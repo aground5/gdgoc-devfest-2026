@@ -89,6 +89,44 @@ body {
   transition: background-color 0.2s ease;
 }
 
+/* Scrollbars: thin, theme-colored thumb on a page-colored track, so the
+   scrollbar strip matches the page background in light and dark mode.
+   With a mouse, the thumb fades in while its scroll area is hovered. */
+:root {
+  --scroll-thumb: color-mix(in srgb, var(--fg) 30%, transparent);
+  --scroll-track: var(--page);
+}
+
+html {
+  background: var(--page);
+}
+
+/* In the base layer so Tailwind utilities (e.g. `transition`) still win over `*` */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    * {
+      scrollbar-color: transparent var(--scroll-track);
+      transition: scrollbar-color 0.2s ease;
+    }
+
+    *:hover,
+    *:focus-within {
+      scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+    }
+  }
+}
+
+/* Set by ThemeToggle for one frame so all colors switch at once */
+:root[data-theme-switching],
+:root[data-theme-switching] * {
+  transition: none !important;
+}
+
 /* Diagonal fold at the bottom of a stripe */
 .fold {
   clip-path: polygon(0 100%, 100% 0, 100% 100%);

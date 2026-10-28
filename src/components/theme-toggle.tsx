@@ -23,7 +23,15 @@ function subscribe(onChange: () => void) {
 }
 
 function setTheme(next: Theme) {
-  document.documentElement.dataset.theme = next;
+  const root = document.documentElement;
+  // Switch every color in the same frame: without this, elements with a color
+  // transition (scrollbars, body) lag behind the rest of the page.
+  root.dataset.themeSwitching = "";
+  root.dataset.theme = next;
+  void root.offsetHeight; // apply the new colors before transitions come back
+  requestAnimationFrame(() => {
+    delete root.dataset.themeSwitching;
+  });
   try {
     localStorage.setItem("theme", next);
   } catch {
