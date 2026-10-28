@@ -3,20 +3,23 @@
 import { useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { schools } from "./brand";
 import {
+  awards,
+  criteria,
+  days,
   event,
   faqs,
+  investRules,
+  keywords,
   notices,
   schedule,
-  trackColor,
-  tracks,
+  steps,
   venueInfo,
-  type Track,
 } from "@/data/guide";
 
 const TABS = [
   { id: "overview", label: "개요" },
   { id: "timetable", label: "타임테이블" },
-  { id: "sessions", label: "세션" },
+  { id: "program", label: "진행 방식" },
   { id: "venue", label: "오시는 길" },
   { id: "faq", label: "FAQ" },
 ] as const;
@@ -108,7 +111,7 @@ export function GuideTabs() {
       >
         {active === "overview" && <Overview onOpen={open} />}
         {active === "timetable" && <Timetable />}
-        {active === "sessions" && <Sessions />}
+        {active === "program" && <Program />}
         {active === "venue" && <Venue />}
         {active === "faq" && <FaqList />}
       </div>
@@ -126,54 +129,12 @@ function SectionTitle({ title }: { title: string }) {
   );
 }
 
-function TrackTag({ track }: { track: Track }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg/70">
-      <span className="h-2.5 w-2.5" style={{ background: trackColor[track] }} />
-      {track}
-    </span>
-  );
-}
-
-function TrackFilter({
-  value,
-  onChange,
-  hideCommon = false,
-}: {
-  value: Track | "전체";
-  onChange: (v: Track | "전체") => void;
-  hideCommon?: boolean;
-}) {
-  const options: (Track | "전체")[] = ["전체", ...tracks.filter((t) => !hideCommon || t !== "공통")];
-  return (
-    <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="트랙 필터">
-      {options.map((o) => {
-        const on = o === value;
-        return (
-          <button
-            key={o}
-            type="button"
-            aria-pressed={on}
-            onClick={() => onChange(o)}
-            className={`inline-flex items-center gap-2 border px-3 py-1.5 text-sm transition ${
-              on ? "border-fg bg-fg text-page" : "border-fg/20 text-fg/70 hover:border-fg/50"
-            }`}
-          >
-            {o !== "전체" && <span className="h-2 w-2" style={{ background: trackColor[o] }} />}
-            {o}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 /* ---------- Panels ---------- */
 
 const shortcuts: { tab: TabId; title: string; desc: string }[] = [
-  { tab: "timetable", title: "타임테이블", desc: "시간대별 전체 일정과 장소" },
-  { tab: "sessions", title: "세션", desc: "트랙별 세션 소개" },
-  { tab: "venue", title: "오시는 길", desc: "장소 · 교통 · 체크인" },
+  { tab: "timetable", title: "타임테이블", desc: "온라인 OT · Demo Day 일정" },
+  { tab: "program", title: "진행 방식", desc: "팀빌딩 · 모의 투자 · 심사 기준" },
+  { tab: "venue", title: "오시는 길", desc: "장소 · 운영 시간 · 소통 채널" },
   { tab: "faq", title: "FAQ", desc: "자주 묻는 질문" },
 ];
 
@@ -206,10 +167,11 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
         </ul>
 
         <div className="mt-12">
-          <SectionTitle title="네 개의 캠퍼스, 하나의 DevFest" />
-          <p className="max-w-2xl leading-relaxed text-fg/70">
-            고려대 · 연세대 · 성균관대 · KAIST의 GDG on Campus가 함께 준비한 개발자 행사입니다. 올해의 주제{" "}
-            <strong className="font-semibold text-fg">{event.theme}</strong> 아래, 각자가 그리는 기술의 다음 모습을 나눕니다.
+          <SectionTitle title={event.title} />
+          <p className="max-w-2xl leading-relaxed text-fg/70">{event.concept}</p>
+          <p className="mt-3 max-w-2xl leading-relaxed text-fg/70">
+            고려대 · 연세대 · 성균관대 · KAIST의 GDG on Campus가 함께 준비했고, {event.venue}에서 열립니다. 올해의 주제{" "}
+            <strong className="font-semibold text-fg">{event.theme}</strong>
           </p>
           <ul className="mt-6 flex flex-wrap gap-2">
             {schools.map((s) => (
@@ -242,21 +204,40 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
 }
 
 function Timetable() {
-  const [filter, setFilter] = useState<Track | "전체">("전체");
-  const rows = schedule.filter((s) => filter === "전체" || s.track === filter || s.track === "공통");
+  const [day, setDay] = useState(days[days.length - 1].id);
+  const current = days.find((d) => d.id === day) ?? days[0];
+  const rows = schedule.filter((s) => s.day === day);
 
   return (
     <div>
-      <SectionTitle title={`${event.date} 일정`} />
-      <TrackFilter value={filter} onChange={setFilter} />
+      <SectionTitle title="일정" />
+      <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="날짜 선택">
+        {days.map((d) => {
+          const on = d.id === day;
+          return (
+            <button
+              key={d.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => setDay(d.id)}
+              className={`border px-3 py-1.5 text-sm transition ${
+                on ? "border-fg bg-fg text-page" : "border-fg/20 text-fg/70 hover:border-fg/50"
+              }`}
+            >
+              <span className="font-mono">{d.date}</span> · {d.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mb-3 text-sm text-fg/60">
+        {current.date} · {current.where}
+      </p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[36rem] border-t border-fg/15 text-left">
+        <table className="w-full min-w-[28rem] border-t border-fg/15 text-left">
           <thead className="sr-only">
             <tr>
               <th>시간</th>
-              <th>세션</th>
-              <th>트랙</th>
-              <th>장소</th>
+              <th>내용</th>
             </tr>
           </thead>
           <tbody>
@@ -266,14 +247,10 @@ function Timetable() {
                   {r.time}
                   <span className="text-fg/40"> – {r.end}</span>
                 </td>
-                <td className="py-4 pr-4">
+                <td className="py-4">
                   <p className="font-semibold text-fg">{r.title}</p>
-                  {r.speaker && <p className="mt-0.5 text-sm text-fg/50">{r.speaker}</p>}
+                  {r.desc && <p className="mt-0.5 text-sm text-fg/60">{r.desc}</p>}
                 </td>
-                <td className="w-24 py-4 pr-4">
-                  <TrackTag track={r.track} />
-                </td>
-                <td className="w-24 py-4 text-sm text-fg/60">{r.room}</td>
               </tr>
             ))}
           </tbody>
@@ -284,30 +261,75 @@ function Timetable() {
   );
 }
 
-function Sessions() {
-  const [filter, setFilter] = useState<Track | "전체">("전체");
-  const items = schedule.filter((s) => s.track !== "공통" && (filter === "전체" || s.track === filter));
-
+function Program() {
   return (
-    <div>
-      <SectionTitle title="트랙별 세션" />
-      <TrackFilter value={filter} onChange={setFilter} hideCommon />
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((s) => (
-          <li key={s.title} className="flex flex-col border border-fg/15 bg-surface">
-            <span className="h-1" style={{ background: trackColor[s.track] }} />
-            <div className="flex flex-1 flex-col p-5">
-              <TrackTag track={s.track} />
-              <h3 className="mt-3 text-lg font-semibold leading-snug text-fg">{s.title}</h3>
-              {s.desc && <p className="mt-2 text-sm leading-relaxed text-fg/60">{s.desc}</p>}
-              <p className="mt-auto pt-5 font-mono text-xs text-fg/50">
-                {s.time}–{s.end} · {s.room} · {s.speaker}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ul>
-      {items.length === 0 && <p className="text-fg/60">이 트랙의 세션은 준비 중입니다.</p>}
+    <div className="grid gap-14">
+      <section>
+        <SectionTitle title="Demo Day까지" />
+        <ol className="grid gap-px border border-fg/10 bg-fg/10 md:grid-cols-5">
+          {steps.map((st, i) => (
+            <li key={st.title} className="flex flex-col bg-page p-5">
+              <span className="h-1 w-8" style={{ background: schools[i % schools.length].light }} aria-hidden="true" />
+              <p className="mt-4 font-mono text-xs text-fg/50">{st.date}</p>
+              <h3 className="mt-1 text-lg font-semibold text-fg">{st.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-fg/60">{st.desc}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section>
+        <SectionTitle title="키워드 기반 팀빌딩" />
+        <p className="max-w-2xl leading-relaxed text-fg/70">
+          정해진 트랙 대신 넓은 키워드로 팀을 꾸립니다. 신청할 때 1~3지망을 고르면, 수요에 맞춰 키워드를 합치거나 조정해 팀당 5~6명으로 구성합니다.
+        </p>
+        <ul className="mt-6 flex flex-wrap gap-2">
+          {keywords.map((k) => (
+            <li key={k} className="border border-fg/15 px-3 py-1.5 text-sm text-fg">
+              {k}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <div className="grid gap-12 lg:grid-cols-2">
+        <section>
+          <SectionTitle title="모의 투자" />
+          <ul className="border-t border-fg/15">
+            {investRules.map((r) => (
+              <li key={r} className="flex gap-3 border-b border-fg/15 py-4 text-fg/80">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 bg-fg" aria-hidden="true" />
+                {r}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <SectionTitle title="심사 기준" />
+          <dl className="border-t border-fg/15">
+            {criteria.map((c) => (
+              <div key={c.name} className="grid grid-cols-[6.5rem_1fr] gap-4 border-b border-fg/15 py-4">
+                <dt className="font-semibold text-fg">{c.name}</dt>
+                <dd className="text-fg/70">{c.desc}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-3 text-sm text-fg/60">기술 스택 제한은 없으며, Google 기술을 활용하면 가산점이 있습니다.</p>
+        </section>
+      </div>
+
+      <section>
+        <SectionTitle title="시상" />
+        <ul className="flex flex-wrap gap-2">
+          {awards.map((a) => (
+            <li key={a} className="border border-fg/15 bg-surface px-4 py-2 font-semibold text-fg">
+              {a}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-sm text-fg/60">인기상은 개미 투자를 가장 많이 받은 팀에게 돌아갑니다. 상세 시상 내역은 추후 공지됩니다.</p>
+      </section>
     </div>
   );
 }
@@ -328,7 +350,7 @@ function Venue() {
         <div className="mt-6 border border-fg/15 bg-surface p-5">
           <p className="font-semibold text-fg">체크인 안내</p>
           <p className="mt-1 text-sm leading-relaxed text-fg/70">
-            {event.checkIn} 로비에서 체크인할 수 있습니다. 신청 완료 메일의 QR 코드를 준비해 주세요.
+            {event.checkIn} 체크인할 수 있고, 체크인 후 Demo Market이 시작됩니다. 체크인 방법은 추후 안내됩니다.
           </p>
         </div>
       </div>
