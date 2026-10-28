@@ -1,30 +1,25 @@
 "use client";
 
-import Link from "next/link";
-import { useId, useRef, useState, type FormEvent } from "react";
-import { GdgLogo, GoogleBar, schools, type School } from "./brand";
-import { ThemeToggle } from "./theme-toggle";
+// Participant screen (/onfestival). Shows only what an individual participant should see:
+// their own team and attendance, the team list, their own investments, and the
+// investment status that staff last published (never live totals).
+
+import { useId, useState, type FormEvent } from "react";
+import { INVEST_BUDGET, INVEST_STEP, myParticipantId, type Participant, type Team } from "@/data/guide";
+import { membersOf, timeLabel, updateFestival, useFestival, won, type FestivalState } from "@/lib/festival-store";
 import {
-  ATTENDANCE_CODE,
-  INVEST_BUDGET,
-  INVEST_STEP,
-  event,
-  myTeamId,
-  teams as initialTeams,
-  type SchoolKey,
-  type Team,
-} from "@/data/guide";
-
-// Mockup: all state is local and resets on reload.
-
-/* ---------- Helpers ---------- */
-
-const school = (key: SchoolKey) => schools.find((s) => s.key === key) as School;
-
-// Schools represented on a team, in the standard school order
-const teamSchools = (t: Team) => schools.filter((s) => t.members.some((m) => m.school === s.key));
-
-/* ---------- Live screen ---------- */
+  Label,
+  MemberStripe,
+  RankBar,
+  SchoolChip,
+  ScreenFrame,
+  Status,
+  fieldCls,
+  primaryBtn,
+  school,
+  schoolsOf,
+  smallBtn,
+} from "./festival-ui";
 
 const VIEWS = [
   { id: "team", label: "내 팀" },
@@ -34,154 +29,51 @@ const VIEWS = [
 type View = (typeof VIEWS)[number]["id"];
 
 export function LiveScreen() {
-  const [teams, setTeams] = useState(initialTeams);
+  const state = useFestival();
   const [view, setView] = useState<View>("team");
-  const [invest, setInvest] = useState<Record<string, number>>({});
-  // Last confirmed amounts; null until the first confirm. Confirming doesn't lock anything.
-  const [saved, setSaved] = useState<Record<string, number> | null>(null);
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const base = useId();
-  const myTeam = teams.find((t) => t.id === myTeamId) as Team;
-
-  function updateMyTeam(patch: Partial<Team>) {
-    setTeams((all) => all.map((t) => (t.id === myTeamId ? { ...t, ...patch } : t)));
-  }
-
-  function onTabKey(e: React.KeyboardEvent) {
-    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-    e.preventDefault();
-    const i = VIEWS.findIndex((v) => v.id === view);
-    const next = (i + (e.key === "ArrowRight" ? 1 : -1) + VIEWS.length) % VIEWS.length;
-    setView(VIEWS[next].id);
-    tabRefs.current[next]?.focus();
-  }
+  const me = state.participants.find((p) => p.id === myParticipantId);
+  const myTeam = me?.teamId ? state.teams.find((t) => t.id === me.teamId) : undefined;
 
   return (
-    <div className="flex min-h-svh flex-col bg-page text-fg">
-      <header className="sticky top-0 z-10 border-b border-fg/10 bg-page">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-4 sm:px-8">
-          <p className="flex items-center gap-2 text-sm font-semibold sm:text-base">
-            <GdgLogo className="h-3 w-6" />
-            {event.series}
-            <span className="hidden text-fg/40 sm:inline">· {event.theme}</span>
-          </p>
-          <div className="flex items-center gap-2">
-            <ThemeToggle className="h-10 w-10" />
-            <Link
-              href="/"
-              className="inline-flex h-10 items-center gap-2 border border-fg/25 px-4 text-sm font-semibold transition hover:bg-fg/10"
-            >
-              나가기 <span aria-hidden="true">✕</span>
-            </Link>
+    <ScreenFrame tabs={VIEWS} active={view} onTab={setView}>
+      {!me ? (
+        <p className="py-10 text-lg text-fg/60">참가자 정보를 찾을 수 없습니다. 운영진에게 문의해 주세요.</p>
+      ) : view === "team" ? (
+        <div className="grid gap-10 lg:grid-cols-[1fr_26rem]">
+          <div className="grid content-start gap-6">
+            {myTeam ? (
+              <MyTeamCard state={state} team={myTeam} />
+            ) : (
+              <section className="border border-fg/15 p-5 sm:p-7">
+                <Label>내 팀</Label>
+                <p className="mt-3 text-lg font-semibold">아직 팀이 배정되지 않았습니다.</p>
+                <p className="mt-1 text-sm text-fg/60">운영진이 팀을 배정하면 여기에 표시됩니다.</p>
+              </section>
+            )}
+            <AttendanceCard me={me} code={state.attendanceCode} />
           </div>
+          <TeamList state={state} myTeamId={myTeam?.id} />
         </div>
-        <div role="tablist" aria-label="대회 메뉴" onKeyDown={onTabKey} className="mx-auto flex max-w-6xl gap-1 px-4 sm:px-8">
-          {VIEWS.map((v, i) => {
-            const on = v.id === view;
-            return (
-              <button
-                key={v.id}
-                ref={(el) => {
-                  tabRefs.current[i] = el;
-                }}
-                role="tab"
-                id={`${base}-tab-${v.id}`}
-                aria-selected={on}
-                aria-controls={`${base}-panel`}
-                tabIndex={on ? 0 : -1}
-                onClick={() => setView(v.id)}
-                className={`relative px-3 py-3 text-sm font-semibold transition sm:text-base ${on ? "text-fg" : "text-fg/50 hover:text-fg/80"}`}
-              >
-                {v.label}
-                {on && <span className="absolute inset-x-3 bottom-0 h-[3px] bg-fg" />}
-              </button>
-            );
-          })}
+      ) : (
+        <div className="grid gap-10">
+          <InvestPanel state={state} me={me} />
+          <PublishedStatus state={state} myTeamId={myTeam?.id} />
         </div>
-      </header>
-
-      <div
-        role="tabpanel"
-        id={`${base}-panel`}
-        aria-labelledby={`${base}-tab-${view}`}
-        className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 sm:py-10"
-      >
-        {view === "team" ? (
-          <div className="grid gap-10 lg:grid-cols-[1fr_26rem]">
-            <div className="grid content-start gap-6">
-              <MyTeamCard team={myTeam} onSave={updateMyTeam} />
-              <AttendanceCard team={myTeam} onCheckIn={() => updateMyTeam({ checkedIn: true })} />
-            </div>
-            <TeamList teams={teams} />
-          </div>
-        ) : (
-          <InvestPanel
-            teams={teams}
-            amounts={invest}
-            saved={saved}
-            onChange={(id, v) => setInvest((all) => ({ ...all, [id]: v }))}
-            onConfirm={() => setSaved({ ...invest })}
-          />
-        )}
-      </div>
-
-      <GoogleBar horizontal className="h-1.5 shrink-0" />
-    </div>
+      )}
+    </ScreenFrame>
   );
 }
-
-/* ---------- Shared bits ---------- */
-
-function Label({ id, children }: { id?: string; children: React.ReactNode }) {
-  return (
-    <h2 id={id} className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-fg/60">
-      {children}
-    </h2>
-  );
-}
-
-function SchoolChip({ s, className = "h-4 w-4" }: { s: School; className?: string }) {
-  return (
-    <span className={`flex shrink-0 ${className}`} title={s.name}>
-      <span className="flex-1" style={{ background: s.dark }} />
-      <span className="flex-1" style={{ background: s.light }} />
-    </span>
-  );
-}
-
-function Status({ on }: { on: boolean }) {
-  return on ? (
-    <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-[var(--g-green)]">
-      <span className="h-1.5 w-1.5 rounded-full bg-[var(--g-green)]" />
-      출석
-    </span>
-  ) : (
-    <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-fg/40">
-      <span className="h-1.5 w-1.5 rounded-full bg-fg/30" />
-      미출석
-    </span>
-  );
-}
-
-const fieldCls =
-  "mt-1.5 w-full border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-fg placeholder:text-fg/30 outline-none transition focus:border-fg/60";
-
-const smallBtn = "border border-fg/25 px-3 py-1.5 text-sm font-semibold transition hover:bg-fg/10";
 
 /* ---------- My team ---------- */
 
-function MyTeamCard({ team, onSave }: { team: Team; onSave: (patch: Partial<Team>) => void }) {
+function MyTeamCard({ state, team }: { state: FestivalState; team: Team }) {
   const [editing, setEditing] = useState(false);
-  const mix = teamSchools(team);
+  const members = membersOf(state, team.id);
+  const mix = schoolsOf(members);
 
   return (
     <section aria-labelledby="my-team" className="border border-fg/15 bg-fg/[0.04]">
-      {/* One color pair per member, so a mixed team shows its mix */}
-      <div className="flex h-2" aria-hidden="true">
-        {team.members.map((m, i) => (
-          <SchoolChip key={i} s={school(m.school)} className="h-full flex-1" />
-        ))}
-      </div>
+      <MemberStripe people={members} />
       <div className="p-5 sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -189,8 +81,8 @@ function MyTeamCard({ team, onSave }: { team: Team; onSave: (patch: Partial<Team
             <p className="mt-2 break-words text-3xl font-semibold tracking-tight sm:text-4xl">{team.name}</p>
             <p className="mt-1 text-sm text-fg/60">
               테이블 <span className="font-mono text-fg">{team.table}</span>
-              {" · "}
-              {mix.length > 1 ? `${mix.length}개 학교 연합` : `GDG on Campus ${mix[0]?.word ?? ""}`}
+              {mix.length > 0 && " · "}
+              {mix.length > 1 ? `${mix.length}개 학교 연합` : mix[0] && `GDG on Campus ${mix[0].word}`}
             </p>
           </div>
           {!editing && (
@@ -201,14 +93,7 @@ function MyTeamCard({ team, onSave }: { team: Team; onSave: (patch: Partial<Team
         </div>
 
         {editing ? (
-          <TeamForm
-            team={team}
-            onCancel={() => setEditing(false)}
-            onSave={(patch) => {
-              onSave(patch);
-              setEditing(false);
-            }}
-          />
+          <TeamForm team={team} members={members} onDone={() => setEditing(false)} />
         ) : (
           <dl className="mt-6 grid gap-6 sm:grid-cols-2">
             <div>
@@ -217,11 +102,11 @@ function MyTeamCard({ team, onSave }: { team: Team; onSave: (patch: Partial<Team
               {team.desc && <dd className="mt-1 text-sm leading-relaxed text-fg/70">{team.desc}</dd>}
             </div>
             <div>
-              <dt className="text-xs text-fg/50">팀원 {team.members.length}명</dt>
+              <dt className="text-xs text-fg/50">팀원 {members.length}명</dt>
               <dd className="mt-2">
                 <ul className="grid gap-1.5">
-                  {team.members.map((m, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm">
+                  {members.map((m) => (
+                    <li key={m.id} className="flex items-center gap-2 text-sm">
                       <SchoolChip s={school(m.school)} className="h-3 w-3" />
                       <span className="font-medium">{m.name}</span>
                       <span className="text-fg/40">{school(m.school).word}</span>
@@ -238,15 +123,7 @@ function MyTeamCard({ team, onSave }: { team: Team; onSave: (patch: Partial<Team
 }
 
 // Members are assigned by staff, so only team details are editable.
-function TeamForm({
-  team,
-  onSave,
-  onCancel,
-}: {
-  team: Team;
-  onSave: (patch: Partial<Team>) => void;
-  onCancel: () => void;
-}) {
+function TeamForm({ team, members, onDone }: { team: Team; members: Participant[]; onDone: () => void }) {
   const id = useId();
   const [name, setName] = useState(team.name);
   const [project, setProject] = useState(team.project);
@@ -256,7 +133,9 @@ function TeamForm({
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) return setError("팀명을 입력해 주세요.");
-    onSave({ name: name.trim(), project: project.trim(), desc: desc.trim() });
+    const patch = { name: name.trim(), project: project.trim(), desc: desc.trim() };
+    updateFestival((s) => ({ ...s, teams: s.teams.map((t) => (t.id === team.id ? { ...t, ...patch } : t)) }));
+    onDone();
   }
 
   return (
@@ -279,8 +158,8 @@ function TeamForm({
       <div>
         <p className="text-xs text-fg/60">팀원</p>
         <ul className="mt-1.5 flex flex-wrap gap-2">
-          {team.members.map((m, i) => (
-            <li key={i} className="inline-flex items-center gap-2 border border-fg/15 px-2.5 py-1 text-sm text-fg/70">
+          {members.map((m) => (
+            <li key={m.id} className="inline-flex items-center gap-2 border border-fg/15 px-2.5 py-1 text-sm text-fg/70">
               <SchoolChip s={school(m.school)} className="h-3 w-3" />
               {m.name}
             </li>
@@ -295,10 +174,10 @@ function TeamForm({
         </p>
       )}
       <div className="flex gap-2">
-        <button type="submit" className="bg-fg px-4 py-2 text-sm font-semibold text-page transition hover:opacity-85">
+        <button type="submit" className={primaryBtn}>
           저장
         </button>
-        <button type="button" onClick={onCancel} className={smallBtn}>
+        <button type="button" onClick={onDone} className={smallBtn}>
           취소
         </button>
       </div>
@@ -308,34 +187,34 @@ function TeamForm({
 
 /* ---------- Attendance ---------- */
 
-function AttendanceCard({ team, onCheckIn }: { team: Team; onCheckIn: () => void }) {
+function AttendanceCard({ me, code: expected }: { me: Participant; code: string }) {
   const id = useId();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [at, setAt] = useState<string | null>(null);
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    if (code !== ATTENDANCE_CODE) {
+    if (code !== expected) {
       setError("출석 코드가 올바르지 않습니다. 운영진에게 다시 확인해 주세요.");
       return;
     }
     setError("");
-    setAt(new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }));
-    onCheckIn();
+    setCode("");
+    updateFestival((s) => ({
+      ...s,
+      participants: s.participants.map((p) => (p.id === me.id ? { ...p, checkedIn: true } : p)),
+    }));
   }
 
   return (
     <section aria-labelledby={`${id}-title`} className="border border-fg/15 p-5 sm:p-7">
       <div className="flex items-center justify-between gap-4">
-        <Label id={`${id}-title`}>출석 체크</Label>
-        <Status on={team.checkedIn} />
+        <Label id={`${id}-title`}>내 출석</Label>
+        <Status on={me.checkedIn} />
       </div>
 
-      {team.checkedIn ? (
-        <p className="mt-4 text-lg font-semibold">
-          출석이 확인되었습니다{at && <span className="ml-2 font-mono text-sm font-normal text-fg/50">{at}</span>}
-        </p>
+      {me.checkedIn ? (
+        <p className="mt-4 text-lg font-semibold">{me.name}님, 출석이 확인되었습니다.</p>
       ) : (
         <form onSubmit={submit} className="mt-4" noValidate>
           <label htmlFor={`${id}-code`} className="text-sm text-fg/70">
@@ -357,11 +236,7 @@ function AttendanceCard({ team, onCheckIn }: { team: Team; onCheckIn: () => void
               aria-describedby={error ? `${id}-err` : undefined}
               className="w-36 border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-center font-mono text-2xl tracking-[0.4em] text-fg outline-none transition placeholder:text-fg/20 focus:border-fg/60"
             />
-            <button
-              type="submit"
-              disabled={code.length < 4}
-              className="bg-fg px-5 font-semibold text-page transition hover:opacity-85 disabled:opacity-30"
-            >
+            <button type="submit" disabled={code.length < 4} className={`${primaryBtn} px-5 text-base`}>
               출석하기
             </button>
           </div>
@@ -370,7 +245,7 @@ function AttendanceCard({ team, onCheckIn }: { team: Team; onCheckIn: () => void
               {error}
             </p>
           )}
-          <p className="mt-3 text-xs text-fg/40">목업용 코드: {ATTENDANCE_CODE}</p>
+          <p className="mt-3 text-xs text-fg/40">목업용 코드: {expected} (운영진 화면에서 변경 가능)</p>
         </form>
       )}
     </section>
@@ -379,22 +254,22 @@ function AttendanceCard({ team, onCheckIn }: { team: Team; onCheckIn: () => void
 
 /* ---------- All teams ---------- */
 
-function TeamList({ teams }: { teams: Team[] }) {
+function TeamList({ state, myTeamId }: { state: FestivalState; myTeamId?: string }) {
   const id = useId();
   const [q, setQ] = useState("");
   const query = q.trim().toLowerCase();
-  const rows = teams.filter(
-    (t) =>
-      !query ||
-      [t.name, t.project, t.table, ...t.members.map((m) => m.name)].some((v) => v.toLowerCase().includes(query)),
-  );
+  const rows = state.teams
+    .map((t) => ({ team: t, members: membersOf(state, t.id) }))
+    .filter(
+      ({ team: t, members }) =>
+        !query || [t.name, t.project, t.table, ...members.map((m) => m.name)].some((v) => v.toLowerCase().includes(query)),
+    );
+
   return (
     <section aria-labelledby={`${id}-title`}>
       <div className="flex items-baseline justify-between gap-4">
         <Label id={`${id}-title`}>참가 팀</Label>
-        <span className="font-mono text-xs text-fg/50">
-          {teams.length}팀
-        </span>
+        <span className="font-mono text-xs text-fg/50">{state.teams.length}팀</span>
       </div>
       <label htmlFor={`${id}-q`} className="sr-only">
         팀 검색
@@ -408,9 +283,9 @@ function TeamList({ teams }: { teams: Team[] }) {
         className={`${fieldCls} mt-3`}
       />
       <ul className="mt-3 border-t border-fg/10">
-        {rows.map((t) => {
+        {rows.map(({ team: t, members }) => {
           const mine = t.id === myTeamId;
-          const mix = teamSchools(t);
+          const mix = schoolsOf(members);
           return (
             <li
               key={t.id}
@@ -430,7 +305,7 @@ function TeamList({ teams }: { teams: Team[] }) {
                     ))}
                   </span>
                   <span className="truncate">
-                    {t.project} · {t.members.length}명
+                    {t.project} · {members.length}명
                   </span>
                 </span>
               </span>
@@ -445,31 +320,31 @@ function TeamList({ teams }: { teams: Team[] }) {
 
 /* ---------- Investment ---------- */
 
-const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
+function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
+  // Confirmed amounts live in the shared store; edits stay in a local draft until confirmed.
+  const saved = state.investments[me.id] ?? null;
+  const [draft, setDraft] = useState<Record<string, number> | null>(null);
+  const amounts = draft ?? saved ?? {};
 
-function InvestPanel({
-  teams,
-  amounts,
-  saved,
-  onChange,
-  onConfirm,
-}: {
-  teams: Team[];
-  amounts: Record<string, number>;
-  saved: Record<string, number> | null;
-  onChange: (teamId: string, amount: number) => void;
-  onConfirm: () => void;
-}) {
-  const targets = teams.filter((t) => t.id !== myTeamId);
+  const targets = state.teams.filter((t) => t.id !== me.teamId);
   const used = targets.reduce((sum, t) => sum + (amounts[t.id] ?? 0), 0);
   const left = INVEST_BUDGET - used;
   const invested = targets.filter((t) => (amounts[t.id] ?? 0) > 0);
   const dirty = saved === null || targets.some((t) => (amounts[t.id] ?? 0) !== (saved[t.id] ?? 0));
   const upToDate = saved !== null && !dirty;
 
+  function change(teamId: string, v: number) {
+    setDraft({ ...amounts, [teamId]: v });
+  }
+
+  function confirm() {
+    const clean = Object.fromEntries(targets.map((t) => [t.id, amounts[t.id] ?? 0]).filter(([, v]) => (v as number) > 0));
+    updateFestival((s) => ({ ...s, investments: { ...s.investments, [me.id]: clean } }));
+    setDraft(null);
+  }
+
   return (
     <div className="grid gap-8">
-      {/* Budget summary */}
       <section aria-labelledby="invest-summary" className="border border-fg/15 bg-fg/[0.04] p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -485,12 +360,7 @@ function InvestPanel({
               확정됨
             </span>
           ) : (
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={saved === null && used === 0}
-              className="bg-fg px-5 py-2.5 font-semibold text-page transition hover:opacity-85 disabled:opacity-30"
-            >
+            <button type="button" onClick={confirm} disabled={saved === null && used === 0} className={`${primaryBtn} px-5 py-2.5 text-base`}>
               {saved === null ? "투자 확정하기" : "변경사항 확정하기"}
             </button>
           )}
@@ -527,7 +397,6 @@ function InvestPanel({
         )}
       </section>
 
-      {/* Projects */}
       <section aria-labelledby="invest-projects">
         <div className="mb-4 flex items-baseline justify-between gap-4">
           <Label id="invest-projects">프로젝트</Label>
@@ -540,10 +409,11 @@ function InvestPanel({
             <InvestCard
               key={t.id}
               team={t}
+              members={membersOf(state, t.id)}
               amount={amounts[t.id] ?? 0}
               max={(amounts[t.id] ?? 0) + left}
-              savedAmount={saved?.[t.id] ?? (saved ? 0 : undefined)}
-              onChange={(v) => onChange(t.id, v)}
+              savedAmount={saved ? (saved[t.id] ?? 0) : undefined}
+              onChange={(v) => change(t.id, v)}
             />
           ))}
         </ul>
@@ -554,12 +424,14 @@ function InvestPanel({
 
 function InvestCard({
   team,
+  members,
   amount,
   max,
   savedAmount,
   onChange,
 }: {
   team: Team;
+  members: Participant[];
   amount: number;
   max: number;
   savedAmount?: number;
@@ -573,11 +445,7 @@ function InvestCard({
 
   return (
     <li className={`flex flex-col border ${amount > 0 ? "border-fg/50 bg-fg/[0.06]" : "border-fg/15"}`}>
-      <div className="flex h-1.5" aria-hidden="true">
-        {team.members.map((m, i) => (
-          <SchoolChip key={i} s={school(m.school)} className="h-full flex-1" />
-        ))}
-      </div>
+      <MemberStripe people={members} className="h-1.5" />
       <div className="flex flex-1 flex-col p-5">
         <p className="font-mono text-xs text-fg/50">
           {team.table} · {team.name}
@@ -607,7 +475,7 @@ function InvestCard({
               placeholder="0"
               onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")) || 0)}
               onBlur={() => set(Math.round(amount / INVEST_STEP) * INVEST_STEP)}
-              className="h-11 min-w-0 flex-1 border border-fg/20 bg-fg/[0.04] px-3 text-right font-mono text-lg tabular-nums text-fg outline-none transition placeholder:text-fg/25 focus:border-fg/60 disabled:opacity-60"
+              className="h-11 min-w-0 flex-1 border border-fg/20 bg-fg/[0.04] px-3 text-right font-mono text-lg tabular-nums text-fg outline-none transition placeholder:text-fg/25 focus:border-fg/60"
             />
             <button
               type="button"
@@ -627,7 +495,7 @@ function InvestCard({
                   확정 {won(savedAmount)}
                 </>
               ) : (
-                "\u00a0"
+                " "
               )}
             </span>
             <span>{amount > 0 ? `내 투자금의 ${Math.round((amount / INVEST_BUDGET) * 100)}%` : ""}</span>
@@ -635,5 +503,50 @@ function InvestCard({
         </div>
       </div>
     </li>
+  );
+}
+
+/* ---------- Published status ---------- */
+
+// Only the snapshot staff published — participants never see live totals.
+function PublishedStatus({ state, myTeamId }: { state: FestivalState; myTeamId?: string }) {
+  const snap = state.snapshot;
+  const rows = snap
+    ? state.teams
+        .map((t) => ({ team: t, total: snap.totals[t.id] ?? 0 }))
+        .sort((a, b) => b.total - a.total)
+    : [];
+  const top = rows[0]?.total ?? 0;
+
+  return (
+    <section aria-labelledby="published" className="border-t border-fg/15 pt-8">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-4">
+        <Label id="published">투자 현황</Label>
+        {snap && <span className="font-mono text-xs text-fg/50">{timeLabel(snap.at)} 발행 기준</span>}
+      </div>
+      {!snap ? (
+        <p className="text-fg/60">아직 발행된 투자 현황이 없습니다. 운영진이 발행하면 여기에 표시됩니다.</p>
+      ) : (
+        <ol className="grid gap-px border border-fg/10 bg-fg/10">
+          {rows.map(({ team: t, total }, i) => (
+            <li key={t.id} className={`grid grid-cols-[2rem_1fr_auto] items-center gap-x-4 gap-y-2 p-4 ${t.id === myTeamId ? "bg-fg/[0.08]" : "bg-page"}`}>
+              <span className="font-mono text-lg font-semibold text-fg/60">{i + 1}</span>
+              <span className="min-w-0">
+                <span className="flex items-center gap-2">
+                  <span className="truncate font-semibold">{t.project}</span>
+                  {t.id === myTeamId && <span className="shrink-0 bg-fg px-1.5 py-0.5 text-[10px] font-bold text-page">MY</span>}
+                </span>
+                <span className="block truncate text-xs text-fg/50">{t.name}</span>
+              </span>
+              <span className="font-mono text-sm font-semibold tabular-nums">{won(total)}</span>
+              <span className="col-span-2 col-start-2">
+                <RankBar value={total} max={top} />
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
+      <p className="mt-3 text-xs text-fg/40">현황은 운영진이 발행한 시점 기준이며, 실시간으로 바뀌지 않습니다.</p>
+    </section>
   );
 }
