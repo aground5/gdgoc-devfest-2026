@@ -29,6 +29,7 @@ import {
   school,
   selectCls,
   smallBtn,
+  useHashTab,
 } from "./festival-ui";
 
 const VIEWS = [
@@ -37,8 +38,6 @@ const VIEWS = [
   { id: "attendance", label: "출석" },
   { id: "invest", label: "투자 현황" },
 ] as const;
-
-type View = (typeof VIEWS)[number]["id"];
 
 const newId = (prefix: string) => `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
 
@@ -91,7 +90,7 @@ function removeTeam(id: string) {
 
 export function AdminScreen() {
   const state = useFestival();
-  const [view, setView] = useState<View>("people");
+  const [view, setView] = useHashTab(VIEWS, "people");
 
   const present = state.participants.filter((p) => p.checkedIn).length;
   const investors = state.participants.filter((p) => Object.values(state.investments[p.id] ?? {}).some((v) => v > 0)).length;

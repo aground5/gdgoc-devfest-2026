@@ -18,6 +18,7 @@ import {
   school,
   schoolsOf,
   smallBtn,
+  useHashTab,
 } from "./festival-ui";
 import { PublishedStatus } from "./investment-status";
 
@@ -26,11 +27,9 @@ const VIEWS = [
   { id: "invest", label: "투자" },
 ] as const;
 
-type View = (typeof VIEWS)[number]["id"];
-
 export function LiveScreen() {
   const state = useFestival();
-  const [view, setView] = useState<View>("team");
+  const [view, setView] = useHashTab(VIEWS, "team");
   const me = state.participants.find((p) => p.id === myParticipantId);
   const myTeam = me?.teamId ? state.teams.find((t) => t.id === me.teamId) : undefined;
 

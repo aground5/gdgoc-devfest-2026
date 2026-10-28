@@ -3,7 +3,7 @@
 // UI bits shared by the participant (/onfestival) and admin (/organize) screens.
 
 import Link from "next/link";
-import { useRef, type ReactNode } from "react";
+import { useRef, useSyncExternalStore, type ReactNode } from "react";
 import { GdgLogo, GoogleBar, schools, type School } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
 import { event, type Participant, type SchoolKey } from "@/data/guide";
@@ -65,6 +65,29 @@ export function Status({ on }: { on: boolean }) {
 }
 
 export type ScreenTab<T extends string> = { id: T; label: string };
+
+function subscribeHash(cb: () => void) {
+  window.addEventListener("hashchange", cb);
+  return () => window.removeEventListener("hashchange", cb);
+}
+
+// Active tab lives in the URL hash (#invest etc.) so it can be linked and survives reloads,
+// same as the guide tabs on the main page.
+export function useHashTab<T extends string>(tabs: readonly ScreenTab<T>[], fallback: T) {
+  const active = useSyncExternalStore(
+    subscribeHash,
+    () => {
+      const h = window.location.hash.slice(1);
+      return tabs.some((t) => t.id === h) ? (h as T) : fallback;
+    },
+    () => fallback,
+  );
+  function setActive(id: T) {
+    history.replaceState(null, "", `#${id}`);
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  }
+  return [active, setActive] as const;
+}
 
 // Page frame: header with brand, theme toggle, exit link, and an ARIA tab bar.
 export function ScreenFrame<T extends string>({
