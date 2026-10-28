@@ -2,15 +2,14 @@
 
 // Participant screen (/onfestival). Shows only what an individual participant should see:
 // their own team and attendance, the team list, their own investments, and the
-// investment status that staff last published (never live totals).
+// investment ticks staff have published (never live totals).
 
 import { useId, useState, type FormEvent } from "react";
 import { INVEST_BUDGET, INVEST_STEP, myParticipantId, type Participant, type Team } from "@/data/guide";
-import { membersOf, timeLabel, updateFestival, useFestival, won, type FestivalState } from "@/lib/festival-store";
+import { membersOf, updateFestival, useFestival, won, type FestivalState } from "@/lib/festival-store";
 import {
   Label,
   MemberStripe,
-  RankBar,
   SchoolChip,
   ScreenFrame,
   Status,
@@ -20,6 +19,7 @@ import {
   schoolsOf,
   smallBtn,
 } from "./festival-ui";
+import { PublishedStatus } from "./investment-status";
 
 const VIEWS = [
   { id: "team", label: "내 팀" },
@@ -503,50 +503,5 @@ function InvestCard({
         </div>
       </div>
     </li>
-  );
-}
-
-/* ---------- Published status ---------- */
-
-// Only the snapshot staff published — participants never see live totals.
-function PublishedStatus({ state, myTeamId }: { state: FestivalState; myTeamId?: string }) {
-  const snap = state.snapshot;
-  const rows = snap
-    ? state.teams
-        .map((t) => ({ team: t, total: snap.totals[t.id] ?? 0 }))
-        .sort((a, b) => b.total - a.total)
-    : [];
-  const top = rows[0]?.total ?? 0;
-
-  return (
-    <section aria-labelledby="published" className="border-t border-fg/15 pt-8">
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-4">
-        <Label id="published">투자 현황</Label>
-        {snap && <span className="font-mono text-xs text-fg/50">{timeLabel(snap.at)} 발행 기준</span>}
-      </div>
-      {!snap ? (
-        <p className="text-fg/60">아직 발행된 투자 현황이 없습니다. 운영진이 발행하면 여기에 표시됩니다.</p>
-      ) : (
-        <ol className="grid gap-px border border-fg/10 bg-fg/10">
-          {rows.map(({ team: t, total }, i) => (
-            <li key={t.id} className={`grid grid-cols-[2rem_1fr_auto] items-center gap-x-4 gap-y-2 p-4 ${t.id === myTeamId ? "bg-fg/[0.08]" : "bg-page"}`}>
-              <span className="font-mono text-lg font-semibold text-fg/60">{i + 1}</span>
-              <span className="min-w-0">
-                <span className="flex items-center gap-2">
-                  <span className="truncate font-semibold">{t.project}</span>
-                  {t.id === myTeamId && <span className="shrink-0 bg-fg px-1.5 py-0.5 text-[10px] font-bold text-page">MY</span>}
-                </span>
-                <span className="block truncate text-xs text-fg/50">{t.name}</span>
-              </span>
-              <span className="font-mono text-sm font-semibold tabular-nums">{won(total)}</span>
-              <span className="col-span-2 col-start-2">
-                <RankBar value={total} max={top} />
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
-      <p className="mt-3 text-xs text-fg/40">현황은 운영진이 발행한 시점 기준이며, 실시간으로 바뀌지 않습니다.</p>
-    </section>
   );
 }

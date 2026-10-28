@@ -1,12 +1,13 @@
 "use client";
 
 // Admin screen (/organize): participants, teams, attendance, live investment status,
-// and publishing the investment snapshot that participants see.
+// and publishing investment ticks (snapshots) that participants see.
 
 import { useId, useState, type FormEvent } from "react";
 import { schools } from "./brand";
 import { INVEST_BUDGET, type Participant, type SchoolKey, type Team } from "@/data/guide";
 import {
+  latestTick,
   liveTotals,
   membersOf,
   resetFestival,
@@ -769,7 +770,7 @@ function CodeCard({ code }: { code: string }) {
 
 function InvestStatusPanel({ state }: { state: FestivalState }) {
   const live = liveTotals(state);
-  const snap = state.snapshot;
+  const snap = latestTick(state);
   const rows = state.teams
     .map((t) => ({ team: t, total: live.totals[t.id] ?? 0, investors: live.investors[t.id] ?? 0 }))
     .sort((a, b) => b.total - a.total);
@@ -794,8 +795,11 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
         </section>
 
         <section aria-labelledby="publish" className="border border-fg/15 bg-fg/[0.04] p-5">
-          <Label id="publish">참가자 화면 발행</Label>
-          <p className="mt-2 text-lg font-semibold">{snap ? `${timeLabel(snap.at)} 발행됨` : "아직 발행하지 않았습니다"}</p>
+          <div className="flex items-center justify-between gap-3">
+            <Label id="publish">참가자 화면 발행</Label>
+            <span className="font-mono text-xs text-fg/50">틱 {state.ticks.length}개</span>
+          </div>
+          <p className="mt-2 text-lg font-semibold">{snap ? `최근 발행 ${timeLabel(snap.at)}` : "아직 발행하지 않았습니다"}</p>
           <p role="status" className="mt-1 flex items-center gap-2 text-sm text-fg/60">
             {snap && changed && <span className="h-2 w-2 shrink-0 bg-[var(--g-yellow)]" aria-hidden="true" />}
             {!snap
@@ -804,15 +808,25 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
                 ? "발행 이후 투자 변동이 있습니다."
                 : "현재 현황과 발행본이 같습니다."}
           </p>
-          <button
-            type="button"
-            onClick={() => updateFestival((s) => ({ ...s, snapshot: liveTotals(s) }))}
-            disabled={!changed}
-            className={`${primaryBtn} mt-4 px-5 py-2.5 text-base`}
-          >
-            현재 현황 발행하기
-          </button>
-          <p className="mt-2 text-xs text-fg/40">참가자는 발행한 시점의 스냅샷만 볼 수 있습니다.</p>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => updateFestival((s) => ({ ...s, ticks: [...s.ticks, liveTotals(s)] }))}
+              disabled={!changed}
+              className={`${primaryBtn} px-5 py-2.5 text-base`}
+            >
+              새 틱 발행하기
+            </button>
+            {snap && (
+              <DeleteButton
+                label="최근 틱 삭제"
+                onConfirm={() => updateFestival((s) => ({ ...s, ticks: s.ticks.slice(0, -1) }))}
+              />
+            )}
+          </div>
+          <p className="mt-2 text-xs text-fg/40">
+            발행할 때마다 틱이 하나씩 쌓이고, 참가자는 발행된 틱들만 그래프로 볼 수 있습니다. 삭제는 가장 최근 틱만 지웁니다.
+          </p>
         </section>
       </div>
 

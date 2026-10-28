@@ -17,7 +17,8 @@ import {
 // Confirmed investments: participantId -> teamId -> amount
 export type Investments = Record<string, Record<string, number>>;
 
-// Published investment status. Participants only ever see this, never live totals.
+// One published investment status ("tick"). Participants only ever see published ticks,
+// never live totals.
 export type Snapshot = {
   at: number;
   totals: Record<string, number>; // teamId -> amount
@@ -28,11 +29,11 @@ export type FestivalState = {
   participants: Participant[];
   teams: Team[];
   investments: Investments;
-  snapshot: Snapshot | null;
+  ticks: Snapshot[]; // every publish, oldest first
   attendanceCode: string;
 };
 
-const KEY = "devfest-festival-mock-v1";
+const KEY = "devfest-festival-mock-v2";
 const EVENT = "festivalchange";
 
 // Deterministic sample investments so the admin view isn't empty.
@@ -54,11 +55,32 @@ function seedInvestments(): Investments {
   return out;
 }
 
+// A few earlier ticks so the participant chart has history to show.
+// Each team grows at its own pace, so the ranking moves between ticks.
+function seedTicks(investments: Investments): Snapshot[] {
+  const now = liveTotals({ participants: seedParticipants, investments });
+  const start = new Date("2026-11-06T13:00:00+09:00").getTime();
+  const pace = [0.2, 0.42, 0.63, 0.82];
+  return pace.map((base, k) => {
+    const totals: Record<string, number> = {};
+    const investors: Record<string, number> = {};
+    seedTeams.forEach((t, i) => {
+      const jitter = ((i * 7 + k * 13) % 10) / 10; // 0..0.9, deterministic
+      const f = Math.min(1, base * (0.6 + 0.8 * jitter));
+      totals[t.id] = Math.round(((now.totals[t.id] ?? 0) * f) / 10_000) * 10_000;
+      investors[t.id] = Math.round((now.investors[t.id] ?? 0) * f);
+    });
+    return { at: start + k * 40 * 60_000, totals, investors };
+  });
+}
+
+const seedInv = seedInvestments();
+
 export const seedState: FestivalState = {
   participants: seedParticipants,
   teams: seedTeams,
-  investments: seedInvestments(),
-  snapshot: null,
+  investments: seedInv,
+  ticks: seedTicks(seedInv),
   attendanceCode: seedAttendanceCode,
 };
 
@@ -127,7 +149,7 @@ export function resetFestival() {
 export const membersOf = (s: FestivalState, teamId: string) => s.participants.filter((p) => p.teamId === teamId);
 
 // Live totals from confirmed investments. Admin only.
-export function liveTotals(s: FestivalState): Snapshot {
+export function liveTotals(s: Pick<FestivalState, "participants" | "investments">): Snapshot {
   const totals: Record<string, number> = {};
   const investors: Record<string, number> = {};
   const known = new Set(s.participants.map((p) => p.id));
@@ -146,3 +168,8 @@ export const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
 
 export const timeLabel = (at: number) =>
   new Date(at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+
+export const latestTick = (s: FestivalState): Snapshot | null => s.ticks[s.ticks.length - 1] ?? null;
+
+export const clockLabel = (at: number) =>
+  new Date(at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
