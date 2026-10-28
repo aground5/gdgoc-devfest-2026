@@ -5,8 +5,10 @@
 
 import { useId, useState, type FormEvent } from "react";
 import { schools } from "./brand";
-import { INVEST_BUDGET, type Participant, type SchoolKey, type Team } from "@/data/guide";
+import { INVEST_BUDGET, INVEST_STEP, type Participant, type SchoolKey, type Team } from "@/data/guide";
 import {
+  budgetOf,
+  investedBy,
   latestTick,
   liveTotals,
   membersOf,
@@ -31,11 +33,13 @@ import {
   smallBtn,
   useHashTab,
 } from "./festival-ui";
+import { PublishedStatus } from "./investment-status";
 
 const VIEWS = [
   { id: "people", label: "참가자" },
   { id: "teams", label: "팀" },
   { id: "attendance", label: "출석" },
+  { id: "budget", label: "투자금" },
   { id: "invest", label: "투자 현황" },
 ] as const;
 
@@ -50,7 +54,9 @@ function removeParticipant(id: string) {
   updateFestival((s) => {
     const investments = { ...s.investments };
     delete investments[id];
-    return { ...s, participants: s.participants.filter((p) => p.id !== id), investments };
+    const budgets = { ...s.budgets };
+    delete budgets[id];
+    return { ...s, participants: s.participants.filter((p) => p.id !== id), investments, budgets };
   });
 }
 
@@ -65,6 +71,19 @@ function assignTeam(id: string, teamId: string | null) {
       investments[id] = rest;
     }
     return { ...s, investments, participants: s.participants.map((p) => (p.id === id ? { ...p, teamId } : p)) };
+  });
+}
+
+// Budgets equal to the default are stored as "no override"
+function setBudgets(ids: string[], amount: number) {
+  const v = Math.max(0, Math.round(amount / INVEST_STEP) * INVEST_STEP);
+  updateFestival((s) => {
+    const budgets = { ...s.budgets };
+    for (const id of ids) {
+      if (v === INVEST_BUDGET) delete budgets[id];
+      else budgets[id] = v;
+    }
+    return { ...s, budgets };
   });
 }
 
@@ -114,6 +133,7 @@ export function AdminScreen() {
       {view === "people" && <PeoplePanel state={state} />}
       {view === "teams" && <TeamsPanel state={state} />}
       {view === "attendance" && <AttendancePanel state={state} />}
+      {view === "budget" && <BudgetPanel state={state} />}
       {view === "invest" && <InvestStatusPanel state={state} />}
     </ScreenFrame>
   );
@@ -346,6 +366,226 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
         </span>
       </td>
     </tr>
+  );
+}
+
+const short = (n: number) => `${(n / 10_000).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}만`;
+
+function BudgetCell({ id, name, budget }: { id: string; name: string; budget: number }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    if (draft !== null) setBudgets([id], Number(draft.replace(/\D/g, "")) || 0);
+    setDraft(null);
+  };
+  const stepBtn = "grid h-8 w-7 shrink-0 place-items-center border border-fg/20 text-sm transition hover:bg-fg/10 disabled:opacity-25";
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex">
+        <button
+          type="button"
+          aria-label={`${name} 투자금 ${won(INVEST_STEP)} 줄이기`}
+          disabled={budget <= 0}
+          onClick={() => setBudgets([id], budget - INVEST_STEP)}
+          className={stepBtn}
+        >
+          −
+        </button>
+        <input
+          aria-label={`${name} 전체 투자금`}
+          inputMode="numeric"
+          autoComplete="off"
+          value={draft ?? budget.toLocaleString("ko-KR")}
+          onChange={(e) => setDraft(e.target.value.replace(/\D/g, ""))}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") setDraft(null);
+          }}
+          className={`h-8 w-24 border-y border-fg/20 bg-fg/[0.04] px-2 text-right font-mono text-xs tabular-nums text-fg outline-none focus:border-fg/60 ${budget !== INVEST_BUDGET ? "font-semibold" : ""}`}
+        />
+        <button
+          type="button"
+          aria-label={`${name} 투자금 ${won(INVEST_STEP)} 늘리기`}
+          onClick={() => setBudgets([id], budget + INVEST_STEP)}
+          className={stepBtn}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function BulkBudget({ ids, filtered }: { ids: string[]; filtered: boolean }) {
+  const fid = useId();
+  const [value, setValue] = useState("");
+  const amount = Number(value) || 0;
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (value) {
+          setBudgets(ids, amount);
+          setValue("");
+        }
+      }}
+      className="mt-3 flex flex-wrap items-center gap-2 border border-fg/10 bg-fg/[0.03] px-3 py-2.5"
+    >
+      <label htmlFor={`${fid}-amt`} className="text-sm font-semibold">
+        투자금 일괄 설정
+      </label>
+      <input
+        id={`${fid}-amt`}
+        inputMode="numeric"
+        autoComplete="off"
+        value={value ? Number(value).toLocaleString("ko-KR") : ""}
+        onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
+        placeholder={INVEST_BUDGET.toLocaleString("ko-KR")}
+        className="h-9 w-32 border border-fg/20 bg-fg/[0.04] px-2 text-right font-mono text-sm tabular-nums text-fg outline-none placeholder:text-fg/30 focus:border-fg/60"
+      />
+      <span className="text-sm text-fg/50">원</span>
+      <button type="submit" disabled={!value || ids.length === 0} className={primaryBtn}>
+        {filtered ? `표시된 ${ids.length}명에게 적용` : `전체 ${ids.length}명에게 적용`}
+      </button>
+      <button type="button" onClick={() => setBudgets(ids, INVEST_BUDGET)} disabled={ids.length === 0} className={smallBtn}>
+        기본값({short(INVEST_BUDGET)}원)으로
+      </button>
+      <span className="text-xs text-fg/40">{won(INVEST_STEP)} 단위로 맞춰집니다.</span>
+    </form>
+  );
+}
+
+/* ---------- 투자금 관리 ---------- */
+
+function BudgetPanel({ state }: { state: FestivalState }) {
+  const id = useId();
+  const [q, setQ] = useState("");
+  const [teamFilter, setTeamFilter] = useState("all");
+  const [onlyOver, setOnlyOver] = useState(false);
+  const query = q.trim().toLowerCase();
+  const teamOf = (tid: string | null) => state.teams.find((t) => t.id === tid);
+
+  const all = state.participants.map((p) => {
+    const budget = budgetOf(state, p.id);
+    const used = investedBy(state, p.id);
+    return { p, budget, used, left: budget - used };
+  });
+  const rows = all.filter(
+    ({ p, left }) =>
+      (teamFilter === "all" || (teamFilter === "none" ? !p.teamId : p.teamId === teamFilter)) &&
+      (!query || p.name.toLowerCase().includes(query) || (teamOf(p.teamId)?.name ?? "").toLowerCase().includes(query)) &&
+      (!onlyOver || left < 0),
+  );
+
+  const pool = all.reduce((sum, r) => sum + r.budget, 0);
+  const spent = all.reduce((sum, r) => sum + r.used, 0);
+  const overCount = all.filter((r) => r.left < 0).length;
+  const custom = all.filter((r) => r.budget !== INVEST_BUDGET).length;
+
+  return (
+    <div className="grid gap-8">
+      <dl className="grid grid-cols-2 gap-px border border-fg/10 bg-fg/10 sm:grid-cols-4">
+        {[
+          ["전체 투자금", won(pool)],
+          ["확정된 투자", `${won(spent)} · ${pool ? Math.round((spent / pool) * 100) : 0}%`],
+          ["기본값과 다른 인원", `${custom}명`],
+          ["투자금 초과", `${overCount}명`],
+        ].map(([k, v]) => (
+          <div key={k} className="bg-page px-4 py-3">
+            <dt className="font-mono text-[11px] uppercase tracking-[0.15em] text-fg/50">{k}</dt>
+            <dd className={`mt-1 font-semibold tabular-nums ${k === "투자금 초과" && overCount > 0 ? "text-[var(--g-red)]" : ""}`}>{v}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <section aria-labelledby={`${id}-title`}>
+        <div className="flex flex-wrap items-baseline justify-between gap-4">
+          <Label id={`${id}-title`}>개인별 투자금</Label>
+          <span className="font-mono text-xs text-fg/50">
+            {rows.length}명 표시 · 기본 {won(INVEST_BUDGET)}
+          </span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <label htmlFor={`${id}-q`} className="sr-only">
+            참가자 검색
+          </label>
+          <input
+            id={`${id}-q`}
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="이름, 팀명 검색"
+            className={`${fieldCls} mt-0 min-w-0 flex-1`}
+          />
+          <select aria-label="팀 필터" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} className={selectCls}>
+            <option value="all">전체 팀</option>
+            <option value="none">미배정</option>
+            {state.teams.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.table} · {t.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            aria-pressed={onlyOver}
+            onClick={() => setOnlyOver((v) => !v)}
+            className={`border px-3 text-sm transition ${onlyOver ? "border-fg bg-fg text-page" : "border-fg/20 text-fg/70 hover:border-fg/50"}`}
+          >
+            초과만
+          </button>
+        </div>
+
+        <BulkBudget ids={rows.map((r) => r.p.id)} filtered={rows.length !== all.length} />
+
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[44rem] border-t border-fg/15 text-left text-sm">
+            <thead className="text-xs text-fg/50">
+              <tr className="border-b border-fg/15">
+                <th className="py-2 pr-3 font-medium">이름</th>
+                <th className="py-2 pr-3 font-medium">팀</th>
+                <th className="py-2 pr-3 font-medium">전체 투자금</th>
+                <th className="py-2 pr-3 text-right font-medium">확정 투자</th>
+                <th className="py-2 text-right font-medium">남은 금액</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ p, budget, used, left }) => (
+                <tr key={p.id} className={`border-b border-fg/10 align-middle ${left < 0 ? "bg-[var(--g-red)]/[0.06]" : ""}`}>
+                  <td className="py-2.5 pr-3">
+                    <span className="inline-flex items-center gap-2">
+                      <SchoolChip s={school(p.school)} className="h-3 w-3" />
+                      <span className="font-semibold">{p.name}</span>
+                    </span>
+                  </td>
+                  <td className="py-2.5 pr-3 text-fg/60">{teamOf(p.teamId)?.name ?? "미배정"}</td>
+                  <td className="py-2.5 pr-3">
+                    <BudgetCell id={p.id} name={p.name} budget={budget} />
+                  </td>
+                  <td className="py-2.5 pr-3 text-right font-mono text-xs tabular-nums text-fg/70">{won(used)}</td>
+                  <td className="py-2.5 text-right font-mono text-xs tabular-nums">
+                    {left < 0 ? (
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--g-red)]">
+                        <span aria-hidden="true">▲</span>
+                        {won(-left)} 초과
+                      </span>
+                    ) : (
+                      <span className="text-fg/70">{won(left)}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {rows.length === 0 && <p className="py-6 text-sm text-fg/50">조건에 맞는 참가자가 없습니다.</p>}
+        <p className="mt-3 text-xs text-fg/40">
+          이미 확정한 금액보다 낮추면 해당 참가자는 금액을 줄이기 전까지 다시 확정할 수 없습니다.
+        </p>
+      </section>
+    </div>
   );
 }
 
@@ -775,7 +1015,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
     .sort((a, b) => b.total - a.total);
   const top = rows[0]?.total ?? 0;
   const grand = rows.reduce((s, r) => s + r.total, 0);
-  const pool = state.participants.length * INVEST_BUDGET;
+  const pool = state.participants.reduce((sum, p) => sum + budgetOf(state, p.id), 0);
   const changed = !snap || state.teams.some((t) => (snap.totals[t.id] ?? 0) !== (live.totals[t.id] ?? 0));
   const nameOf = (pid: string) => state.participants.find((p) => p.id === pid)?.name;
 
@@ -828,6 +1068,9 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
           </p>
         </section>
       </div>
+
+      {/* Same view participants get on /onfestival — published ticks only */}
+      <PublishedStatus state={state} admin />
 
       <section aria-labelledby="live-rank">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-4">

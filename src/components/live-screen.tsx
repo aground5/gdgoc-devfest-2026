@@ -5,8 +5,8 @@
 // investment ticks staff have published (never live totals).
 
 import { useId, useState, type FormEvent } from "react";
-import { INVEST_BUDGET, INVEST_STEP, myParticipantId, type Participant, type Team } from "@/data/guide";
-import { membersOf, updateFestival, useFestival, won, type FestivalState } from "@/lib/festival-store";
+import { INVEST_STEP, myParticipantId, type Participant, type Team } from "@/data/guide";
+import { budgetOf, membersOf, updateFestival, useFestival, won, type FestivalState } from "@/lib/festival-store";
 import {
   Label,
   MemberStripe,
@@ -325,9 +325,13 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
   const [draft, setDraft] = useState<Record<string, number> | null>(null);
   const amounts = draft ?? saved ?? {};
 
+  // Total budget is set per person by staff
+  const budget = budgetOf(state, me.id);
   const targets = state.teams.filter((t) => t.id !== me.teamId);
   const used = targets.reduce((sum, t) => sum + (amounts[t.id] ?? 0), 0);
-  const left = INVEST_BUDGET - used;
+  const left = budget - used;
+  const over = left < 0;
+  const scale = Math.max(budget, used, 1);
   const invested = targets.filter((t) => (amounts[t.id] ?? 0) > 0);
   const dirty = saved === null || targets.some((t) => (amounts[t.id] ?? 0) !== (saved[t.id] ?? 0));
   const upToDate = saved !== null && !dirty;
@@ -348,9 +352,13 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <Label id="invest-summary">내 투자금</Label>
-            <p className="mt-2 font-mono text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">{won(left)}</p>
+            <p
+              className={`mt-2 font-mono text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl ${over ? "text-[var(--g-red)]" : ""}`}
+            >
+              {over ? `−${won(-left)}` : won(left)}
+            </p>
             <p className="mt-1 text-sm text-fg/60">
-              남은 금액 · 총 {won(INVEST_BUDGET)} 중 {won(used)} 투자
+              남은 금액 · 총 {won(budget)} 중 {won(used)} 투자
             </p>
           </div>
           {upToDate ? (
@@ -359,7 +367,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               확정됨
             </span>
           ) : (
-            <button type="button" onClick={confirm} disabled={saved === null && used === 0} className={`${primaryBtn} px-5 py-2.5 text-base`}>
+            <button type="button" onClick={confirm} disabled={over || (saved === null && used === 0)} className={`${primaryBtn} px-5 py-2.5 text-base`}>
               {saved === null ? "투자 확정하기" : "변경사항 확정하기"}
             </button>
           )}
@@ -370,7 +378,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           role="meter"
           aria-label="투자금 사용률"
           aria-valuemin={0}
-          aria-valuemax={INVEST_BUDGET}
+          aria-valuemax={budget}
           aria-valuenow={used}
         >
           {invested.map((t, i) => (
@@ -378,11 +386,16 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               key={t.id}
               className="h-full bg-fg"
               title={`${t.project} ${won(amounts[t.id])}`}
-              style={{ width: `${(amounts[t.id] / INVEST_BUDGET) * 100}%`, opacity: i % 2 ? 0.55 : 0.9 }}
+              style={{ width: `${(amounts[t.id] / scale) * 100}%`, opacity: i % 2 ? 0.55 : 0.9 }}
             />
           ))}
         </div>
-        {saved !== null && dirty ? (
+        {over ? (
+          <p role="alert" className="mt-3 flex items-center gap-2 text-xs font-semibold text-fg">
+            <span className="h-2 w-2 shrink-0 bg-[var(--g-red)]" aria-hidden="true" />
+            운영진이 전체 투자금을 {won(budget)}으로 조정했습니다. {won(-left)}을 줄여야 확정할 수 있습니다.
+          </p>
+        ) : saved !== null && dirty ? (
           <p role="status" className="mt-3 flex items-center gap-2 text-xs font-semibold text-fg">
             <span className="h-2 w-2 shrink-0 bg-[var(--g-yellow)]" aria-hidden="true" />
             확정 후 바뀐 내용이 있습니다. 다시 확정해야 반영됩니다.
@@ -410,7 +423,8 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               team={t}
               members={membersOf(state, t.id)}
               amount={amounts[t.id] ?? 0}
-              max={(amounts[t.id] ?? 0) + left}
+              max={(amounts[t.id] ?? 0) + Math.max(0, left)}
+              budget={budget}
               savedAmount={saved ? (saved[t.id] ?? 0) : undefined}
               onChange={(v) => change(t.id, v)}
             />
@@ -427,6 +441,7 @@ function InvestCard({
   amount,
   max,
   savedAmount,
+  budget,
   onChange,
 }: {
   team: Team;
@@ -434,6 +449,7 @@ function InvestCard({
   amount: number;
   max: number;
   savedAmount?: number;
+  budget: number;
   onChange: (amount: number) => void;
 }) {
   const id = useId();
@@ -497,7 +513,7 @@ function InvestCard({
                 " "
               )}
             </span>
-            <span>{amount > 0 ? `내 투자금의 ${Math.round((amount / INVEST_BUDGET) * 100)}%` : ""}</span>
+            <span>{amount > 0 ? `내 투자금의 ${Math.round((amount / Math.max(1, budget)) * 100)}%` : ""}</span>
           </p>
         </div>
       </div>

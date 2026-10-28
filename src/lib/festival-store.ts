@@ -29,6 +29,7 @@ export type FestivalState = {
   participants: Participant[];
   teams: Team[];
   investments: Investments;
+  budgets: Record<string, number>; // participantId -> budget set by staff; missing = INVEST_BUDGET
   ticks: Snapshot[]; // every publish, oldest first
   attendanceCode: string;
 };
@@ -80,6 +81,7 @@ export const seedState: FestivalState = {
   participants: seedParticipants,
   teams: seedTeams,
   investments: seedInv,
+  budgets: {},
   ticks: seedTicks(seedInv),
   attendanceCode: seedAttendanceCode,
 };
@@ -147,6 +149,13 @@ export function resetFestival() {
 /* ---------- Derived data ---------- */
 
 export const membersOf = (s: FestivalState, teamId: string) => s.participants.filter((p) => p.teamId === teamId);
+
+// A participant's total budget (staff can change it per person on /organize)
+export const budgetOf = (s: FestivalState, pid: string) => s.budgets[pid] ?? INVEST_BUDGET;
+
+// How much a participant has confirmed so far
+export const investedBy = (s: FestivalState, pid: string) =>
+  Object.values(s.investments[pid] ?? {}).reduce((sum, v) => sum + v, 0);
 
 // Live totals from confirmed investments. Admin only.
 export function liveTotals(s: Pick<FestivalState, "participants" | "investments">): Snapshot {

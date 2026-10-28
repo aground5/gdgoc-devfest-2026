@@ -44,7 +44,16 @@ function ranking(teams: Team[], ticks: Snapshot[]): Row[] {
   });
 }
 
-export function PublishedStatus({ state, myTeamId }: { state: FestivalState; myTeamId?: string }) {
+// `admin` renders the same view on /organize, so staff see exactly what participants see.
+export function PublishedStatus({
+  state,
+  myTeamId,
+  admin = false,
+}: {
+  state: FestivalState;
+  myTeamId?: string;
+  admin?: boolean;
+}) {
   const [asTable, setAsTable] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
   const ticks = state.ticks;
@@ -53,8 +62,12 @@ export function PublishedStatus({ state, myTeamId }: { state: FestivalState; myT
   if (ticks.length === 0) {
     return (
       <section aria-labelledby="published" className="border-t border-fg/15 pt-8">
-        <Label id="published">투자 현황</Label>
-        <p className="mt-3 text-fg/60">아직 발행된 투자 현황이 없습니다. 운영진이 발행하면 여기에 표시됩니다.</p>
+        <Label id="published">{admin ? "참가자 화면 투자 현황" : "투자 현황"}</Label>
+        <p className="mt-3 text-fg/60">
+          {admin
+            ? "아직 발행한 틱이 없습니다. 틱을 발행하면 참가자 화면에 이 그래프가 표시됩니다."
+            : "아직 발행된 투자 현황이 없습니다. 운영진이 발행하면 여기에 표시됩니다."}
+        </p>
       </section>
     );
   }
@@ -64,12 +77,14 @@ export function PublishedStatus({ state, myTeamId }: { state: FestivalState; myT
   const hasPrev = ticks.length > 1;
   const mover = hasPrev ? [...rows].sort((a, b) => b.total - b.prev - (a.total - a.prev))[0] : null;
   const mine = rows.find((r) => r.team.id === myTeamId);
+  const sumNow = rows.reduce((acc, r) => acc + r.total, 0);
+  const sumPrev = rows.reduce((acc, r) => acc + r.prev, 0);
   const focus = picked ?? myTeamId ?? rows[0]?.team.id ?? null;
 
   return (
     <section aria-labelledby="published" className="border-t border-fg/15 pt-8">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
-        <Label id="published">투자 현황</Label>
+        <Label id="published">{admin ? "참가자 화면 투자 현황" : "투자 현황"}</Label>
         <div className="flex gap-1" role="group" aria-label="보기 방식">
           {(
             [
@@ -101,11 +116,15 @@ export function PublishedStatus({ state, myTeamId }: { state: FestivalState; myT
           value={mover && mover.total - mover.prev > 0 ? mover.team.project : "—"}
           sub={mover && mover.total - mover.prev > 0 ? signed(mover.total - mover.prev) : "첫 틱"}
         />
-        <Tile
-          label="내 팀 순위"
-          value={mine ? `${mine.rank}위` : "—"}
-          sub={mine ? `${man(mine.total)}${hasPrev ? ` · ${signed(mine.total - mine.prev)}` : ""}` : "팀 미배정"}
-        />
+        {admin ? (
+          <Tile label="최근 틱 총액" value={man(sumNow)} sub={hasPrev ? `이전 틱 대비 ${signed(sumNow - sumPrev)}` : "첫 틱"} />
+        ) : (
+          <Tile
+            label="내 팀 순위"
+            value={mine ? `${mine.rank}위` : "—"}
+            sub={mine ? `${man(mine.total)}${hasPrev ? ` · ${signed(mine.total - mine.prev)}` : ""}` : "팀 미배정"}
+          />
+        )}
       </dl>
 
       {asTable ? (
@@ -116,7 +135,11 @@ export function PublishedStatus({ state, myTeamId }: { state: FestivalState; myT
           <RankList rows={rows} focus={focus} myTeamId={myTeamId} hasPrev={hasPrev} onPick={setPicked} picked={picked} />
         </div>
       )}
-      <p className="mt-4 text-xs text-fg/40">운영진이 발행한 틱만 표시되며, 실시간으로 바뀌지 않습니다.</p>
+      <p className="mt-4 text-xs text-fg/40">
+        {admin
+          ? "참가자에게 보이는 것과 같은 화면입니다. 발행한 틱만 표시되며, 실시간 현황은 아래에서 확인하세요."
+          : "운영진이 발행한 틱만 표시되며, 실시간으로 바뀌지 않습니다."}
+      </p>
     </section>
   );
 }
