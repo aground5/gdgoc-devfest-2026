@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { GdgLogo, FoldStripes, GoogleBar, LetterStripes } from "@/components/brand";
 import { GuideTabs } from "@/components/guide-tabs";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -37,6 +38,15 @@ export default function Home() {
                 <div className="flex flex-col gap-4 lg:items-end">
                   <div className="flex items-center gap-3">
                     <ThemeToggle className="h-11 w-11" />
+                    <Link
+                      href="/onfestival"
+                      className="group inline-flex h-11 items-center gap-2 bg-fg px-5 font-semibold text-page transition hover:opacity-85"
+                    >
+                      입장하기
+                      <span aria-hidden="true" className="transition group-hover:translate-x-0.5">
+                        →
+                      </span>
+                    </Link>
                   </div>
                 </div>
               </div>

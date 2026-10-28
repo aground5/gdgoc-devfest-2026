@@ -72,3 +72,42 @@ export const venueInfo = [
   { label: "주차", value: "주차 지원 없음 · 대중교통 권장" },
   { label: "문의", value: "GDG on Campus 운영진" },
 ];
+
+// Live (대회중) screen mock data — replace with real team data.
+
+export type SchoolKey = "ku" | "yu" | "skku" | "kaist";
+
+// Teams can mix schools, so school is tracked per member.
+export type Member = { name: string; school: SchoolKey };
+
+export type Team = {
+  id: string;
+  name: string;
+  table: string;
+  project: string;
+  desc: string;
+  members: Member[];
+  checkedIn: boolean;
+};
+
+const m = (name: string, school: SchoolKey): Member => ({ name, school });
+
+export const teams: Team[] = [
+  { id: "t01", name: "Vision Makers", table: "A-01", project: "SightLine", desc: "시각장애인을 위한 Gemini 기반 길 안내 앱", members: [m("김민준", "ku"), m("이서연", "yu"), m("박도윤", "kaist"), m("최하은", "ku")], checkedIn: true },
+  { id: "t02", name: "Blue Byte", table: "A-02", project: "StudyMate", desc: "강의 녹음을 요약해 주는 학습 도우미", members: [m("정지호", "yu"), m("강수아", "yu"), m("윤시우", "yu")], checkedIn: true },
+  { id: "t03", name: "Green Light", table: "A-03", project: "EcoRoute", desc: "탄소 배출이 가장 적은 경로 추천", members: [m("조예준", "skku"), m("한지민", "ku"), m("오서준", "kaist"), m("신유나", "skku")], checkedIn: false },
+  { id: "t04", name: "Sky Lab", table: "B-01", project: "LabNote", desc: "실험 노트를 자동으로 정리하는 AI", members: [m("임건우", "kaist"), m("서하린", "kaist"), m("황준서", "skku")], checkedIn: true },
+  { id: "t05", name: "Crimson Code", table: "B-02", project: "CampusEats", desc: "학식 메뉴와 혼잡도를 한눈에", members: [m("송지안", "ku"), m("문채원", "ku"), m("배현우", "ku")], checkedIn: false },
+  { id: "t06", name: "Eagle Eye", table: "B-03", project: "SafeWalk", desc: "야간 귀갓길 안심 동행 서비스", members: [m("권도현", "yu"), m("유소율", "skku"), m("장민서", "ku"), m("노은우", "kaist")], checkedIn: true },
+  { id: "t07", name: "Sprout", table: "C-01", project: "PlantPal", desc: "사진 한 장으로 식물 상태 진단", members: [m("홍예린", "skku"), m("전시윤", "skku"), m("고태윤", "yu")], checkedIn: true },
+  { id: "t08", name: "Orbit", table: "C-02", project: "SpaceQuiz", desc: "우주 과학 퀴즈로 배우는 물리", members: [m("남지우", "kaist"), m("심하준", "ku"), m("류다인", "kaist")], checkedIn: false },
+];
+
+export const myTeamId = "t03";
+
+// Mock attendance code shown to staff at the venue.
+export const ATTENDANCE_CODE = "1106";
+
+// Mock investment rules: each participant splits a virtual budget across other teams' projects.
+export const INVEST_BUDGET = 1_000_000;
+export const INVEST_STEP = 50_000;
