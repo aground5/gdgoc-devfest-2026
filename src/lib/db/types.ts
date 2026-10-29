@@ -296,16 +296,19 @@ export type Database = {
       };
       staff_emails: {
         Row: {
+          added_by: string | null;
           created_at: string;
           email: string;
           note: string;
         };
         Insert: {
+          added_by?: string | null;
           created_at?: string;
           email: string;
           note?: string;
         };
         Update: {
+          added_by?: string | null;
           created_at?: string;
           email?: string;
           note?: string;
@@ -374,6 +377,7 @@ export type Database = {
       generate_access_code: { Args: { len?: number }; Returns: string };
       is_participant: { Args: never; Returns: boolean };
       is_staff: { Args: never; Returns: boolean };
+      my_email: { Args: never; Returns: string };
       participant_directory: {
         Args: never;
         Returns: {

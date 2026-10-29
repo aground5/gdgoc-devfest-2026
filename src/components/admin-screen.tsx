@@ -3,7 +3,7 @@
 // Admin screen (/organize): participants, teams, attendance, budgets, live
 // investment status and publishing ticks. All data comes from Supabase.
 
-import { useId, useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { schools } from "./brand";
 import { type Participant, type SchoolKey, type Team } from "@/data/guide";
 import {
@@ -24,6 +24,7 @@ import {
   run,
   useInvestSettings,
   useInvestments,
+  useStaffEmails,
   usePeople,
   useTeams,
   useTicks,
@@ -39,6 +40,10 @@ import {
   setAttendance,
   setBudgets as saveBudgets,
   setInvestSettings,
+  addStaffEmail,
+  normalizeEmail,
+  removeStaffEmail,
+  updateStaffNote,
   setVenueCode,
   updateParticipant,
   updateTeam,
@@ -68,6 +73,7 @@ const VIEWS = [
   { id: "attendance", label: "출석" },
   { id: "budget", label: "투자금" },
   { id: "invest", label: "투자 현황" },
+  { id: "staff", label: "운영진" },
 ] as const;
 
 /* ---------- Writes ---------- */
@@ -138,8 +144,8 @@ function StaffLogin({ denied }: { denied: string | null }) {
         <>
           <p className="mt-3 text-2xl font-bold tracking-tight">접근 권한이 없습니다</p>
           <p className="mt-2 text-sm text-fg/60">
-            <span className="font-bold text-fg">{denied}</span> 계정은 운영진 목록에 없습니다. 다른 계정으로 로그인하거나 운영진
-            관리자에게 추가를 요청해 주세요.
+            <span className="font-bold text-fg">{denied}</span> 계정은 운영진 목록에 없습니다. 다른 계정으로 로그인하거나 운영진 관리자에게
+            추가를 요청해 주세요.
           </p>
           <button type="button" className={`${primaryBtn} mt-6 w-full py-3 text-base`} onClick={() => void staffSignOut()}>
             다른 계정으로 로그인
@@ -206,7 +212,7 @@ function AdminPanels({ email }: { email: string }) {
       }
     >
       {state ? (
-        <Panels state={state} view={view} />
+        <Panels state={state} view={view} email={email} />
       ) : failed ? (
         <p role="alert" className="py-10 text-[var(--g-red)]">
           데이터를 불러오지 못했습니다. {failed.message}
@@ -220,7 +226,7 @@ function AdminPanels({ email }: { email: string }) {
   );
 }
 
-function Panels({ state, view }: { state: FestivalState; view: (typeof VIEWS)[number]["id"] }) {
+function Panels({ state, view, email }: { state: FestivalState; view: (typeof VIEWS)[number]["id"]; email: string }) {
   const present = state.participants.filter((p) => p.checkedIn).length;
   const investors = state.participants.filter((p) => Object.values(state.investments[p.id] ?? {}).some((v) => v > 0)).length;
 
@@ -245,6 +251,7 @@ function Panels({ state, view }: { state: FestivalState; view: (typeof VIEWS)[nu
       {view === "attendance" && <AttendancePanel state={state} />}
       {view === "budget" && <BudgetPanel state={state} />}
       {view === "invest" && <InvestStatusPanel state={state} />}
+      {view === "staff" && <StaffPanel me={email} />}
     </>
   );
 }
@@ -778,8 +785,8 @@ function AddParticipant({ teams }: { teams: Team[] }) {
       )}
       {added && (
         <p role="status" className="mt-3 text-sm">
-          {added.name}님을 추가했습니다. 참가자 코드 <span className="tabular-nums text-base font-bold tracking-wider">{added.code}</span>
-          를 전달해 주세요.
+          {added.name}님을 추가했습니다. 참가자 코드 <span className="tabular-nums text-base font-bold tracking-wider">{added.code}</span>를
+          전달해 주세요.
         </p>
       )}
     </form>
@@ -1348,5 +1355,196 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
         <p className="mt-2 text-xs text-fg/40">항목을 누르면 투자한 참가자를 볼 수 있습니다.</p>
       </section>
     </div>
+  );
+}
+
+/* ---------- 운영진 (staff whitelist) ---------- */
+
+// Every staff member can add and remove staff, except themselves (the
+// database refuses removing your own email so nobody locks themselves out).
+function StaffPanel({ me }: { me: string }) {
+  const id = useId();
+  const staff = useStaffEmails();
+  const mine = normalizeEmail(me);
+
+  return (
+    <div className="grid gap-8">
+      <AddStaff />
+
+      <section aria-labelledby={`${id}-title`}>
+        <div className="flex flex-wrap items-baseline justify-between gap-4">
+          <Label id={`${id}-title`}>운영진 목록</Label>
+          <span className="text-xs tabular-nums text-fg/50">{staff.data ? `${staff.data.length}명` : ""}</span>
+        </div>
+        {staff.isPending ? (
+          <p className="py-6 text-sm text-fg/50" role="status">
+            불러오는 중…
+          </p>
+        ) : staff.error ? (
+          <p role="alert" className="py-6 text-sm text-[var(--g-red)]">
+            목록을 불러오지 못했습니다. {staff.error.message}
+          </p>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[40rem] border-t border-fg/15 text-left text-sm">
+              <thead className="text-xs text-fg/50">
+                <tr className="border-b border-fg/15">
+                  <th className="py-2 pr-3 font-normal">이메일</th>
+                  <th className="py-2 pr-3 font-normal">메모</th>
+                  <th className="py-2 pr-3 font-normal">추가한 사람</th>
+                  <th className="py-2 font-normal">
+                    <span className="sr-only">관리</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {staff.data.map((s) => {
+                  const self = s.email === mine;
+                  return (
+                    <tr key={s.email} className="border-b border-fg/10 align-middle">
+                      <td className="py-2.5 pr-3">
+                        <span className="font-bold">{s.email}</span>
+                        {self && <span className="ml-2 bg-fg px-1.5 py-0.5 text-[11px] font-bold text-page">나</span>}
+                      </td>
+                      <td className="py-2.5 pr-3">
+                        <StaffNote email={s.email} note={s.note} />
+                      </td>
+                      <td className="py-2.5 pr-3 text-fg/60">
+                        {s.addedBy ?? "—"}
+                        <span className="block text-xs tabular-nums text-fg/40">{timeLabel(s.createdAt)}</span>
+                      </td>
+                      <td className="py-2.5 text-right">
+                        {self ? (
+                          <span className="text-xs text-fg/40" title="본인 이메일은 삭제할 수 없습니다">
+                            본인
+                          </span>
+                        ) : (
+                          <DeleteButton
+                            label={`${s.email} 운영진에서 삭제`}
+                            onConfirm={() => void run(() => removeStaffEmail(s.email), optimisticPatch.removeStaffEmail(s.email))}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="mt-3 text-xs text-fg/40">
+          삭제된 사람은 다음 요청부터 운영진 화면을 쓸 수 없습니다. 본인 이메일은 다른 운영진만 삭제할 수 있습니다.
+        </p>
+      </section>
+    </div>
+  );
+}
+
+// Saves 600 ms after the last keystroke, or right away on blur / Enter
+const NOTE_DEBOUNCE = 600;
+
+function StaffNote({ email, note }: { email: string; note: string }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancel = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+  useEffect(() => cancel, []);
+
+  function save(value: string) {
+    cancel();
+    const v = value.trim();
+    // Keep the draft if the user typed more while this save was in flight
+    const settle = () => setDraft((d) => (d === value ? null : d));
+    if (v === note) return settle();
+    void run(() => updateStaffNote(email, v), optimisticPatch.staffNote(email, v)).then(settle);
+  }
+
+  return (
+    <input
+      aria-label={`${email} 메모`}
+      value={draft ?? note}
+      onChange={(e) => {
+        const value = e.target.value;
+        setDraft(value);
+        cancel();
+        timer.current = setTimeout(() => save(value), NOTE_DEBOUNCE);
+      }}
+      onBlur={() => draft !== null && save(draft)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+        if (e.key === "Escape") {
+          cancel();
+          setDraft(null);
+        }
+      }}
+      placeholder="메모"
+      className={`${fieldCls} mt-0 py-1.5`}
+    />
+  );
+}
+
+function AddStaff() {
+  const id = useId();
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    const v = normalizeEmail(email);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return setError("이메일 형식을 확인해 주세요.");
+    setBusy(true);
+    const done = await run(() => addStaffEmail(v, note));
+    setBusy(false);
+    if (!done) return;
+    setEmail("");
+    setNote("");
+    setError("");
+  }
+
+  return (
+    <form onSubmit={submit} noValidate className="border border-fg/15 p-5">
+      <Label>운영진 추가</Label>
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <label htmlFor={`${id}-email`} className="min-w-[14rem] flex-1 text-xs text-fg/60">
+          Google 계정 이메일
+          <input
+            id={`${id}-email`}
+            type="email"
+            autoComplete="off"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setError("");
+            }}
+            placeholder="name@gmail.com"
+            className={`${fieldCls} py-2`}
+          />
+        </label>
+        <label htmlFor={`${id}-note`} className="min-w-[10rem] flex-1 text-xs text-fg/60">
+          메모
+          <input
+            id={`${id}-note`}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="이름, 학교 등"
+            className={`${fieldCls} py-2`}
+          />
+        </label>
+        <button type="submit" disabled={busy} className={`${primaryBtn} h-[2.4rem]`}>
+          {busy ? "추가 중…" : "추가"}
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-[var(--g-red)]">
+          {error}
+        </p>
+      )}
+      <p className="mt-2 text-xs text-fg/40">추가된 사람은 이 이메일의 Google 계정으로 /organize에 로그인할 수 있습니다.</p>
+    </form>
   );
 }

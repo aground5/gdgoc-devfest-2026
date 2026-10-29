@@ -34,7 +34,7 @@ function fail(error: PostgrestError): never {
     error.code === "42501"
       ? "권한이 없습니다. 다시 로그인해 주세요."
       : error.code === "23505"
-        ? "이미 같은 값이 있습니다."
+        ? "이미 등록되어 있습니다."
         : error.code === "23514" || error.code === "22023"
           ? "입력값을 확인해 주세요."
           : `저장하지 못했습니다. (${error.message})`;
@@ -230,6 +230,35 @@ export async function publishTick() {
 
 export async function deleteTick(id: number) {
   ok(await sb().from("invest_ticks").delete().eq("id", id));
+}
+
+/* ---------- Staff whitelist ---------- */
+
+export type StaffEmail = { email: string; note: string; addedBy: string | null; createdAt: number };
+
+export async function fetchStaffEmails(): Promise<StaffEmail[]> {
+  const rows = ok(await sb().from("staff_emails").select("email, note, added_by, created_at").order("created_at"));
+  return rows.map((r) => ({ email: r.email, note: r.note, addedBy: r.added_by, createdAt: new Date(r.created_at).getTime() }));
+}
+
+export const normalizeEmail = (e: string) => e.trim().toLowerCase();
+
+export async function addStaffEmail(email: string, note: string) {
+  ok(
+    await sb()
+      .from("staff_emails")
+      .insert({ email: normalizeEmail(email), note: note.trim() }),
+  );
+}
+
+export async function updateStaffNote(email: string, note: string) {
+  ok(await sb().from("staff_emails").update({ note: note.trim() }).eq("email", email));
+}
+
+// RLS refuses removing your own email; that shows up as zero deleted rows
+export async function removeStaffEmail(email: string) {
+  const rows = ok(await sb().from("staff_emails").delete().eq("email", email).select("email"));
+  if (rows.length === 0) throw new DbError("본인 이메일은 삭제할 수 없습니다.");
 }
 
 /* ---------- Participant RPCs ---------- */

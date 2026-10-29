@@ -17,8 +17,10 @@ import {
   fetchPeople,
   fetchTeams,
   fetchTicks,
+  fetchStaffEmails,
   fetchVenueCode,
   type InvestSettings,
+  type StaffEmail,
   type Mode,
 } from "./queries";
 
@@ -36,6 +38,7 @@ export const keys = {
   investSettings: ["invest", "settings"] as const,
   investments: ["invest", "allocations"] as const,
   ticks: ["invest", "ticks"] as const,
+  staffEmails: ["staff-emails"] as const,
   // Under "people" so participant-row changes refetch it
   myBudget: (id: string) => ["people", "my-budget", id] as const,
 };
@@ -58,6 +61,7 @@ export const useInvestSettings = (mode: Mode) =>
 export const useInvestments = (mode: Mode) =>
   useQuery({ queryKey: keys.investments, queryFn: fetchInvestments, refetchInterval: poll(mode) });
 export const useTicks = (mode: Mode) => useQuery({ queryKey: keys.ticks, queryFn: fetchTicks, refetchInterval: poll(mode) });
+export const useStaffEmails = () => useQuery({ queryKey: keys.staffEmails, queryFn: fetchStaffEmails });
 export const useMyBudget = (id: string) =>
   useQuery({ queryKey: keys.myBudget(id), queryFn: () => fetchMyBudget(id), refetchInterval: poll("participant") });
 
@@ -120,6 +124,10 @@ export const patch = {
     queryClient.setQueryData<InvestSettings>(keys.investSettings, (old) => old && { ...old, ...p }),
   myInvestments: (pid: string, alloc: Record<string, number>) => () =>
     queryClient.setQueryData<Investments>(keys.investments, (old) => old && { ...old, [pid]: alloc }),
+  staffNote: (email: string, note: string) => () =>
+    queryClient.setQueryData<StaffEmail[]>(keys.staffEmails, (old) => old?.map((x) => (x.email === email ? { ...x, note } : x))),
+  removeStaffEmail: (email: string) => () =>
+    queryClient.setQueryData<StaffEmail[]>(keys.staffEmails, (old) => old?.filter((x) => x.email !== email)),
   removeTick: (id: number) => () => queryClient.setQueryData<Snapshot[]>(keys.ticks, (old) => old?.filter((t) => t.id !== id)),
 };
 
@@ -172,6 +180,7 @@ const TABLE_KEYS = {
   investments: keys.investments,
   invest_ticks: keys.ticks,
   invest_tick_totals: keys.ticks,
+  staff_emails: keys.staffEmails,
 } as const;
 
 function useRealtime() {
