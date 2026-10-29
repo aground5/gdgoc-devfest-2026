@@ -8,11 +8,12 @@ import { QueryClient, QueryClientProvider, useQuery, type QueryKey } from "@tans
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import type { Participant, Team } from "@/data/guide";
 import { createClient } from "@/utils/supabase/client";
-import type { Snapshot } from "@/lib/festival-store";
+import type { Investments, Snapshot } from "@/lib/festival-store";
 import {
   DbError,
   fetchInvestSettings,
   fetchInvestments,
+  fetchMyBudget,
   fetchPeople,
   fetchTeams,
   fetchTicks,
@@ -35,6 +36,8 @@ export const keys = {
   investSettings: ["invest", "settings"] as const,
   investments: ["invest", "allocations"] as const,
   ticks: ["invest", "ticks"] as const,
+  // Under "people" so participant-row changes refetch it
+  myBudget: (id: string) => ["people", "my-budget", id] as const,
 };
 
 // Participants can't receive change events for other people's rows (RLS),
@@ -50,9 +53,13 @@ export const usePeople = (mode: Mode) =>
 
 export const useVenueCode = () => useQuery({ queryKey: keys.venueCode, queryFn: fetchVenueCode });
 
-export const useInvestSettings = () => useQuery({ queryKey: keys.investSettings, queryFn: fetchInvestSettings });
-export const useInvestments = () => useQuery({ queryKey: keys.investments, queryFn: fetchInvestments });
-export const useTicks = () => useQuery({ queryKey: keys.ticks, queryFn: fetchTicks });
+export const useInvestSettings = (mode: Mode) =>
+  useQuery({ queryKey: keys.investSettings, queryFn: fetchInvestSettings, refetchInterval: poll(mode) });
+export const useInvestments = (mode: Mode) =>
+  useQuery({ queryKey: keys.investments, queryFn: fetchInvestments, refetchInterval: poll(mode) });
+export const useTicks = (mode: Mode) => useQuery({ queryKey: keys.ticks, queryFn: fetchTicks, refetchInterval: poll(mode) });
+export const useMyBudget = (id: string) =>
+  useQuery({ queryKey: keys.myBudget(id), queryFn: () => fetchMyBudget(id), refetchInterval: poll("participant") });
 
 /* ---------- Writes ---------- */
 
@@ -94,7 +101,8 @@ export async function run(write: () => Promise<unknown>, optimistic?: () => void
 
 // Cache patches for run(..., optimistic)
 const mapPeople = (fn: (list: Participant[]) => Participant[]) => () =>
-  queryClient.setQueriesData<Participant[]>({ queryKey: ["people"] }, (old) => old && fn(old));
+  // Only the people lists; ["people", "my-budget", id] holds a number
+  queryClient.setQueriesData<unknown>({ queryKey: ["people"] }, (old: unknown) => (Array.isArray(old) ? fn(old as Participant[]) : old));
 const mapTeams = (fn: (list: Team[]) => Team[]) => () => queryClient.setQueryData<Team[]>(keys.teams, (old) => old && fn(old));
 
 export const patch = {
@@ -110,6 +118,8 @@ export const patch = {
   budgets: (ids: string[], budget: number | null) => mapPeople((l) => l.map((x) => (ids.includes(x.id) ? { ...x, budget } : x))),
   investSettings: (p: Partial<InvestSettings>) => () =>
     queryClient.setQueryData<InvestSettings>(keys.investSettings, (old) => old && { ...old, ...p }),
+  myInvestments: (pid: string, alloc: Record<string, number>) => () =>
+    queryClient.setQueryData<Investments>(keys.investments, (old) => old && { ...old, [pid]: alloc }),
   removeTick: (id: number) => () => queryClient.setQueryData<Snapshot[]>(keys.ticks, (old) => old?.filter((t) => t.id !== id)),
 };
 

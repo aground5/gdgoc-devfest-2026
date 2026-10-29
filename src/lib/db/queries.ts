@@ -18,7 +18,18 @@ export const seoulToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "As
 
 export class DbError extends Error {}
 
+// Business-rule errors raised by confirm_investments() and publish_tick() carry a hint
+const HINTS: Record<string, string> = {
+  closed: "투자가 마감되었습니다.",
+  over_budget: "투자금을 초과했습니다. 금액을 줄여 주세요.",
+  own_team: "내 팀 프로젝트에는 투자할 수 없습니다.",
+  step: "투자 단위에 맞지 않는 금액이 있습니다.",
+  unchanged: "마지막 발행 이후 바뀐 투자가 없습니다.",
+};
+
 function fail(error: PostgrestError): never {
+  const hinted = error.hint ? HINTS[error.hint] : undefined;
+  if (hinted) throw new DbError(hinted);
   const text =
     error.code === "42501"
       ? "권한이 없습니다. 다시 로그인해 주세요."
@@ -222,6 +233,19 @@ export async function deleteTick(id: number) {
 }
 
 /* ---------- Participant RPCs ---------- */
+
+// The participant's own budget override (the directory doesn't include it)
+export async function fetchMyBudget(id: string): Promise<number | null> {
+  const row = ok<{ invest_budget: number | null } | null>(
+    await sb().from("participants").select("invest_budget").eq("id", id).maybeSingle(),
+  );
+  return row?.invest_budget ?? null;
+}
+
+// Replaces the caller's whole allocation; zero amounts are dropped server-side
+export async function confirmInvestments(alloc: Record<string, number>) {
+  ok(await sb().rpc("confirm_investments", { p_alloc: alloc }));
+}
 
 export async function updateMyTeam(t: Pick<Team, "name" | "project" | "desc">) {
   ok(await sb().rpc("update_my_team", { p_name: t.name, p_project: t.project, p_description: t.desc }));

@@ -4,12 +4,12 @@
 // their own team and attendance, the team list, their own investments, and the
 // investment ticks staff have published (never live totals).
 
-import { useId, useState, type FormEvent } from "react";
-import { INVEST_STEP, type Participant, type Team } from "@/data/guide";
-import { budgetOf, membersOf, updateFestival, useFestival, won, type FestivalState } from "@/lib/festival-store";
+import { useId, useMemo, useState, type FormEvent } from "react";
+import { type Participant, type Team } from "@/data/guide";
+import { budgetOf, buildState, membersOf, won, type FestivalState } from "@/lib/festival-store";
 import { login, logout, useParticipantSession, type SessionParticipant } from "@/lib/participant-session";
-import { patch, run, usePeople, useTeams } from "@/lib/db/hooks";
-import { checkIn, updateMyTeam } from "@/lib/db/queries";
+import { patch, run, useInvestSettings, useInvestments, useMyBudget, usePeople, useTeams, useTicks } from "@/lib/db/hooks";
+import { checkIn, confirmInvestments, updateMyTeam } from "@/lib/db/queries";
 import {
   Label,
   MemberStripe,
@@ -125,11 +125,20 @@ function LoginCard() {
 function Festival({ who }: { who: SessionParticipant }) {
   const people = usePeople("participant");
   const teams = useTeams("participant");
-  const state = useFestival(people.data, teams.data);
+  const settings = useInvestSettings("participant");
+  const investments = useInvestments("participant"); // RLS: only my own
+  const ticks = useTicks("participant");
+  const myBudget = useMyBudget(who.id);
+  const state = useMemo(() => {
+    if (myBudget.data === undefined) return null;
+    // The directory has no budgets; add mine so budgetOf() works
+    const withMine = people.data?.map((p) => (p.id === who.id ? { ...p, budget: myBudget.data } : p));
+    return buildState(withMine, teams.data, settings.data, investments.data, ticks.data);
+  }, [people.data, teams.data, settings.data, investments.data, ticks.data, myBudget.data, who.id]);
   const [view, setView] = useHashTab(VIEWS, "team");
   const me = state?.participants.find((p) => p.id === who.id);
   const myTeam = me?.teamId ? state?.teams.find((t) => t.id === me.teamId) : undefined;
-  const failed = people.error ?? teams.error;
+  const failed = people.error ?? teams.error ?? settings.error ?? investments.error ?? ticks.error ?? myBudget.error;
   const [leaving, setLeaving] = useState(false);
 
   return (
@@ -454,7 +463,24 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
   // Confirmed amounts live in the shared store; edits stay in a local draft until confirmed.
   const saved = state.investments[me.id] ?? null;
   const [draft, setDraft] = useState<Record<string, number> | null>(null);
-  const amounts = draft ?? saved ?? {};
+  const [busy, setBusy] = useState(false);
+  const closed = !state.investOpen;
+
+  // When staff close investing, unconfirmed edits are dropped so the screen
+  // only shows what was actually confirmed. (State adjusted during render on
+  // the open -> closed change, the React-recommended way to reset on a prop.)
+  const [wasOpen, setWasOpen] = useState(state.investOpen);
+  const [discarded, setDiscarded] = useState(false);
+  if (wasOpen !== state.investOpen) {
+    setWasOpen(state.investOpen);
+    if (closed && draft) {
+      setDraft(null);
+      setDiscarded(true);
+    }
+    if (!closed) setDiscarded(false);
+  }
+  // Also ignore any draft while closed (e.g. a confirm that failed because it just closed)
+  const amounts = (closed ? null : draft) ?? saved ?? {};
 
   // Total budget is set per person by staff
   const budget = budgetOf(state, me.id);
@@ -471,10 +497,15 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
     setDraft({ ...amounts, [teamId]: v });
   }
 
-  function confirm() {
-    const clean = Object.fromEntries(targets.map((t) => [t.id, amounts[t.id] ?? 0]).filter(([, v]) => (v as number) > 0));
-    updateFestival((s) => ({ ...s, investments: { ...s.investments, [me.id]: clean } }));
-    setDraft(null);
+  // On failure the draft stays, so nothing typed is lost
+  async function confirm() {
+    const clean: Record<string, number> = Object.fromEntries(
+      targets.map((t) => [t.id, amounts[t.id] ?? 0]).filter(([, v]) => (v as number) > 0),
+    );
+    setBusy(true);
+    const ok = await run(() => confirmInvestments(clean), patch.myInvestments(me.id, clean));
+    setBusy(false);
+    if (ok) setDraft(null);
   }
 
   return (
@@ -501,10 +532,10 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
             <button
               type="button"
               onClick={confirm}
-              disabled={over || (saved === null && used === 0)}
+              disabled={closed || busy || over || (saved === null && used === 0)}
               className={`${primaryBtn} px-5 py-2.5 text-base`}
             >
-              {saved === null ? "투자 확정하기" : "변경사항 확정하기"}
+              {busy ? "확정 중…" : saved === null ? "투자 확정하기" : "변경사항 확정하기"}
             </button>
           )}
         </div>
@@ -526,7 +557,14 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
             />
           ))}
         </div>
-        {over ? (
+        {closed ? (
+          <p role="status" className="mt-3 flex items-center gap-2 text-xs font-semibold text-fg">
+            <span className="h-2 w-2 shrink-0 bg-[var(--g-red)]" aria-hidden="true" />
+            {discarded
+              ? "투자가 마감되어 확정하지 않은 변경사항은 취소되었습니다. 마지막으로 확정한 투자가 반영됩니다."
+              : "투자가 마감되었습니다. 확정된 투자는 그대로 유지됩니다."}
+          </p>
+        ) : over ? (
           <p role="alert" className="mt-3 flex items-center gap-2 text-xs font-semibold text-fg">
             <span className="h-2 w-2 shrink-0 bg-[var(--g-red)]" aria-hidden="true" />
             운영진이 전체 투자금을 {won(budget)}으로 조정했습니다. {won(-left)}을 줄여야 확정할 수 있습니다.
@@ -540,7 +578,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           <p role="status" className="mt-3 text-xs text-fg/40">
             {upToDate
               ? "확정된 투자입니다. 언제든 다시 바꾸고 확정할 수 있습니다."
-              : `${won(INVEST_STEP)} 단위로 투자할 수 있습니다. 내 팀 프로젝트에는 투자할 수 없습니다.`}
+              : `${won(state.step)} 단위로 투자할 수 있습니다. 내 팀 프로젝트에는 투자할 수 없습니다.`}
           </p>
         )}
       </section>
@@ -561,6 +599,8 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               amount={amounts[t.id] ?? 0}
               max={(amounts[t.id] ?? 0) + Math.max(0, left)}
               budget={budget}
+              step={state.step}
+              disabled={closed}
               savedAmount={saved ? (saved[t.id] ?? 0) : undefined}
               onChange={(v) => change(t.id, v)}
             />
@@ -578,6 +618,8 @@ function InvestCard({
   max,
   savedAmount,
   budget,
+  step,
+  disabled,
   onChange,
 }: {
   team: Team;
@@ -586,6 +628,8 @@ function InvestCard({
   max: number;
   savedAmount?: number;
   budget: number;
+  step: number;
+  disabled: boolean;
   onChange: (amount: number) => void;
 }) {
   const id = useId();
@@ -611,9 +655,9 @@ function InvestCard({
           <div className="mt-1.5 flex gap-1.5">
             <button
               type="button"
-              aria-label={`${team.project} 투자금 ${won(INVEST_STEP)} 줄이기`}
-              disabled={amount === 0}
-              onClick={() => set(amount - INVEST_STEP)}
+              aria-label={`${team.project} 투자금 ${won(step)} 줄이기`}
+              disabled={disabled || amount === 0}
+              onClick={() => set(amount - step)}
               className={stepBtn}
             >
               −
@@ -624,15 +668,16 @@ function InvestCard({
               autoComplete="off"
               value={amount ? amount.toLocaleString("ko-KR") : ""}
               placeholder="0"
+              disabled={disabled}
               onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")) || 0)}
-              onBlur={() => set(Math.round(amount / INVEST_STEP) * INVEST_STEP)}
+              onBlur={() => set(Math.round(amount / step) * step)}
               className="h-11 min-w-0 flex-1 border border-fg/20 bg-fg/[0.04] px-3 text-right font-mono text-lg tabular-nums text-fg outline-none transition placeholder:text-fg/25 focus:border-fg/60"
             />
             <button
               type="button"
-              aria-label={`${team.project} 투자금 ${won(INVEST_STEP)} 늘리기`}
-              disabled={amount >= max}
-              onClick={() => set(amount + INVEST_STEP)}
+              aria-label={`${team.project} 투자금 ${won(step)} 늘리기`}
+              disabled={disabled || amount >= max}
+              onClick={() => set(amount + step)}
               className={stepBtn}
             >
               +

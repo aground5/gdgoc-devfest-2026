@@ -8,6 +8,7 @@ import { schools } from "./brand";
 import { type Participant, type SchoolKey, type Team } from "@/data/guide";
 import {
   budgetOf,
+  buildState,
   investedBy,
   latestTick,
   liveTotals,
@@ -17,7 +18,9 @@ import {
   type FestivalState,
 } from "@/lib/festival-store";
 import {
+  keys,
   patch as optimisticPatch,
+  queryClient,
   run,
   useInvestSettings,
   useInvestments,
@@ -172,27 +175,16 @@ function StaffLogin({ denied }: { denied: string | null }) {
 function AdminPanels({ email }: { email: string }) {
   const people = usePeople("staff");
   const teams = useTeams("staff");
-  const settings = useInvestSettings();
-  const investments = useInvestments();
-  const ticks = useTicks();
+  const settings = useInvestSettings("staff");
+  const investments = useInvestments("staff");
+  const ticks = useTicks("staff");
   const [view, setView] = useHashTab(VIEWS, "people");
   const failed = people.error ?? teams.error ?? settings.error ?? investments.error ?? ticks.error;
 
-  // Everything on this screen comes from Supabase, investments included
-  const state = useMemo<FestivalState | null>(() => {
-    if (!people.data || !teams.data || !settings.data || !investments.data || !ticks.data) return null;
-    return {
-      participants: people.data,
-      teams: teams.data,
-      investments: investments.data,
-      budgets: Object.fromEntries(people.data.flatMap((p) => (p.budget != null ? [[p.id, p.budget]] : []))),
-      ticks: ticks.data,
-      idsFrom: "supabase",
-      defaultBudget: settings.data.defaultBudget,
-      step: settings.data.step,
-      investOpen: settings.data.open,
-    };
-  }, [people.data, teams.data, settings.data, investments.data, ticks.data]);
+  const state = useMemo(
+    () => buildState(people.data, teams.data, settings.data, investments.data, ticks.data),
+    [people.data, teams.data, settings.data, investments.data, ticks.data],
+  );
 
   return (
     <ScreenFrame
@@ -1167,6 +1159,39 @@ function CodeCard() {
 
 /* ---------- 투자 현황 / 발행 ---------- */
 
+// One publish at a time. The flag is module-level and set synchronously, so a
+// double click (both clicks land before React re-renders the disabled button)
+// still sends a single request. It's released only after the new tick has
+// been refetched, so the button can't re-enable on stale data in between.
+// publish_tick() also serializes on the server and refuses a duplicate tick.
+let publishInFlight = false;
+const publishListeners = new Set<() => void>();
+const setPublishInFlight = (v: boolean) => {
+  publishInFlight = v;
+  publishListeners.forEach((l) => l());
+};
+
+function usePublishing() {
+  return useSyncExternalStore(
+    (cb) => {
+      publishListeners.add(cb);
+      return () => publishListeners.delete(cb);
+    },
+    () => publishInFlight,
+    () => false,
+  );
+}
+
+async function publishOnce() {
+  if (publishInFlight) return;
+  setPublishInFlight(true);
+  try {
+    if (await run(publishTick)) await queryClient.refetchQueries({ queryKey: keys.ticks });
+  } finally {
+    setPublishInFlight(false);
+  }
+}
+
 // Staff open and close investing; while closed, participants can't confirm
 function InvestOpen({ open }: { open: boolean }) {
   const next = !open;
@@ -1197,7 +1222,7 @@ function InvestOpen({ open }: { open: boolean }) {
 }
 
 function InvestStatusPanel({ state }: { state: FestivalState }) {
-  const [publishing, setPublishing] = useState(false);
+  const publishing = usePublishing();
   const live = liveTotals(state);
   const snap = latestTick(state);
   const rows = state.teams
@@ -1242,11 +1267,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={async () => {
-                setPublishing(true);
-                await run(publishTick);
-                setPublishing(false);
-              }}
+              onClick={() => void publishOnce()}
               disabled={!changed || publishing}
               className={`${primaryBtn} px-5 py-2.5 text-base`}
             >
