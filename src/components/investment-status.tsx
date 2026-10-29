@@ -201,7 +201,7 @@ function TickChart({
     if (id === myTeamId) return 1;
     return 0;
   }
-  const stroke = (id: string) => (id === focus ? "var(--g-blue)" : "var(--fg)");
+  const stroke = (id: string) => (id === focus ? "var(--accent)" : "var(--fg)");
   const opacity = (id: string) => (id === focus ? 1 : id === myTeamId ? 0.75 : 0.18);
 
   function onMove(e: PointerEvent<SVGRectElement>) {
@@ -357,7 +357,7 @@ function TickChart({
       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg/60">
         {focusTeam && (
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-0.5 w-4 bg-[var(--g-blue)]" aria-hidden="true" />
+            <span className="h-0.5 w-4 bg-accent" aria-hidden="true" />
             {focusTeam.project}
           </span>
         )}
@@ -416,7 +416,7 @@ function RankList({
                     <span className="text-fg/30">–</span>
                   ) : move > 0 ? (
                     <>
-                      <span className="text-[var(--g-green)]" aria-hidden="true">
+                      <span className="text-fg" aria-hidden="true">
                         ▲
                       </span>
                       <span className="sr-only">순위 상승</span>
@@ -424,7 +424,7 @@ function RankList({
                     </>
                   ) : (
                     <>
-                      <span className="text-[var(--g-red)]" aria-hidden="true">
+                      <span className="text-fg/45" aria-hidden="true">
                         ▼
                       </span>
                       <span className="sr-only">순위 하락</span>
@@ -435,7 +435,7 @@ function RankList({
                 <span className="flex min-w-0 items-center gap-2">
                   <span
                     className="h-0.5 w-3 shrink-0"
-                    style={{ background: on ? "var(--g-blue)" : "var(--fg)", opacity: on ? 1 : mine ? 0.75 : 0.2 }}
+                    style={{ background: on ? "var(--accent)" : "var(--fg)", opacity: on ? 1 : mine ? 0.75 : 0.2 }}
                     aria-hidden="true"
                   />
                   <span className="min-w-0">

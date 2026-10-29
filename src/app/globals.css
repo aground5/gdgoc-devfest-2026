@@ -1,33 +1,31 @@
 @import "tailwindcss";
 
-/* GDG DevFest 2026 palette (gdg-devfest-2026-RGB.ase) */
+/* GDG DevFest 2026 palette (gdg-devfest-2026-RGB.ase). Only the four schools'
+   main colors plus the guide's black and white are used: no tints, no Google colors. */
 :root {
-  /* Strip under the KU pair in the color bar (gdg-devfest-2026-color-bar.svg only) */
-  --ku-deep: #7d001a;
   --ku-main: #761227;
-  --ku-tint: #a32a43;
   --yu-main: #003876;
-  --yu-tint: #1459a4;
   --skku-main: #8ec540;
-  --skku-tint: #72a627;
   --kaist-main: #5fbeeb;
-  --kaist-tint: #40a4d6;
 
   --black: #181818;
   --white: #e8e8e8;
 
-  --g-red: #d5292a;
-  --g-yellow: #f4ce25;
-  --g-blue: #405cc5;
-  --g-green: #1fa439;
+  /* Status, from the same palette. KU and YU read well on light backgrounds,
+     SKKU and KAIST on dark ones, so status text stays in --fg and these mark it
+     (dots, borders, chips). --danger and --accent flip with the theme. */
+  --danger: var(--ku-main); /* errors, over budget, destructive actions */
+  --ok: var(--skku-main); /* checked in, confirmed, published */
+  --warn: var(--kaist-main); /* changed since, needs attention */
+  --accent: var(--yu-main); /* highlighted series (my team in the chart) */
 
   /* Light theme (default) */
-  --page: #f4f4f4;
-  --surface: var(--white);
+  --page: var(--white);
+  --surface: color-mix(in srgb, var(--black) 6%, var(--white));
   --fg: var(--black);
   --contrast: var(--black);
   --on-contrast: var(--white);
-  --raised: #ffffff;
+  --raised: var(--white);
   --on-raised: var(--black);
   color-scheme: light;
 }
@@ -42,6 +40,8 @@
     --on-contrast: var(--black);
     --raised: var(--white);
     --on-raised: var(--black);
+    --danger: var(--white);
+    --accent: var(--kaist-main);
     color-scheme: dark;
   }
 }
@@ -54,6 +54,8 @@
   --on-contrast: var(--black);
   --raised: var(--white);
   --on-raised: var(--black);
+  --danger: var(--white);
+  --accent: var(--kaist-main);
   color-scheme: dark;
 }
 
@@ -66,17 +68,13 @@
   --color-raised: var(--raised);
   --color-on-raised: var(--on-raised);
   --color-ku: var(--ku-main);
-  --color-ku-tint: var(--ku-tint);
   --color-yu: var(--yu-main);
-  --color-yu-tint: var(--yu-tint);
   --color-skku: var(--skku-main);
-  --color-skku-tint: var(--skku-tint);
   --color-kaist: var(--kaist-main);
-  --color-kaist-tint: var(--kaist-tint);
-  --color-g-red: var(--g-red);
-  --color-g-yellow: var(--g-yellow);
-  --color-g-blue: var(--g-blue);
-  --color-g-green: var(--g-green);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-accent: var(--accent);
   /* Fixed (not theme-flipped) guide black and white, e.g. the content-wise header bar */
   --color-ink: var(--black);
   --color-paper: var(--white);
@@ -144,8 +142,8 @@ html {
   color-scheme: dark;
 }
 
-/* Hairline that is invisible on the light page but keeps the color bar's black block
-   from melting into the guide-black page in dark mode */
+/* Hairline around the color bar's black and white blocks, so neither melts into
+   the page (guide black in dark mode, guide white in light mode) */
 .ink-edge {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 14%, transparent);
 }
