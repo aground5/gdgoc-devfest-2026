@@ -7,6 +7,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import type { Participant, SchoolKey, Team } from "@/data/guide";
 import type { Investments, Snapshot } from "@/lib/festival-store";
 import { createClient } from "@/utils/supabase/client";
+import { ASSET_RULES, normalizeUrl, type AssetKind } from "@/lib/market-rules";
 
 // createBrowserClient returns one shared client per page
 const sb = () => createClient();
@@ -33,6 +34,7 @@ const HINTS: Record<string, string> = {
   person_required: "참가자 이름은 비워 둘 수 없습니다.",
   bad_school: "알 수 없는 학교가 있습니다.",
   bad_table: "팀 목록에 없는 팀 테이블을 쓴 참가자가 있습니다.",
+  too_many_assets: "올릴 수 있는 개수를 넘었습니다.",
 };
 
 function fail(error: PostgrestError): never {
@@ -308,3 +310,197 @@ export async function updateMyTeam(t: Pick<Team, "name" | "project" | "desc">) {
 export async function checkIn(code: string): Promise<boolean> {
   return ok(await sb().rpc("check_in", { p_code: code })) !== null;
 }
+
+/* ---------- Demo Market ---------- */
+
+export type DemoAsset = {
+  id: string;
+  kind: AssetKind;
+  bucket: "demo-images" | "demo-files";
+  path: string;
+  fileName: string;
+  size: number;
+  url: string | null; // short-lived signed URL
+};
+
+export type DemoEntry = {
+  id: string;
+  teamId: string;
+  status: "draft" | "published";
+  title: string;
+  description: string;
+  testInstructions: string;
+  liveUrl: string | null;
+  repoUrl: string | null;
+  videoUrl: string | null;
+  hidden: boolean;
+  hiddenReason: string | null;
+  publishedAt: number | null;
+  updatedAt: number;
+  credentials: string | null; // test account info, if the team added any
+  images: DemoAsset[];
+  files: DemoAsset[];
+};
+
+// RLS returns what the caller may see: published, non-hidden entries plus
+// their own team's (participants), or everything (staff). Uploads get signed URLs.
+export async function fetchDemos(): Promise<DemoEntry[]> {
+  const [entries, creds, assets] = await Promise.all([
+    sb().from("demo_entries").select("*").order("published_at", { ascending: false, nullsFirst: false }).then(ok),
+    sb().from("demo_entry_credentials").select("entry_id, credentials").then(ok),
+    sb().from("demo_assets").select("*").order("sort").order("created_at").then(ok),
+  ]);
+
+  const urls = new Map<string, string>();
+  for (const bucket of ["demo-images", "demo-files"] as const) {
+    const paths = assets.filter((a) => a.bucket === bucket).map((a) => a.path);
+    if (paths.length === 0) continue;
+    const { data } = await sb()
+      .storage.from(bucket)
+      .createSignedUrls(paths, 60 * 60, bucket === "demo-files" ? { download: true } : undefined);
+    for (const u of data ?? []) if (u.path && u.signedUrl) urls.set(u.path, u.signedUrl);
+  }
+
+  const credBy = new Map(creds.map((c) => [c.entry_id, c.credentials]));
+  const assetsBy = new Map<string, DemoAsset[]>();
+  for (const a of assets) {
+    const list = assetsBy.get(a.entry_id) ?? [];
+    list.push({
+      id: a.id,
+      kind: a.kind as AssetKind, // CHECK-constrained in the database
+      bucket: a.bucket as DemoAsset["bucket"],
+      path: a.path,
+      fileName: a.file_name,
+      size: a.size_bytes,
+      url: urls.get(a.path) ?? null,
+    });
+    assetsBy.set(a.entry_id, list);
+  }
+
+  return entries.map((e) => {
+    const all = assetsBy.get(e.id) ?? [];
+    return {
+      id: e.id,
+      teamId: e.team_id,
+      status: e.status,
+      title: e.title,
+      description: e.description,
+      testInstructions: e.test_instructions,
+      liveUrl: e.live_url,
+      repoUrl: e.repo_url,
+      videoUrl: e.video_url,
+      hidden: e.hidden,
+      hiddenReason: e.hidden_reason,
+      publishedAt: e.published_at ? Date.parse(e.published_at) : null,
+      updatedAt: Date.parse(e.updated_at),
+      credentials: credBy.get(e.id) ?? null,
+      images: all.filter((a) => a.kind === "image"),
+      files: all.filter((a) => a.kind === "file"),
+    };
+  });
+}
+
+export type DemoInput = {
+  title: string;
+  liveUrl: string;
+  repoUrl: string;
+  videoUrl: string;
+  description: string;
+  testInstructions: string;
+  credentials: string;
+};
+
+// Creates or updates the caller's team entry; `publish` false keeps or makes it a draft.
+// Returns the entry id.
+export async function saveDemo(teamId: string, input: DemoInput, publish: boolean): Promise<string> {
+  const liveUrl = normalizeUrl(input.liveUrl);
+  const repoUrl = normalizeUrl(input.repoUrl);
+  const videoUrl = normalizeUrl(input.videoUrl);
+  if (liveUrl === false || repoUrl === false || videoUrl === false) {
+    throw new DbError("링크는 http:// 또는 https:// 로 시작하는 주소여야 합니다.");
+  }
+  if (publish && (!liveUrl || !input.description.trim() || !input.testInstructions.trim())) {
+    throw new DbError("공개하려면 서비스 링크, 소개, 테스트 방법을 모두 입력해 주세요.");
+  }
+  const entry = ok<{ id: string }>(
+    await sb()
+      .from("demo_entries")
+      .upsert(
+        {
+          team_id: teamId,
+          status: publish ? "published" : "draft",
+          title: input.title.trim(),
+          live_url: liveUrl,
+          repo_url: repoUrl,
+          video_url: videoUrl,
+          description: input.description.trim(),
+          test_instructions: input.testInstructions.trim(),
+        },
+        { onConflict: "team_id" },
+      )
+      .select("id")
+      .single(),
+  );
+  const creds = input.credentials.trim();
+  if (creds) {
+    ok(
+      await sb()
+        .from("demo_entry_credentials")
+        .upsert({ entry_id: entry.id, team_id: teamId, credentials: creds }, { onConflict: "entry_id" }),
+    );
+  } else {
+    ok(await sb().from("demo_entry_credentials").delete().eq("entry_id", entry.id));
+  }
+  return entry.id;
+}
+
+export async function unpublishDemo(entryId: string) {
+  ok(await sb().from("demo_entries").update({ status: "draft" }).eq("id", entryId));
+}
+
+// Browser -> Storage, then the row. If the row is rejected (limit, wrong team), the object is removed.
+export async function uploadDemoAsset(teamId: string, entryId: string, kind: AssetKind, file: File, path: string, type: string) {
+  const bucket = ASSET_RULES[kind].bucket;
+  const up = await sb().storage.from(bucket).upload(path, file, { contentType: type, upsert: false });
+  if (up.error) throw new DbError(`${file.name}: 업로드하지 못했습니다.`);
+  const { error } = await sb().from("demo_assets").insert({
+    entry_id: entryId,
+    team_id: teamId,
+    kind,
+    bucket,
+    path,
+    file_name: file.name.slice(0, 200),
+    mime: type,
+    size_bytes: file.size,
+  });
+  if (error) {
+    await sb().storage.from(bucket).remove([path]);
+    fail(error);
+  }
+}
+
+// Storage first (SQL can't delete objects), then the row
+export async function deleteDemoAsset(a: Pick<DemoAsset, "id" | "bucket" | "path">) {
+  const removed = await sb().storage.from(a.bucket).remove([a.path]);
+  if (removed.error) throw new DbError("파일을 삭제하지 못했습니다.");
+  ok(await sb().from("demo_assets").delete().eq("id", a.id));
+}
+
+// Team members or staff. Removes every uploaded object first.
+export async function deleteDemo(entry: Pick<DemoEntry, "id" | "images" | "files">) {
+  for (const list of [entry.images, entry.files]) {
+    if (list.length) await sb().storage.from(list[0].bucket).remove(list.map((a) => a.path));
+  }
+  ok(await sb().from("demo_entries").delete().eq("id", entry.id));
+}
+
+// Staff moderation
+export async function setDemoHidden(entryId: string, hidden: boolean, reason: string) {
+  ok(
+    await sb()
+      .from("demo_entries")
+      .update({ hidden, hidden_reason: hidden ? reason.trim() || null : null })
+      .eq("id", entryId),
+  );
+}
+

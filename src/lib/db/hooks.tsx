@@ -11,6 +11,7 @@ import { createClient } from "@/utils/supabase/client";
 import type { Investments, Snapshot } from "@/lib/festival-store";
 import {
   DbError,
+  fetchDemos,
   fetchInvestSettings,
   fetchInvestments,
   fetchMyBudget,
@@ -19,6 +20,7 @@ import {
   fetchTicks,
   fetchStaffEmails,
   fetchVenueCode,
+  type DemoEntry,
   type InvestSettings,
   type StaffEmail,
   type Mode,
@@ -39,6 +41,7 @@ export const keys = {
   investments: ["invest", "allocations"] as const,
   ticks: ["invest", "ticks"] as const,
   staffEmails: ["staff-emails"] as const,
+  demos: ["demos"] as const,
   // Under "people" so participant-row changes refetch it
   myBudget: (id: string) => ["people", "my-budget", id] as const,
 };
@@ -61,6 +64,7 @@ export const useInvestSettings = (mode: Mode) =>
 export const useInvestments = (mode: Mode) =>
   useQuery({ queryKey: keys.investments, queryFn: fetchInvestments, refetchInterval: poll(mode) });
 export const useTicks = (mode: Mode) => useQuery({ queryKey: keys.ticks, queryFn: fetchTicks, refetchInterval: poll(mode) });
+export const useDemos = (mode: Mode) => useQuery({ queryKey: keys.demos, queryFn: fetchDemos, refetchInterval: poll(mode) });
 export const useStaffEmails = () => useQuery({ queryKey: keys.staffEmails, queryFn: fetchStaffEmails });
 export const useMyBudget = (id: string) =>
   useQuery({ queryKey: keys.myBudget(id), queryFn: () => fetchMyBudget(id), refetchInterval: poll("participant") });
@@ -128,6 +132,13 @@ export const patch = {
     queryClient.setQueryData<StaffEmail[]>(keys.staffEmails, (old) => old?.map((x) => (x.email === email ? { ...x, note } : x))),
   removeStaffEmail: (email: string) => () =>
     queryClient.setQueryData<StaffEmail[]>(keys.staffEmails, (old) => old?.filter((x) => x.email !== email)),
+  demoHidden: (id: string, hidden: boolean, reason: string | null) => () =>
+    queryClient.setQueryData<DemoEntry[]>(keys.demos, (old) => old?.map((e) => (e.id === id ? { ...e, hidden, hiddenReason: reason } : e))),
+  removeDemo: (id: string) => () => queryClient.setQueryData<DemoEntry[]>(keys.demos, (old) => old?.filter((e) => e.id !== id)),
+  removeDemoAsset: (id: string) => () =>
+    queryClient.setQueryData<DemoEntry[]>(keys.demos, (old) =>
+      old?.map((e) => ({ ...e, images: e.images.filter((a) => a.id !== id), files: e.files.filter((a) => a.id !== id) })),
+    ),
   removeTick: (id: number) => () => queryClient.setQueryData<Snapshot[]>(keys.ticks, (old) => old?.filter((t) => t.id !== id)),
 };
 
@@ -181,6 +192,8 @@ const TABLE_KEYS = {
   invest_ticks: keys.ticks,
   invest_tick_totals: keys.ticks,
   staff_emails: keys.staffEmails,
+  demo_entries: keys.demos,
+  demo_assets: keys.demos,
 } as const;
 
 function useRealtime() {

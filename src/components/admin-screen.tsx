@@ -23,6 +23,7 @@ import {
   patch as optimisticPatch,
   queryClient,
   run,
+  useDemos,
   useInvestSettings,
   useInvestments,
   useStaffEmails,
@@ -67,6 +68,7 @@ import {
   useHashTab,
 } from "./festival-ui";
 import { PublishedStatus } from "./investment-status";
+import { MarketModeration } from "./market/market-moderation";
 
 const VIEWS = [
   { id: "people", label: "참가자" },
@@ -75,6 +77,7 @@ const VIEWS = [
   { id: "attendance", label: "출석" },
   { id: "budget", label: "투자금" },
   { id: "invest", label: "투자 현황" },
+  { id: "market", label: "데모 마켓" },
   { id: "staff", label: "운영진" },
 ] as const;
 
@@ -255,11 +258,29 @@ function Panels({ state, view, email }: { state: FestivalState; view: (typeof VI
       {view === "invest" && <InvestStatusPanel state={state} />}
       {view === "bulk" && <BulkImportPanel people={state.participants} teams={state.teams} />}
       {view === "staff" && <StaffPanel me={email} />}
+      {view === "market" && <MarketTab state={state} />}
     </>
   );
 }
 
 // Two-step delete so a stray click doesn't remove anything
+function MarketTab({ state }: { state: FestivalState }) {
+  const demos = useDemos("staff");
+  if (demos.error)
+    return (
+      <p role="alert" className="py-10 text-[var(--g-red)]">
+        데모 마켓을 불러오지 못했습니다. {demos.error.message}
+      </p>
+    );
+  if (!demos.data)
+    return (
+      <p className="py-10 text-fg/50" role="status">
+        불러오는 중…
+      </p>
+    );
+  return <MarketModeration state={state} entries={demos.data} />;
+}
+
 function DeleteButton({ label, onConfirm }: { label: string; onConfirm: () => void }) {
   const [arm, setArm] = useState(false);
   return arm ? (
