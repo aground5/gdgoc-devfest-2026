@@ -497,6 +497,9 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
     setDraft({ ...amounts, [teamId]: v });
   }
 
+  const canConfirm = !closed && !busy && !over && !(saved === null && used === 0);
+  const confirmLabel = busy ? "확정 중…" : saved === null ? "투자 확정하기" : "변경사항 확정하기";
+
   // On failure the draft stays, so nothing typed is lost
   async function confirm() {
     const clean: Record<string, number> = Object.fromEntries(
@@ -509,7 +512,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
   }
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-8 pb-24 sm:pb-0">
       <section aria-labelledby="invest-summary" className="border border-fg/15 bg-fg/[0.04] p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -532,10 +535,10 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
             <button
               type="button"
               onClick={confirm}
-              disabled={closed || busy || over || (saved === null && used === 0)}
+              disabled={!canConfirm}
               className={`${primaryBtn} px-5 py-2.5 text-base`}
             >
-              {busy ? "확정 중…" : saved === null ? "투자 확정하기" : "변경사항 확정하기"}
+              {confirmLabel}
             </button>
           )}
         </div>
@@ -607,6 +610,33 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           ))}
         </ul>
       </section>
+
+      {/* Phones: the project list is long, so keep what's left and the confirm button in reach */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-fg/15 bg-page px-4 pt-3 sm:hidden"
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-fg/50">남은 금액</p>
+            <p className={`truncate text-lg font-bold tabular-nums ${over ? "text-[var(--g-red)]" : ""}`}>
+              {over ? `−${won(-left)}` : won(left)}
+            </p>
+          </div>
+          {closed ? (
+            <span className="shrink-0 border border-fg/25 px-3 py-2 text-sm font-bold text-fg/60">투자 마감</span>
+          ) : upToDate ? (
+            <span className="inline-flex shrink-0 items-center gap-2 border border-[var(--g-green)] px-3 py-2 text-sm font-bold text-[var(--g-green)]">
+              <span className="h-1.5 w-1.5 bg-[var(--g-green)]" />
+              확정됨
+            </span>
+          ) : (
+            <button type="button" onClick={confirm} disabled={!canConfirm} className={`${primaryBtn} shrink-0 px-5 py-3 text-base`}>
+              {confirmLabel}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

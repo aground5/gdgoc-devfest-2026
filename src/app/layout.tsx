@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Google_Sans, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 
@@ -6,6 +6,9 @@ import "./globals.css";
 // Google Sans has no Hangul, so Korean falls through to Noto Sans KR.
 const googleSans = Google_Sans({ variable: "--font-google-sans", subsets: ["latin"], weight: ["400", "700"], adjustFontFallback: false });
 const notoSansKr = Noto_Sans_KR({ variable: "--font-noto-kr", weight: ["400", "700"], preload: false });
+
+// viewport-fit=cover lets fixed bars pad themselves with env(safe-area-inset-*) on notched phones
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export const metadata: Metadata = {
   title: "GDG DevFest 2026",
