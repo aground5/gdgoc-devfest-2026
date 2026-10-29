@@ -156,3 +156,38 @@ html {
   color-scheme: dark;
 }
 
+/* Home hero: the edge frame's bars slide in from the edges one after another,
+   then the headline rises and the facts fade in. Visible at rest when motion is off. */
+.edge-bar {
+  animation: edge-in 800ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i) * 110ms + 100ms);
+}
+@keyframes edge-in {
+  from {
+    transform: translateX(calc(var(--dir) * 100%));
+  }
+}
+.hero-rise {
+  animation: hero-rise 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 350ms both;
+}
+.hero-fade {
+  animation: hero-fade 900ms ease 650ms both;
+}
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .edge-bar,
+  .hero-rise,
+  .hero-fade {
+    animation: none;
+  }
+}

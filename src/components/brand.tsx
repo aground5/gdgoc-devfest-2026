@@ -16,12 +16,11 @@ export const schools: School[] = [
 ];
 
 // GDG logo (from gdg.svg). Uses currentColor so it follows the theme.
-export function GdgLogo({ className = "", title, style }: { className?: string; title?: string; style?: React.CSSProperties }) {
+export function GdgLogo({ className = "", title }: { className?: string; title?: string }) {
   return (
     <svg
       viewBox="0 0 60 29"
       className={className}
-      style={style}
       fill="currentColor"
       role={title ? "img" : undefined}
       aria-hidden={title ? undefined : true}
@@ -48,19 +47,40 @@ export function SchoolBar({ className = "", vertical = false }: { className?: st
   );
 }
 
-// Bottom-aligned steps of the four school colors (rising left to right), used as the
-// base of the home hero rather than a block of its own. No text sits on the colors;
-// each step carries a faint, oversized GDG <> mark in the step's `on` color.
-// (University logos aren't used: each school restricts and approves their use.)
-export function SchoolSteps({ className = "" }: { className?: string }) {
-  const heights = ["58%", "72%", "86%", "100%"];
+// Home hero frame: bars in the four school colors come in from the left and right
+// edges (four rows a side, mirrored) and frame the centered headline. They slide in
+// one after another on load (.edge-bar in globals.css). Hidden on phones, where they
+// would cover the text; nothing is written on the colors.
+const EDGE_LEFT = [6, 3, 9, 4.5]; // vw, top to bottom
+const EDGE_RIGHT = [4.5, 9, 3, 6];
+
+export function EdgeFrame() {
+  const side = (left: boolean) => {
+    const widths = left ? EDGE_LEFT : EDGE_RIGHT;
+    const order = left ? schools : [...schools].reverse();
+    return (
+      <div className={`absolute inset-y-0 flex flex-col ${left ? "left-0" : "right-0 items-end"}`}>
+        {order.map((s, i) => (
+          <span
+            key={s.key}
+            className="edge-bar flex-1"
+            style={
+              {
+                width: `${widths[i]}vw`,
+                background: s.main,
+                "--i": i + (left ? 0 : 0.5),
+                "--dir": left ? -1 : 1,
+              } as React.CSSProperties
+            }
+          />
+        ))}
+      </div>
+    );
+  };
   return (
-    <div className={`grid grid-cols-4 items-end ${className}`} aria-hidden="true">
-      {schools.map((s, i) => (
-        <div key={s.key} className="relative h-full overflow-hidden" style={{ height: heights[i], background: s.main }}>
-          <GdgLogo className="absolute bottom-[12%] right-[6%] w-[46%] opacity-[0.12]" style={{ color: s.on }} />
-        </div>
-      ))}
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden sm:block">
+      {side(true)}
+      {side(false)}
     </div>
   );
 }
