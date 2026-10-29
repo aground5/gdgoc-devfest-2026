@@ -18,13 +18,14 @@ export const seoulToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "As
 
 export class DbError extends Error {}
 
-// Business-rule errors raised by confirm_investments() and publish_tick() carry a hint
+// Business-rule errors raised by confirm_investments(), publish_tick() and check_in() carry a hint
 const HINTS: Record<string, string> = {
   closed: "투자가 마감되었습니다.",
   over_budget: "투자금을 초과했습니다. 금액을 줄여 주세요.",
   own_team: "내 팀 프로젝트에는 투자할 수 없습니다.",
   step: "투자 단위에 맞지 않는 금액이 있습니다.",
   unchanged: "마지막 발행 이후 바뀐 투자가 없습니다.",
+  rate_limited: "출석 코드를 여러 번 잘못 입력했습니다. 10분 뒤에 다시 시도해 주세요.",
   dup_table: "파일에 같은 팀 테이블이 두 번 이상 있습니다.",
   dup_person: "파일에 이름과 학교가 같은 참가자가 두 번 이상 있습니다.",
   ambiguous_person:
