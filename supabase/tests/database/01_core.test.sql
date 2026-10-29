@@ -17,8 +17,8 @@ select is((select user_id from public.staff where email = 'staff@devfest.test'),
 -- Sign-up hook: whitelisted staff emails and registered participant ids only
 select is(public.hook_before_user_created('{"user":{"email":"Staff@devfest.test"}}'), '{}'::jsonb,
   'hook allows a whitelisted staff email (case-insensitive)');
-select is(public.hook_before_user_created('{"user":{"email":"pz32@participants.devfest.invalid"}}'), '{}'::jsonb,
-  'hook allows a registered participant login id');
+select ok(public.hook_before_user_created('{"user":{"email":"pz32@participants.devfest.invalid"}}') ? 'error',
+  'hook rejects self sign-up as a participant (only staff issue those accounts)');
 select ok(public.hook_before_user_created('{"user":{"email":"zzzz@participants.devfest.invalid"}}') ? 'error',
   'hook rejects an unknown participant login id');
 select ok(public.hook_before_user_created('{"user":{"email":"stranger@example.com"}}') ? 'error',

@@ -3,7 +3,7 @@
 // Staff writes. RLS and the staff-only RPCs reject anyone who isn't staff.
 
 import { refresh } from "next/cache";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, hasAdminKey } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { CODE_ALPHABET, formatCode, participantEmail } from "@/lib/festival/login-code";
 import { fail, ok, type ActionResult } from "@/lib/festival/result";
@@ -41,8 +41,12 @@ export async function removeParticipant(id: string): Promise<ActionResult> {
   const { data: priv } = await db.from("participant_private").select("user_id").eq("participant_id", id).maybeSingle();
   const { data, error } = await db.from("participants").delete().eq("id", id).select("id");
   if (error || !data?.length) return fail(error);
-  if (priv?.user_id) await createAdminClient().auth.admin.deleteUser(priv.user_id);
   refresh();
+  if (priv?.user_id) {
+    // Without the secret key the login can't be revoked; it no longer links to anyone, but say so.
+    if (!hasAdminKey()) return { ok: false, error: "삭제했지만 로그인 계정은 남아 있습니다. 서버에 SUPABASE_SECRET_KEY를 설정해 주세요." };
+    await createAdminClient().auth.admin.deleteUser(priv.user_id);
+  }
   return ok(undefined);
 }
 
@@ -66,6 +70,7 @@ export async function issueCodes(ids: string[]): Promise<ActionResult<{ particip
   const db = await createClient();
   const { data: staff } = await db.rpc("is_staff");
   if (!staff) return { ok: false, error: "운영진만 할 수 있습니다." };
+  if (!hasAdminKey()) return { ok: false, error: "코드를 발급하려면 서버에 SUPABASE_SECRET_KEY를 설정해야 합니다." };
   const { data: rows, error } = await db
     .from("participant_private")
     .select("participant_id, login_id, user_id")

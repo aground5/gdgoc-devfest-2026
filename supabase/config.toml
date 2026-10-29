@@ -219,6 +219,8 @@ web3 = 30
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
+# Must stay on: turning it off also blocks password sign-in, which participant codes use.
+# Public email sign-ups are still rejected by hook_before_user_created.
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
@@ -244,15 +246,10 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Magic link / sign-up mail. Links go to /auth/confirm with a token hash (works in in-app browsers),
-# and the 6-digit code is a fallback. New users get the "confirmation" mail, existing ones "magic_link".
-[auth.email.template.magic_link]
-subject = "GDG DevFest 2026 로그인"
-content_path = "./supabase/templates/magic_link.html"
-
-[auth.email.template.confirmation]
-subject = "GDG DevFest 2026 로그인"
-content_path = "./supabase/templates/magic_link.html"
+# Uncomment to customize email template
+# [auth.email.template.invite]
+# subject = "You have been invited"
+# content_path = "./supabase/templates/invite.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
@@ -339,6 +336,18 @@ url = ""
 # If enabled, the nonce check will be skipped. Required for local sign in with Google auth.
 skip_nonce_check = false
 # If enabled, it will allow the user to successfully authenticate when the provider does not return an email address.
+email_optional = false
+
+# Staff sign in with Google. Only emails in public.staff get an account (hook_before_user_created).
+# Google Cloud OAuth client redirect URI (local): http://127.0.0.1:54321/auth/v1/callback
+# Set the two values in supabase/.env (see supabase/.env.example).
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = ""
+url = ""
+skip_nonce_check = false
 email_optional = false
 
 # Allow Solana wallet holders to sign in to your project via the Sign in with Solana (SIWS, EIP-4361) standard.

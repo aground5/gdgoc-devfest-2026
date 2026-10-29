@@ -11,17 +11,19 @@ as $$
     then upper(split_part(p_email, '@', 1)) end
 $$;
 
--- Auth hook: reject every sign-up that isn't a whitelisted staff email or a registered participant id.
+-- Auth hook for self-service sign-ups (Google, email). Only whitelisted staff emails pass.
+-- Participant accounts are never self-created: staff issue them through the admin API, which
+-- doesn't run this hook. Rejecting the participant domain here stops anyone from signing up
+-- as <login_id>@participants.devfest.invalid before a code is issued and taking that seat.
 create function public.hook_before_user_created(event jsonb)
 returns jsonb
 language plpgsql stable security definer set search_path = ''
 as $$
 declare
   v_email text := lower(event -> 'user' ->> 'email');
-  v_login text := private.participant_login_id(v_email);
 begin
-  if (v_login is not null and exists (select 1 from public.participant_private where login_id = v_login))
-     or (v_login is null and exists (select 1 from public.staff where email = v_email)) then
+  if private.participant_login_id(v_email) is null
+     and exists (select 1 from public.staff where email = v_email) then
     return '{}'::jsonb;
   end if;
   return jsonb_build_object(

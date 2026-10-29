@@ -1,5 +1,6 @@
 -- Local/dev seed, generated once from the former localStorage mock (src/data/guide.ts).
--- Staff sign in with staff@devfest.test (the magic link arrives in Mailpit, http://127.0.0.1:54324).
+-- Staff sign in with Google: add your own Google email to public.staff to try /organize locally,
+-- e.g. insert into public.staff (email, name) values ('you@gmail.com', '나');
 -- Participants have fixed login ids (PZ23 = p01 … PZ4A = p28) but no codes yet: issue them on /organize.
 
 insert into private.settings (attendance_code, default_budget, invest_step) values ('1106', 1000000, 50000);

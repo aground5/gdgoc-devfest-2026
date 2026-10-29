@@ -17,9 +17,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <p className="text-sm font-bold text-fg/60">GDG DevFest 2026</p>
           <h1 className="mt-1 text-4xl font-bold tracking-tight">로그인</h1>
           <p className="mt-2 text-sm leading-relaxed text-fg/60">
-            참가자는 운영진에게 받은 코드로, 운영진은 등록된 이메일로 로그인합니다.
+            참가자는 운영진에게 받은 코드로, 운영진은 등록된 Google 계정으로 로그인합니다.
           </p>
-          <LoginForm next={next} staff={next.startsWith("/organize")} linkError={error === "link"} />
+          <LoginForm next={next} staff={next.startsWith("/organize")} staffError={error === "staff"} />
         </div>
       </div>
     </main>
