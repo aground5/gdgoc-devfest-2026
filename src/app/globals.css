@@ -156,8 +156,3 @@ html {
   color-scheme: dark;
 }
 
-/* Hairline around the color bar's black and white blocks, so neither melts into
-   the page (guide black in dark mode, guide white in light mode) */
-.ink-edge {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 14%, transparent);
-}

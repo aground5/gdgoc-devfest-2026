@@ -47,51 +47,34 @@ export function SchoolBar({ className = "", vertical = false }: { className?: st
   );
 }
 
-// Four school bars, each labeled with its school at the bottom.
-function SchoolBars({ className = "", labels = true }: { className?: string; labels?: boolean }) {
+// Bottom-aligned steps of the four school colors (rising left to right), used as the
+// base of the home hero rather than a block of its own. No text sits on the colors.
+// `logos`: schools whose logo file exists in /public/logos/{key}.svg; each is shown as a
+// faint watermark in its column (drawn in the column's `on` color through a CSS mask).
+export function SchoolSteps({ logos = [], className = "" }: { logos?: string[]; className?: string }) {
+  const heights = ["58%", "72%", "86%", "100%"];
   return (
-    <div className={`grid grid-cols-4 ${className}`}>
-      {schools.map((s) => (
-        <div key={s.key} className="relative" style={{ background: s.main }}>
-          {labels && (
+    <div className={`grid grid-cols-4 items-end ${className}`} aria-hidden="true">
+      {schools.map((s, i) => (
+        <div key={s.key} className="relative h-full overflow-hidden" style={{ height: heights[i], background: s.main }}>
+          {logos.includes(s.key) && (
             <span
-              className="absolute bottom-[0.6em] left-[0.7em] text-[clamp(0.55rem,1.1vw,0.8rem)] font-bold leading-none tracking-[0.08em]"
-              style={{ color: s.on }}
-            >
-              {s.word}
-            </span>
+              className="absolute -bottom-[12%] -right-[10%] aspect-square w-[78%] opacity-[0.1]"
+              style={{
+                background: s.on,
+                maskImage: `url(/logos/${s.key}.svg)`,
+                WebkitMaskImage: `url(/logos/${s.key}.svg)`,
+                maskSize: "contain",
+                WebkitMaskSize: "contain",
+                maskRepeat: "no-repeat",
+                WebkitMaskRepeat: "no-repeat",
+                maskPosition: "center",
+                WebkitMaskPosition: "center",
+              }}
+            />
           )}
         </div>
       ))}
-    </div>
-  );
-}
-
-// The event's color bar: the design guide's TV color bar, drawn only with the
-// four schools' main colors plus the guide's black and white. Size it from
-// outside (e.g. `aspect-square w-96`). The school colors always take the
-// largest share.
-//   "square": four school bars over a black / white row
-//   "wide":   four school bars beside a black-over-white column, for short spaces
-export function ColorBar({ variant = "square", className = "" }: { variant?: "square" | "wide"; className?: string }) {
-  if (variant === "wide") {
-    return (
-      <div className={`flex ${className}`} aria-hidden="true">
-        <SchoolBars className="flex-[4]" />
-        <div className="flex flex-1 flex-col">
-          <div className="ink-edge flex-[3] bg-ink" />
-          <div className="ink-edge flex-1 bg-paper" />
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className={`flex flex-col ${className}`} aria-hidden="true">
-      <SchoolBars className="min-h-0 flex-[5]" />
-      <div className="grid min-h-0 flex-[2] grid-cols-4">
-        <div className="ink-edge col-span-3 bg-ink" />
-        <div className="ink-edge bg-paper" />
-      </div>
     </div>
   );
 }
