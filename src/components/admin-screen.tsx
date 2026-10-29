@@ -5,6 +5,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { schools } from "./brand";
+import { ContentPanel } from "./content-editor";
 import { type Participant, type SchoolKey, type Team } from "@/data/guide";
 import {
   budgetOf,
@@ -73,6 +74,7 @@ const VIEWS = [
   { id: "attendance", label: "출석" },
   { id: "budget", label: "투자금" },
   { id: "invest", label: "투자 현황" },
+  { id: "content", label: "행사 정보" },
   { id: "staff", label: "운영진" },
 ] as const;
 
@@ -251,6 +253,7 @@ function Panels({ state, view, email }: { state: FestivalState; view: (typeof VI
       {view === "attendance" && <AttendancePanel state={state} />}
       {view === "budget" && <BudgetPanel state={state} />}
       {view === "invest" && <InvestStatusPanel state={state} />}
+      {view === "content" && <ContentPanel />}
       {view === "staff" && <StaffPanel me={email} />}
     </>
   );

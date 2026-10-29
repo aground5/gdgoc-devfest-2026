@@ -6,6 +6,8 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import type { Participant, SchoolKey, Team } from "@/data/guide";
 import type { Investments, Snapshot } from "@/lib/festival-store";
+import { mergeContent, type ContentKey, type SiteContent } from "@/lib/site-content";
+import type { Json } from "@/lib/db/types";
 import { createClient } from "@/utils/supabase/client";
 
 // createBrowserClient returns one shared client per page
@@ -259,6 +261,20 @@ export async function updateStaffNote(email: string, note: string) {
 export async function removeStaffEmail(email: string) {
   const rows = ok(await sb().from("staff_emails").delete().eq("email", email).select("email"));
   if (rows.length === 0) throw new DbError("본인 이메일은 삭제할 수 없습니다.");
+}
+
+/* ---------- Guide page content ---------- */
+
+export async function fetchSiteContent(): Promise<SiteContent> {
+  return mergeContent(ok(await sb().from("site_content").select("key, value")));
+}
+
+export async function saveContent(key: ContentKey, value: unknown) {
+  ok(
+    await sb()
+      .from("site_content")
+      .upsert({ key, value: value as Json, updated_at: new Date().toISOString() }),
+  );
 }
 
 /* ---------- Participant RPCs ---------- */

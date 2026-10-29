@@ -135,3 +135,24 @@ export type Team = {
   desc: string;
 };
 
+
+// Everything the guide page shows, as one object. Staff edit it on /organize
+// (Supabase `site_content`, one row per key); these exports are the defaults
+// for any section that has no row yet.
+export const defaultContent = { event, notices, steps, days, schedule, keywords, investRules, criteria, awards, faqs, venueInfo };
+
+export type SiteContent = {
+  event: typeof event;
+  notices: Notice[];
+  steps: Step[];
+  days: Day[];
+  schedule: ScheduleItem[];
+  keywords: string[];
+  investRules: string[];
+  criteria: { name: string; desc: string }[];
+  awards: string[];
+  faqs: Faq[];
+  venueInfo: { label: string; value: string }[];
+};
+
+export type ContentKey = keyof SiteContent;

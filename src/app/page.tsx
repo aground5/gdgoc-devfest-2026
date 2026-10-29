@@ -2,16 +2,22 @@ import Link from "next/link";
 import { ColorBar, GdgLogo, schools } from "@/components/brand";
 import { GuideTabs } from "@/components/guide-tabs";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { event } from "@/data/guide";
+import { getSiteContent } from "@/lib/site-content";
 
-const summary = [
-  { label: "일시", value: event.date },
-  { label: "운영 시간", value: event.hours },
-  { label: "체크인", value: event.checkIn },
-  { label: "장소", value: event.venue },
-];
+// Content is edited by staff on /organize; saving revalidates this page, and
+// it also refreshes on its own every minute.
+export const revalidate = 60;
 
-export default function Home() {
+export default async function Home() {
+  const content = await getSiteContent();
+  const { event } = content;
+  const summary = [
+    { label: "일시", value: event.date },
+    { label: "운영 시간", value: event.hours },
+    { label: "체크인", value: event.checkIn },
+    { label: "장소", value: event.venue },
+  ];
+
   return (
     <main className="min-h-svh overflow-x-clip bg-page text-fg">
       {/* Hero, laid out like the design guide's cover: the color bar keeps the same margin on
@@ -66,7 +72,7 @@ export default function Home() {
 
       {/* Guide tabs */}
       <section aria-label="행사 안내">
-        <GuideTabs />
+        <GuideTabs content={content} />
       </section>
 
       <footer className="mt-8 border-t border-fg/10 bg-page">

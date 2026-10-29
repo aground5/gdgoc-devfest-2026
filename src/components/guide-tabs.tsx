@@ -1,20 +1,12 @@
 "use client";
 
-import { useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { createContext, useContext, useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { schools } from "./brand";
-import {
-  awards,
-  criteria,
-  days,
-  event,
-  faqs,
-  investRules,
-  keywords,
-  notices,
-  schedule,
-  steps,
-  venueInfo,
-} from "@/data/guide";
+import type { SiteContent } from "@/data/guide";
+
+// Content comes from the server page (Supabase, falling back to guide.ts)
+const ContentContext = createContext<SiteContent | null>(null);
+const useContent = () => useContext(ContentContext)!;
 
 const TABS = [
   { id: "overview", label: "개요" },
@@ -44,7 +36,7 @@ function goTo(tab: TabId) {
   window.dispatchEvent(new HashChangeEvent("hashchange"));
 }
 
-export function GuideTabs() {
+export function GuideTabs({ content }: { content: SiteContent }) {
   const active = useSyncExternalStore(subscribeHash, readHash, () => "overview" as TabId);
   const base = useId();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -68,7 +60,7 @@ export function GuideTabs() {
   }
 
   return (
-    <div>
+    <ContentContext.Provider value={content}>
       {/* Sticky tab bar */}
       <div id={`${base}-bar`} className="sticky top-0 z-10 border-b border-fg/10 bg-page/90 backdrop-blur">
         <div
@@ -115,7 +107,7 @@ export function GuideTabs() {
         {active === "venue" && <Venue />}
         {active === "faq" && <FaqList />}
       </div>
-    </div>
+    </ContentContext.Provider>
   );
 }
 
@@ -139,6 +131,7 @@ const shortcuts: { tab: TabId; title: string; desc: string }[] = [
 ];
 
 function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
+  const { event, notices } = useContent();
   return (
     <div className="grid gap-12 lg:grid-cols-[1fr_22rem]">
       <div>
@@ -204,6 +197,7 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
 }
 
 function Timetable() {
+  const { days, schedule } = useContent();
   const [day, setDay] = useState(days[days.length - 1].id);
   const current = days.find((d) => d.id === day) ?? days[0];
   const rows = schedule.filter((s) => s.day === day);
@@ -262,6 +256,7 @@ function Timetable() {
 }
 
 function Program() {
+  const { steps, keywords, investRules, criteria, awards } = useContent();
   return (
     <div className="grid gap-14">
       <section>
@@ -335,6 +330,7 @@ function Program() {
 }
 
 function Venue() {
+  const { event, venueInfo } = useContent();
   return (
     <div className="grid gap-10 lg:grid-cols-2">
       <div>
@@ -378,6 +374,7 @@ function Venue() {
 }
 
 function FaqList() {
+  const { faqs } = useContent();
   return (
     <div className="max-w-3xl">
       <SectionTitle title="자주 묻는 질문" />

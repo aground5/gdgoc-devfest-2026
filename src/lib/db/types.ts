@@ -294,6 +294,27 @@ export type Database = {
           },
         ];
       };
+      site_content: {
+        Row: {
+          key: string;
+          updated_at: string;
+          updated_by: string | null;
+          value: Json;
+        };
+        Insert: {
+          key: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value: Json;
+        };
+        Update: {
+          key?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+          value?: Json;
+        };
+        Relationships: [];
+      };
       staff_emails: {
         Row: {
           added_by: string | null;
