@@ -4,9 +4,10 @@
 // their own team and attendance, the team list, their own investments, and the
 // investment ticks staff have published (never live totals).
 
-import { useId, useState, type FormEvent } from "react";
-import { INVEST_STEP, myParticipantId, type Participant, type Team } from "@/data/guide";
-import { budgetOf, membersOf, updateFestival, useFestival, won, type FestivalState } from "@/lib/festival-store";
+import { useId, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { checkIn, confirmInvestments, updateMyTeam } from "@/app/onfestival/actions";
+import { budgetOf, membersOf, won } from "@/lib/festival/selectors";
+import type { FestivalState, Participant, Team } from "@/lib/festival/types";
 import {
   Label,
   MemberStripe,
@@ -25,16 +26,17 @@ import { PublishedStatus } from "./investment-status";
 const VIEWS = [
   { id: "team", label: "내 팀" },
   { id: "invest", label: "투자" },
+  { id: "market", label: "데모 마켓" },
 ] as const;
 
-export function LiveScreen() {
-  const state = useFestival();
+// `market` is the Demo Market panel, rendered on the server side of the page.
+export function LiveScreen({ state, meId, market }: { state: FestivalState; meId: string; market: ReactNode }) {
   const [view, setView] = useHashTab(VIEWS, "team");
-  const me = state.participants.find((p) => p.id === myParticipantId);
+  const me = state.participants.find((p) => p.id === meId);
   const myTeam = me?.teamId ? state.teams.find((t) => t.id === me.teamId) : undefined;
 
   return (
-    <ScreenFrame tabs={VIEWS} active={view} onTab={setView}>
+    <ScreenFrame tabs={VIEWS} active={view} onTab={setView} who={me?.name}>
       {!me ? (
         <p className="py-10 text-lg text-fg/60">참가자 정보를 찾을 수 없습니다. 운영진에게 문의해 주세요.</p>
       ) : view === "team" ? (
@@ -49,15 +51,17 @@ export function LiveScreen() {
                 <p className="mt-1 text-sm text-fg/60">운영진이 팀을 배정하면 여기에 표시됩니다.</p>
               </section>
             )}
-            <AttendanceCard me={me} code={state.attendanceCode} />
+            <AttendanceCard me={me} />
           </div>
           <TeamList state={state} myTeamId={myTeam?.id} />
         </div>
-      ) : (
+      ) : view === "invest" ? (
         <div className="grid gap-10">
           <InvestPanel state={state} me={me} />
           <PublishedStatus state={state} myTeamId={myTeam?.id} />
         </div>
+      ) : (
+        market
       )}
     </ScreenFrame>
   );
@@ -128,13 +132,16 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
   const [project, setProject] = useState(team.project);
   const [desc, setDesc] = useState(team.desc);
   const [error, setError] = useState("");
+  const [saving, startSaving] = useTransition();
 
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) return setError("팀명을 입력해 주세요.");
-    const patch = { name: name.trim(), project: project.trim(), desc: desc.trim() };
-    updateFestival((s) => ({ ...s, teams: s.teams.map((t) => (t.id === team.id ? { ...t, ...patch } : t)) }));
-    onDone();
+    startSaving(async () => {
+      const res = await updateMyTeam({ name, project, desc });
+      if (res.ok) onDone();
+      else setError(res.error);
+    });
   }
 
   return (
@@ -173,8 +180,8 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
         </p>
       )}
       <div className="flex gap-2">
-        <button type="submit" className={primaryBtn}>
-          저장
+        <button type="submit" disabled={saving} className={primaryBtn}>
+          {saving ? "저장 중…" : "저장"}
         </button>
         <button type="button" onClick={onDone} className={smallBtn}>
           취소
@@ -186,23 +193,22 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
 
 /* ---------- Attendance ---------- */
 
-function AttendanceCard({ me, code: expected }: { me: Participant; code: string }) {
+// The code is checked on the server; participants never receive it.
+function AttendanceCard({ me }: { me: Participant }) {
   const id = useId();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [checking, startChecking] = useTransition();
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    if (code !== expected) {
-      setError("출석 코드가 올바르지 않습니다. 운영진에게 다시 확인해 주세요.");
-      return;
-    }
-    setError("");
-    setCode("");
-    updateFestival((s) => ({
-      ...s,
-      participants: s.participants.map((p) => (p.id === me.id ? { ...p, checkedIn: true } : p)),
-    }));
+    startChecking(async () => {
+      const res = await checkIn(code);
+      if (!res.ok) return setError(res.error);
+      if (!res.data) return setError("출석 코드가 올바르지 않습니다. 운영진에게 다시 확인해 주세요.");
+      setError("");
+      setCode("");
+    });
   }
 
   return (
@@ -235,8 +241,8 @@ function AttendanceCard({ me, code: expected }: { me: Participant; code: string 
               aria-describedby={error ? `${id}-err` : undefined}
               className="w-36 border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-center tabular-nums text-2xl tracking-[0.4em] text-fg outline-none transition placeholder:text-fg/20 focus:border-fg/60"
             />
-            <button type="submit" disabled={code.length < 4} className={`${primaryBtn} px-5 text-base`}>
-              출석하기
+            <button type="submit" disabled={code.length < 4 || checking} className={`${primaryBtn} px-5 text-base`}>
+              {checking ? "확인 중…" : "출석하기"}
             </button>
           </div>
           {error && (
@@ -244,7 +250,6 @@ function AttendanceCard({ me, code: expected }: { me: Participant; code: string 
               {error}
             </p>
           )}
-          <p className="mt-3 text-xs text-fg/40">목업용 코드: {expected} (운영진 화면에서 변경 가능)</p>
         </form>
       )}
     </section>
@@ -323,7 +328,10 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
   // Confirmed amounts live in the shared store; edits stay in a local draft until confirmed.
   const saved = state.investments[me.id] ?? null;
   const [draft, setDraft] = useState<Record<string, number> | null>(null);
+  const [error, setError] = useState("");
+  const [confirming, startConfirming] = useTransition();
   const amounts = draft ?? saved ?? {};
+  const step = state.investStep;
 
   // Total budget is set per person by staff
   const budget = budgetOf(state, me.id);
@@ -338,12 +346,18 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
 
   function change(teamId: string, v: number) {
     setDraft({ ...amounts, [teamId]: v });
+    setError("");
   }
 
   function confirm() {
-    const clean = Object.fromEntries(targets.map((t) => [t.id, amounts[t.id] ?? 0]).filter(([, v]) => (v as number) > 0));
-    updateFestival((s) => ({ ...s, investments: { ...s.investments, [me.id]: clean } }));
-    setDraft(null);
+    const clean = Object.fromEntries(
+      targets.map((t) => [t.id, amounts[t.id] ?? 0] as const).filter(([, v]) => v > 0),
+    );
+    startConfirming(async () => {
+      const res = await confirmInvestments(clean);
+      if (res.ok) setDraft(null);
+      else setError(res.error);
+    });
   }
 
   return (
@@ -367,8 +381,13 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               확정됨
             </span>
           ) : (
-            <button type="button" onClick={confirm} disabled={over || (saved === null && used === 0)} className={`${primaryBtn} px-5 py-2.5 text-base`}>
-              {saved === null ? "투자 확정하기" : "변경사항 확정하기"}
+            <button
+              type="button"
+              onClick={confirm}
+              disabled={over || confirming || (saved === null && used === 0)}
+              className={`${primaryBtn} px-5 py-2.5 text-base`}
+            >
+              {confirming ? "확정 중…" : saved === null ? "투자 확정하기" : "변경사항 확정하기"}
             </button>
           )}
         </div>
@@ -390,7 +409,12 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
             />
           ))}
         </div>
-        {over ? (
+        {error ? (
+          <p role="alert" className="mt-3 flex items-center gap-2 text-xs font-bold text-fg">
+            <span className="h-2 w-2 shrink-0 bg-[var(--g-red)]" aria-hidden="true" />
+            {error}
+          </p>
+        ) : over ? (
           <p role="alert" className="mt-3 flex items-center gap-2 text-xs font-bold text-fg">
             <span className="h-2 w-2 shrink-0 bg-[var(--g-red)]" aria-hidden="true" />
             운영진이 전체 투자금을 {won(budget)}으로 조정했습니다. {won(-left)}을 줄여야 확정할 수 있습니다.
@@ -404,7 +428,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           <p role="status" className="mt-3 text-xs text-fg/40">
             {upToDate
               ? "확정된 투자입니다. 언제든 다시 바꾸고 확정할 수 있습니다."
-              : `${won(INVEST_STEP)} 단위로 투자할 수 있습니다. 내 팀 프로젝트에는 투자할 수 없습니다.`}
+              : `${won(step)} 단위로 투자할 수 있습니다. 내 팀 프로젝트에는 투자할 수 없습니다.`}
           </p>
         )}
       </section>
@@ -425,6 +449,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               amount={amounts[t.id] ?? 0}
               max={(amounts[t.id] ?? 0) + Math.max(0, left)}
               budget={budget}
+              step={step}
               savedAmount={saved ? (saved[t.id] ?? 0) : undefined}
               onChange={(v) => change(t.id, v)}
             />
@@ -442,6 +467,7 @@ function InvestCard({
   max,
   savedAmount,
   budget,
+  step,
   onChange,
 }: {
   team: Team;
@@ -450,6 +476,7 @@ function InvestCard({
   max: number;
   savedAmount?: number;
   budget: number;
+  step: number;
   onChange: (amount: number) => void;
 }) {
   const id = useId();
@@ -475,9 +502,9 @@ function InvestCard({
           <div className="mt-1.5 flex gap-1.5">
             <button
               type="button"
-              aria-label={`${team.project} 투자금 ${won(INVEST_STEP)} 줄이기`}
+              aria-label={`${team.project} 투자금 ${won(step)} 줄이기`}
               disabled={amount === 0}
-              onClick={() => set(amount - INVEST_STEP)}
+              onClick={() => set(amount - step)}
               className={stepBtn}
             >
               −
@@ -489,14 +516,14 @@ function InvestCard({
               value={amount ? amount.toLocaleString("ko-KR") : ""}
               placeholder="0"
               onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")) || 0)}
-              onBlur={() => set(Math.round(amount / INVEST_STEP) * INVEST_STEP)}
+              onBlur={() => set(Math.round(amount / step) * step)}
               className="h-11 min-w-0 flex-1 border border-fg/20 bg-fg/[0.04] px-3 text-right text-lg tabular-nums text-fg outline-none transition placeholder:text-fg/25 focus:border-fg/60"
             />
             <button
               type="button"
-              aria-label={`${team.project} 투자금 ${won(INVEST_STEP)} 늘리기`}
+              aria-label={`${team.project} 투자금 ${won(step)} 늘리기`}
               disabled={amount >= max}
-              onClick={() => set(amount + INVEST_STEP)}
+              onClick={() => set(amount + step)}
               className={stepBtn}
             >
               +

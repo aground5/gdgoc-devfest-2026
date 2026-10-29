@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A single-page attendee guide for GDG DevFest 2026 (joint GDG on Campus event: Korea Univ., Yonsei, SKKU, KAIST). Next.js 16 App Router, React 19, Tailwind CSS v4, TypeScript. UI copy is Korean (`<html lang="ko">`). Deployed on Vercel (`.vercel/` is gitignored; link with `vercel link` if missing).
+An attendee guide plus the event-day app for GDG DevFest 2026 (joint GDG on Campus event: Korea Univ., Yonsei, SKKU, KAIST). Next.js 16 App Router, React 19, Tailwind CSS v4, TypeScript, Supabase (Postgres + Auth + Storage). UI copy is Korean (`<html lang="ko">`). Deployed on Vercel (`.vercel/` is gitignored; link with `vercel link` if missing).
 
 ## Commands
 
@@ -13,20 +13,27 @@ npm run dev      # dev server at http://localhost:3000
 npm run build    # production build (also type-checks)
 npm run lint     # ESLint 9 flat config (next core-web-vitals + typescript)
 npx tsc --noEmit # type-check only
+
+supabase start   # local Supabase in Docker (applies supabase/migrations + seed.sql); Mailpit at :54324
+npm run db:reset # re-apply migrations + seed
+npm run db:test  # pgTAP tests in supabase/tests/database (role/RLS rules)
+npm run db:types # regenerate src/lib/database.types.ts after changing the schema
 ```
 
-There is no test framework set up.
+`.env.local` needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` (see `.env.example`; local values come from `supabase status`). There are no JS tests; the database rules are tested with pgTAP.
 
 ## Architecture
 
 - **Content lives in `src/data/guide.ts`.** Event info, notices, the road-to-Demo-Day `steps`, the two-day `schedule` (`days`: 10/30 online OT, 11/6 Demo Day), team-building `keywords`, mock-investment rules, judging `criteria`, `awards`, FAQs and venue details are plain typed arrays/objects there; components only render them. Content comes from the organizer meetings; undecided items say "추후 공지". Edit content here, not in components. The event has no tracks (teams form around keywords), so don't reintroduce track filters.
 - **`src/app/page.tsx`** (`/`) is a server component: hero (color bar + title + at-a-glance summary), then `<GuideTabs />`, footer.
 - **`src/components/guide-tabs.tsx`** (client) holds all tab panels (개요, 타임테이블, 진행 방식, 오시는 길, FAQ) in one file. The active tab is stored in the URL hash (`#timetable` etc.) via `useSyncExternalStore` over `hashchange`; `goTo()` uses `history.replaceState` and dispatches a synthetic `hashchange`. Tabs follow the ARIA tablist pattern with arrow/Home/End keyboard handling.
-- **Festival mockup** — two client screens sharing one mock backend, `src/lib/festival-store.ts`: state (participants, teams, confirmed investments, per-person budgets, published ticks, attendance code) is kept in `localStorage` and read with `useSyncExternalStore` via `useFestival()`; write with `updateFestival(fn)`. Derived values have selectors there too (`membersOf`, `budgetOf`, `investedBy`, `liveTotals`, `latestTick`, `won` for 원 formatting); reuse them instead of recomputing in components. Changes sync across pages and tabs. Seed data (`seedParticipants`, `seedTeams`, `myParticipantId`, `seedAttendanceCode`, `INVEST_*`) is in `guide.ts`. Shared UI (frame with tabs, chips, field styles) is in `src/components/festival-ui.tsx`; its `useHashTab()` keeps the active tab in the URL hash (`/onfestival#invest`, `/organize#attendance`), like the main page.
-  - **`/onfestival`** (`live-screen.tsx`) — participant view, reached from the hero's "입장하기" link. Tabs: 내 팀 (team info, own attendance via code, team list) and 투자 (split a virtual budget across other teams, confirm any number of times, plus 투자 현황: every published tick as a line chart with a ranking, in `investment-status.tsx`).
-  - **`/organize`** (`admin-screen.tsx`) — staff view: 참가자 (add/edit/delete, assign teams), 팀 (add/edit/delete, remove members), 출석 (per-person check-in, attendance code), 투자금 (each person's total budget, bulk-set for the filtered list, over-budget flag), 투자 현황 (publishing a new tick or deleting the latest one, the same published-tick chart participants see via `<PublishedStatus admin />`, then live totals and who invested). There is no auth; it's a mockup.
-  - **Keep the roles separate.** The participant screen shows only that participant's own data plus public info. Admin data (others' attendance, live investment totals, who invested) stays on `/organize`. Participants see investment totals only through the ticks staff publish (`state.ticks`, each a `Snapshot`), never live. The localStorage key is versioned (`devfest-festival-mock-vN`); bump it when the state shape changes.
-  - Members are assigned by staff: participants can edit their team's name, project and intro, but not its members. Teams can mix schools, so a school is stored per participant, and team members are derived from `Participant.teamId`. Attendance is per participant. Budgets: `state.budgets` holds only overrides; read with `budgetOf()` (default `INVEST_BUDGET`). If staff lower a budget below what someone already confirmed, that participant can't re-confirm until they cut back.
+- **Festival app (Supabase)** — `/onfestival` (participants) and `/organize` (staff). The database enforces every rule (RLS, triggers, RPCs in `supabase/migrations/`); the UI only mirrors them.
+  - **Reads:** the route `page.tsx` files are async Server Components. They call `requireViewer()` (`src/lib/auth.ts`), then `loadFestival()` / `loadStaffExtras()` (`src/lib/festival/load.ts`) and `loadMarket()` (`src/lib/festival/market.ts`), and pass `FestivalState` (`src/lib/festival/types.ts`) to the client screens. RLS decides what comes back: a participant gets their own private row and investments, staff get everything. Pure selectors (`membersOf`, `budgetOf`, `investedBy`, `liveTotals`, `latestTick`, `won`) are in `src/lib/festival/selectors.ts`.
+  - **Writes:** Server Actions in `src/app/onfestival/actions.ts`, `src/app/organize/actions.ts` and `src/app/onfestival/market/actions.ts` run as the signed-in user (`src/lib/supabase/server.ts`), call a table write or an RPC, then `refresh()`. They return `ActionResult`; RPC errors carry a code in `HINT` that `fail()` (`src/lib/festival/result.ts`) maps to Korean copy. `<RealtimeRefresh>` refetches the page when another user changes data.
+  - **Sign-in:** participants use a staff-issued code `LLLL-SSSS-SSSS` (`src/lib/festival/login-code.ts`): the login id names an auth user `<id>@participants.devfest.invalid`, and the secret is its password. Staff issue or reissue codes on /organize (`issueCodes`, which uses the secret-key admin client `src/lib/supabase/admin.ts`, server only). Codes are shown once and never stored readably. Staff sign in with a whitelisted email (`public.staff`) by magic link or 6-digit code. The auth hook `hook_before_user_created` rejects everyone else, and triggers link auth users to rows. `src/proxy.ts` refreshes the session.
+  - **Keep the roles separate.** Participants never receive others' attendance, live totals, the attendance code (checked by the `check_in` RPC), or who invested. They see totals only through ticks staff publish (`publish_tick`). Investing goes through `confirm_investments`, which atomically replaces the allocation and rejects investing in your own team, off-step amounts and going over budget. If staff lower a budget below what someone already confirmed, that participant can't re-confirm until they cut back. Members can edit their team's name, project and description (a trigger keeps `table_no` staff-only), but not membership.
+  - **Demo Market** (데모 마켓 tab on both screens, `src/components/market/`): one `demo_entries` row per team. Only members edit it. Publishing requires a live link, a description and test instructions (a CHECK constraint). Test credentials live in `demo_entry_credentials`. Images and files are uploaded from the browser to private buckets `demo-images` / `demo-files` under `{team_id}/{entry_id}/…` (storage policies allow only your own team's prefix) and are served by signed URLs. Staff can hide (with a reason) or delete entries. Peer evaluation isn't built yet; a future table would reference `demo_entries.id`.
+  - Shared UI (frame with tabs, chips, field styles) is in `src/components/festival-ui.tsx`; `useHashTab()` keeps the active tab in the URL hash (`/onfestival#invest`, `/organize#attendance`). `supabase/seed.sql` holds local sample data (staff `staff@devfest.test`, 28 participants with login ids but no codes; issue them on /organize).
 - **`src/components/brand.tsx`** has the school list (`schools`) and brand components: `ColorBar` (the guide's TV color bar, `square` or `wide`), `SchoolMark` (2×4 school-color mark), `GoogleBar`, `GdgLogo`.
 
 ## Design guide
@@ -48,4 +55,5 @@ There is no test framework set up.
 ## Conventions
 
 - Import alias `@/*` → `src/*`.
-- `.env*` files are gitignored; the app reads no env vars (a local `.env.local`, if present, only holds a Vercel CLI token).
+- `.env*` files are gitignored except `.env.example`. Never expose `SUPABASE_SECRET_KEY` to client code; `src/lib/supabase/admin.ts` is `server-only`.
+- Schema changes go in a new file in `supabase/migrations/`, followed by `npm run db:types` and a pgTAP test for any new rule. Functions are `security definer` with `search_path = ''` and fully qualified names, and `execute` is revoked from `anon`. Supabase grants new functions to `anon` by default, so revoke it in the migration.
