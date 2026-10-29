@@ -47,51 +47,40 @@ export function SchoolBar({ className = "", vertical = false }: { className?: st
   );
 }
 
-// Four school bars, each labeled with its school at the bottom.
-function SchoolBars({ className = "", labels = true }: { className?: string; labels?: boolean }) {
-  return (
-    <div className={`grid grid-cols-4 ${className}`}>
-      {schools.map((s) => (
-        <div key={s.key} className="relative" style={{ background: s.main }}>
-          {labels && (
-            <span
-              className="absolute bottom-[0.6em] left-[0.7em] text-[clamp(0.55rem,1.1vw,0.8rem)] font-bold leading-none tracking-[0.08em]"
-              style={{ color: s.on }}
-            >
-              {s.word}
-            </span>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
+// Home hero frame: bars in the four school colors come in from the left and right
+// edges (four rows a side, mirrored) and frame the centered headline. They slide in
+// one after another on load (.edge-bar in globals.css). Hidden on phones, where they
+// would cover the text; nothing is written on the colors.
+const EDGE_LEFT = [6, 3, 9, 4.5]; // vw, top to bottom
+const EDGE_RIGHT = [4.5, 9, 3, 6];
 
-// The event's color bar: the design guide's TV color bar, drawn only with the
-// four schools' main colors plus the guide's black and white. Size it from
-// outside (e.g. `aspect-square w-96`). The school colors always take the
-// largest share.
-//   "square": four school bars over a black / white row
-//   "wide":   four school bars beside a black-over-white column, for short spaces
-export function ColorBar({ variant = "square", className = "" }: { variant?: "square" | "wide"; className?: string }) {
-  if (variant === "wide") {
+export function EdgeFrame() {
+  const side = (left: boolean) => {
+    const widths = left ? EDGE_LEFT : EDGE_RIGHT;
+    const order = left ? schools : [...schools].reverse();
     return (
-      <div className={`flex ${className}`} aria-hidden="true">
-        <SchoolBars className="flex-[4]" />
-        <div className="flex flex-1 flex-col">
-          <div className="ink-edge flex-[3] bg-ink" />
-          <div className="ink-edge flex-1 bg-paper" />
-        </div>
+      <div className={`absolute inset-y-0 flex flex-col ${left ? "left-0" : "right-0 items-end"}`}>
+        {order.map((s, i) => (
+          <span
+            key={s.key}
+            className="edge-bar flex-1"
+            style={
+              {
+                width: `${widths[i]}vw`,
+                background: s.main,
+                "--i": i + (left ? 0 : 0.5),
+                "--dir": left ? -1 : 1,
+              } as React.CSSProperties
+            }
+          />
+        ))}
       </div>
     );
-  }
+  };
   return (
-    <div className={`flex flex-col ${className}`} aria-hidden="true">
-      <SchoolBars className="min-h-0 flex-[5]" />
-      <div className="grid min-h-0 flex-[2] grid-cols-4">
-        <div className="ink-edge col-span-3 bg-ink" />
-        <div className="ink-edge bg-paper" />
-      </div>
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden sm:block">
+      {side(true)}
+      {side(false)}
     </div>
   );
 }
