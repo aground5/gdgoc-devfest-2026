@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { useId, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from "react";
 import { schools } from "./brand";
 import {
   awards,
@@ -14,6 +14,8 @@ import {
   schedule,
   steps,
   venueInfo,
+  chapterLinks,
+  type SchoolKey,
 } from "@/data/guide";
 
 const TABS = [
@@ -174,12 +176,24 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
             <strong className="font-bold text-fg">{event.theme}</strong>
           </p>
           <ul className="mt-6 flex flex-wrap gap-2">
-            {schools.map((s) => (
-              <li key={s.key} className="inline-flex items-center gap-2 border border-fg/15 py-1.5 pl-1.5 pr-3 text-sm text-fg">
-                <span className="block h-5 w-5" style={{ background: s.main }} />
-                GDG on Campus {s.word}
-              </li>
-            ))}
+            {schools.map((s) => {
+              const links = chapterLinks[s.key as SchoolKey];
+              const name = `GDG on Campus ${s.word}`;
+              return (
+                <li key={s.key} className="inline-flex items-center gap-2 border border-fg/15 py-0.5 pl-1.5 pr-0.5 text-sm text-fg">
+                  <span className="block h-5 w-5" style={{ background: s.main }} />
+                  {name}
+                  <span className="ml-1 flex">
+                    <ChapterLink href={links.instagram} label={`${name} 인스타그램`}>
+                      <InstagramIcon />
+                    </ChapterLink>
+                    <ChapterLink href={links.website} label={`${name} 웹사이트`}>
+                      <LinkIcon />
+                    </ChapterLink>
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
@@ -197,6 +211,50 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
         </ul>
       </aside>
     </div>
+  );
+}
+
+// Icon link to a chapter's page outside the site (opens in a new tab).
+function ChapterLink({ href, label, children }: { href: string; label: string; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      title={label}
+      className="flex h-8 w-8 items-center justify-center text-subtle transition hover:bg-fg/[0.06] hover:text-fg"
+    >
+      {children}
+    </a>
+  );
+}
+
+function InstagramIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5" />
+      <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5" />
+    </svg>
   );
 }
 
