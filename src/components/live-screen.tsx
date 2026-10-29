@@ -21,10 +21,12 @@ import {
   useHashTab,
 } from "./festival-ui";
 import { PublishedStatus } from "./investment-status";
+import { StockPanel } from "./stock-market";
 
 const VIEWS = [
   { id: "team", label: "내 팀" },
   { id: "invest", label: "투자" },
+  { id: "stock", label: "주식 β" }, // experimental
 ] as const;
 
 export function LiveScreen() {
@@ -37,6 +39,8 @@ export function LiveScreen() {
     <ScreenFrame tabs={VIEWS} active={view} onTab={setView}>
       {!me ? (
         <p className="py-10 text-lg text-fg/60">참가자 정보를 찾을 수 없습니다. 운영진에게 문의해 주세요.</p>
+      ) : view === "stock" ? (
+        <StockPanel state={state} me={me} />
       ) : view === "team" ? (
         <div className="grid gap-10 lg:grid-cols-[1fr_26rem]">
           <div className="grid content-start gap-6">

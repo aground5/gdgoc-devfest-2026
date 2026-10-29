@@ -3,6 +3,7 @@
 // Replace with a real API when one exists.
 
 import { useSyncExternalStore } from "react";
+import { seedMarket, type Market } from "./stock-engine";
 import {
   INVEST_BUDGET,
   INVEST_STEP,
@@ -30,6 +31,7 @@ export type FestivalState = {
   teams: Team[];
   investments: Investments;
   budgets: Record<string, number>; // participantId -> budget set by staff; missing = INVEST_BUDGET
+  market: Market; // experimental 주식 tab (see stock-engine.ts)
   ticks: Snapshot[]; // every publish, oldest first
   attendanceCode: string;
 };
@@ -82,6 +84,8 @@ export const seedState: FestivalState = {
   teams: seedTeams,
   investments: seedInv,
   budgets: {},
+  // Sample trading by other participants over the last few hours, so the market isn't empty
+  market: seedMarket(seedTeams, seedParticipants, myParticipantId, Date.now()),
   ticks: seedTicks(seedInv),
   attendanceCode: seedAttendanceCode,
 };
