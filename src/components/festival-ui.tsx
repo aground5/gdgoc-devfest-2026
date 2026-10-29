@@ -1,6 +1,7 @@
 "use client";
 
 // UI bits shared by the participant (/onfestival) and admin (/organize) screens.
+// Inputs use 16px text on phones: iOS Safari zooms the page into any smaller field on focus.
 
 import Link from "next/link";
 import { useRef, useSyncExternalStore, type ReactNode } from "react";
@@ -15,9 +16,10 @@ export const school = (key: SchoolKey) => schools.find((s) => s.key === key) as 
 export const schoolsOf = (people: Participant[]) => schools.filter((s) => people.some((p) => p.school === s.key));
 
 export const fieldCls =
-  "mt-1.5 w-full border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-fg placeholder:text-fg/30 outline-none transition focus:border-fg/60";
+  "mt-1.5 w-full border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-base text-fg placeholder:text-fg/30 outline-none transition focus:border-fg/60";
 
-export const selectCls = "border border-fg/20 bg-page px-2 py-2 text-sm text-fg outline-none transition focus:border-fg/60";
+export const selectCls =
+  "border border-fg/20 bg-page px-2 py-2 text-base text-fg outline-none transition focus:border-fg/60 sm:text-sm";
 
 export const smallBtn = "border border-fg/25 px-3 py-1.5 text-sm font-bold transition hover:bg-fg/10 disabled:opacity-30";
 
@@ -182,6 +184,18 @@ export function ScreenFrame<T extends string>({
       >
         {children}
       </div>
+
+      {/* Phones: the header hides the name and sign-out to fit, so offer them at the end of the page */}
+      {who && (
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 border-t border-fg/10 px-4 py-4 sm:hidden">
+          <span className="truncate text-sm text-fg/60">{who}님으로 로그인됨</span>
+          <form action="/auth/signout" method="post">
+            <button type="submit" className={`${smallBtn} py-2`}>
+              로그아웃
+            </button>
+          </form>
+        </div>
+      )}
 
       <GoogleBar horizontal className="h-1.5 shrink-0" />
     </div>

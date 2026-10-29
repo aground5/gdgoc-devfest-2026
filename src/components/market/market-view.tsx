@@ -53,9 +53,9 @@ export function MarketCard({
     <li className={`flex flex-col border ${mine ? "border-fg/50" : "border-fg/15"}`}>
       {cover?.url ? (
         // eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL, nothing to optimize
-        <img src={cover.url} alt="" className="aspect-[16/9] w-full bg-fg/5 object-cover" />
+        <img src={cover.url} alt="" className="aspect-[2/1] w-full bg-fg/5 object-cover sm:aspect-[16/9]" />
       ) : (
-        <MemberStripe people={members} className="aspect-[16/9] w-full" />
+        <MemberStripe people={members} className="h-2 w-full" />
       )}
       <div className="flex flex-1 flex-col p-5">
         <p className="flex items-center gap-2 text-xs text-fg/50">
@@ -108,7 +108,9 @@ export function MarketDetail({
         <MemberStripe people={members} className="h-2" />
         <div className="p-5 sm:p-7">
           <p className="flex flex-wrap items-center gap-2 text-sm text-fg/60">
-            <span className="tabular-nums">{team?.table}</span> · {team?.name}
+            <span className="tabular-nums">
+              {team?.table} · {team?.name}
+            </span>
             <StatusChip entry={entry} />
           </p>
           <h2 id="market-detail" className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">

@@ -55,5 +55,6 @@ npm run db:types # regenerate src/lib/database.types.ts after changing the schem
 ## Conventions
 
 - Import alias `@/*` → `src/*`.
+- Participants mostly use phones. Check pages at 390px wide. Form fields need 16px text (`fieldCls` does this; iOS zooms into smaller fields). Body text uses `word-break: keep-all` so Korean wraps between words. Fixed bottom bars pad with `env(safe-area-inset-bottom)` (the viewport uses `viewport-fit=cover`). Header actions hidden on phones need another way in (e.g. the sign-out row at the end of `ScreenFrame`).
 - `.env*` files are gitignored except `.env.example`. Never expose `SUPABASE_SECRET_KEY` to client code; `src/lib/supabase/admin.ts` is `server-only`.
 - Schema changes go in a new file in `supabase/migrations/`, followed by `npm run db:types` and a pgTAP test for any new rule. Functions are `security definer` with `search_path = ''` and fully qualified names, and `execute` is revoked from `anon`. Supabase grants new functions to `anon` by default, so revoke it in the migration.

@@ -250,9 +250,7 @@ function Uploads({ kind, title, entry, teamId }: { kind: AssetKind; title: strin
           <AssetRow key={a.id} asset={a} onError={setError} />
         ))}
       </ul>
-      <label htmlFor={`${id}-file`} className="sr-only">
-        {title} 올리기
-      </label>
+      {/* The native file button shows the browser's own (often English) text, so it's visually hidden */}
       <input
         ref={input}
         id={`${id}-file`}
@@ -261,8 +259,15 @@ function Uploads({ kind, title, entry, teamId }: { kind: AssetKind; title: strin
         accept={rule.accept}
         disabled={busy || list.length >= rule.max}
         onChange={(e) => upload(e.target.files)}
-        className="mt-2 block w-full text-sm text-fg/70 file:mr-3 file:border file:border-fg/25 file:bg-transparent file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-fg disabled:opacity-40"
+        className="peer sr-only"
       />
+      <label
+        htmlFor={`${id}-file`}
+        className={`${smallBtn} mt-2 inline-flex cursor-pointer items-center gap-2 py-2 peer-focus-visible:outline peer-focus-visible:outline-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-30`}
+      >
+        <span aria-hidden="true">＋</span>
+        {kind === "image" ? "사진 올리기" : "파일 올리기"}
+      </label>
       {busy && (
         <p role="status" className="mt-1 text-xs text-fg/50">
           올리는 중…
