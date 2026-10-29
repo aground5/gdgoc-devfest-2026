@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Google_Sans, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// The design guide sets everything in Google Sans (Latin) + a Korean companion, Regular and Bold only.
+// Google Sans has no Hangul, so Korean falls through to Noto Sans KR.
+const googleSans = Google_Sans({ variable: "--font-google-sans", subsets: ["latin"], weight: ["400", "700"], adjustFontFallback: false });
+const notoSansKr = Noto_Sans_KR({ variable: "--font-noto-kr", weight: ["400", "700"], preload: false });
 
 export const metadata: Metadata = {
   title: "GDG DevFest 2026",
@@ -23,7 +25,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${googleSans.variable} ${notoSansKr.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

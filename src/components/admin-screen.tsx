@@ -124,8 +124,8 @@ export function AdminScreen() {
           ["투자 확정", `${investors}명`],
         ].map(([k, v]) => (
           <div key={k} className="bg-page px-4 py-3">
-            <dt className="font-mono text-[11px] uppercase tracking-[0.15em] text-fg/50">{k}</dt>
-            <dd className="mt-1 text-lg font-semibold tabular-nums">{v}</dd>
+            <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-fg/50">{k}</dt>
+            <dd className="mt-1 text-lg font-bold tabular-nums">{v}</dd>
           </div>
         ))}
       </dl>
@@ -149,7 +149,7 @@ function ResetButton() {
           resetFestival();
           setArm(false);
         }}
-        className="h-10 border border-[var(--g-red)] px-3 text-sm font-semibold text-[var(--g-red)] transition hover:bg-[var(--g-red)]/10"
+        className="h-10 border border-[var(--g-red)] px-3 text-sm font-bold text-[var(--g-red)] transition hover:bg-[var(--g-red)]/10"
       >
         초기화 확인
       </button>
@@ -169,7 +169,7 @@ function DeleteButton({ label, onConfirm }: { label: string; onConfirm: () => vo
   const [arm, setArm] = useState(false);
   return arm ? (
     <span className="inline-flex gap-1">
-      <button type="button" onClick={onConfirm} className="border border-[var(--g-red)] px-2.5 py-1.5 text-sm font-semibold text-[var(--g-red)]">
+      <button type="button" onClick={onConfirm} className="border border-[var(--g-red)] px-2.5 py-1.5 text-sm font-bold text-[var(--g-red)]">
         삭제 확인
       </button>
       <button type="button" onClick={() => setArm(false)} className={smallBtn}>
@@ -241,7 +241,7 @@ function PeoplePanel({ state }: { state: FestivalState }) {
       <section aria-labelledby={`${id}-title`}>
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <Label id={`${id}-title`}>참가자 목록</Label>
-          <span className="font-mono text-xs text-fg/50">
+          <span className="tabular-nums text-xs text-fg/50">
             {rows.length}명 표시{unassigned > 0 && ` · 미배정 ${unassigned}명`}
           </span>
         </div>
@@ -272,11 +272,11 @@ function PeoplePanel({ state }: { state: FestivalState }) {
           <table className="w-full min-w-[40rem] border-t border-fg/15 text-left text-sm">
             <thead className="text-xs text-fg/50">
               <tr className="border-b border-fg/15">
-                <th className="py-2 pr-3 font-medium">이름</th>
-                <th className="py-2 pr-3 font-medium">학교</th>
-                <th className="py-2 pr-3 font-medium">팀</th>
-                <th className="py-2 pr-3 font-medium">출석</th>
-                <th className="py-2 font-medium">
+                <th className="py-2 pr-3 font-normal">이름</th>
+                <th className="py-2 pr-3 font-normal">학교</th>
+                <th className="py-2 pr-3 font-normal">팀</th>
+                <th className="py-2 pr-3 font-normal">출석</th>
+                <th className="py-2 font-normal">
                   <span className="sr-only">관리</span>
                 </th>
               </tr>
@@ -317,7 +317,7 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
             className={`${fieldCls} mt-0 py-1.5`}
           />
         ) : (
-          <span className="font-semibold">{p.name}</span>
+          <span className="font-bold">{p.name}</span>
         )}
       </td>
       <td className="py-2.5 pr-3">
@@ -402,7 +402,7 @@ function BudgetCell({ id, name, budget }: { id: string; name: string; budget: nu
             if (e.key === "Enter") commit();
             if (e.key === "Escape") setDraft(null);
           }}
-          className={`h-8 w-24 border-y border-fg/20 bg-fg/[0.04] px-2 text-right font-mono text-xs tabular-nums text-fg outline-none focus:border-fg/60 ${budget !== INVEST_BUDGET ? "font-semibold" : ""}`}
+          className={`h-8 w-24 border-y border-fg/20 bg-fg/[0.04] px-2 text-right  text-xs tabular-nums text-fg outline-none focus:border-fg/60 ${budget !== INVEST_BUDGET ? "font-bold" : ""}`}
         />
         <button
           type="button"
@@ -433,7 +433,7 @@ function BulkBudget({ ids, filtered }: { ids: string[]; filtered: boolean }) {
       }}
       className="mt-3 flex flex-wrap items-center gap-2 border border-fg/10 bg-fg/[0.03] px-3 py-2.5"
     >
-      <label htmlFor={`${fid}-amt`} className="text-sm font-semibold">
+      <label htmlFor={`${fid}-amt`} className="text-sm font-bold">
         투자금 일괄 설정
       </label>
       <input
@@ -443,7 +443,7 @@ function BulkBudget({ ids, filtered }: { ids: string[]; filtered: boolean }) {
         value={value ? Number(value).toLocaleString("ko-KR") : ""}
         onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
         placeholder={INVEST_BUDGET.toLocaleString("ko-KR")}
-        className="h-9 w-32 border border-fg/20 bg-fg/[0.04] px-2 text-right font-mono text-sm tabular-nums text-fg outline-none placeholder:text-fg/30 focus:border-fg/60"
+        className="h-9 w-32 border border-fg/20 bg-fg/[0.04] px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-fg/30 focus:border-fg/60"
       />
       <span className="text-sm text-fg/50">원</span>
       <button type="submit" disabled={!value || ids.length === 0} className={primaryBtn}>
@@ -494,8 +494,8 @@ function BudgetPanel({ state }: { state: FestivalState }) {
           ["투자금 초과", `${overCount}명`],
         ].map(([k, v]) => (
           <div key={k} className="bg-page px-4 py-3">
-            <dt className="font-mono text-[11px] uppercase tracking-[0.15em] text-fg/50">{k}</dt>
-            <dd className={`mt-1 font-semibold tabular-nums ${k === "투자금 초과" && overCount > 0 ? "text-[var(--g-red)]" : ""}`}>{v}</dd>
+            <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-fg/50">{k}</dt>
+            <dd className={`mt-1 font-bold tabular-nums ${k === "투자금 초과" && overCount > 0 ? "text-[var(--g-red)]" : ""}`}>{v}</dd>
           </div>
         ))}
       </dl>
@@ -503,7 +503,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
       <section aria-labelledby={`${id}-title`}>
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <Label id={`${id}-title`}>개인별 투자금</Label>
-          <span className="font-mono text-xs text-fg/50">
+          <span className="tabular-nums text-xs text-fg/50">
             {rows.length}명 표시 · 기본 {won(INVEST_BUDGET)}
           </span>
         </div>
@@ -544,11 +544,11 @@ function BudgetPanel({ state }: { state: FestivalState }) {
           <table className="w-full min-w-[44rem] border-t border-fg/15 text-left text-sm">
             <thead className="text-xs text-fg/50">
               <tr className="border-b border-fg/15">
-                <th className="py-2 pr-3 font-medium">이름</th>
-                <th className="py-2 pr-3 font-medium">팀</th>
-                <th className="py-2 pr-3 font-medium">전체 투자금</th>
-                <th className="py-2 pr-3 text-right font-medium">확정 투자</th>
-                <th className="py-2 text-right font-medium">남은 금액</th>
+                <th className="py-2 pr-3 font-normal">이름</th>
+                <th className="py-2 pr-3 font-normal">팀</th>
+                <th className="py-2 pr-3 font-normal">전체 투자금</th>
+                <th className="py-2 pr-3 text-right font-normal">확정 투자</th>
+                <th className="py-2 text-right font-normal">남은 금액</th>
               </tr>
             </thead>
             <tbody>
@@ -557,17 +557,17 @@ function BudgetPanel({ state }: { state: FestivalState }) {
                   <td className="py-2.5 pr-3">
                     <span className="inline-flex items-center gap-2">
                       <SchoolChip s={school(p.school)} className="h-3 w-3" />
-                      <span className="font-semibold">{p.name}</span>
+                      <span className="font-bold">{p.name}</span>
                     </span>
                   </td>
                   <td className="py-2.5 pr-3 text-fg/60">{teamOf(p.teamId)?.name ?? "미배정"}</td>
                   <td className="py-2.5 pr-3">
                     <BudgetCell id={p.id} name={p.name} budget={budget} />
                   </td>
-                  <td className="py-2.5 pr-3 text-right font-mono text-xs tabular-nums text-fg/70">{won(used)}</td>
-                  <td className="py-2.5 text-right font-mono text-xs tabular-nums">
+                  <td className="py-2.5 pr-3 text-right text-xs tabular-nums text-fg/70">{won(used)}</td>
+                  <td className="py-2.5 text-right text-xs tabular-nums">
                     {left < 0 ? (
-                      <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--g-red)]">
+                      <span className="inline-flex items-center gap-1.5 font-bold text-[var(--g-red)]">
                         <span aria-hidden="true">▲</span>
                         {won(-left)} 초과
                       </span>
@@ -655,7 +655,7 @@ function TeamsPanel({ state }: { state: FestivalState }) {
               <li key={p.id} className="flex items-center justify-between gap-3">
                 <span className="flex items-center gap-2 text-sm">
                   <SchoolChip s={school(p.school)} className="h-3 w-3" />
-                  <span className="font-semibold">{p.name}</span>
+                  <span className="font-bold">{p.name}</span>
                 </span>
                 <TeamSelect label={`${p.name} 팀 배정`} teams={state.teams} value={null} onChange={(v) => assignTeam(p.id, v)} />
               </li>
@@ -735,8 +735,8 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
           <>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-mono text-xs text-fg/50">{team.table || "테이블 미정"}</p>
-                <h3 className="mt-1 truncate text-xl font-semibold">{team.name}</h3>
+                <p className="tabular-nums text-xs text-fg/50">{team.table || "테이블 미정"}</p>
+                <h3 className="mt-1 truncate text-xl font-bold">{team.name}</h3>
                 <p className="mt-0.5 text-sm text-fg/60">
                   {team.project || "프로젝트 미정"}
                   {team.desc && ` · ${team.desc}`}
@@ -862,7 +862,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
         <CodeCard code={state.attendanceCode} />
         <section aria-labelledby="att-rate" className="border border-fg/15 p-5">
           <Label id="att-rate">출석률</Label>
-          <p className="mt-2 font-mono text-4xl font-semibold tabular-nums">
+          <p className="mt-2 text-4xl font-bold tabular-nums">
             {total ? Math.round((present / total) * 100) : 0}%
           </p>
           <p className="mt-1 text-sm text-fg/60">
@@ -906,9 +906,9 @@ function AttendancePanel({ state }: { state: FestivalState }) {
             return (
               <div key={g.key} className="border border-fg/15">
                 <div className="flex items-center justify-between gap-3 border-b border-fg/10 px-4 py-3">
-                  <p className="min-w-0 truncate font-semibold">{g.title}</p>
+                  <p className="min-w-0 truncate font-bold">{g.title}</p>
                   <span className="flex shrink-0 items-center gap-2">
-                    <span className="font-mono text-xs text-fg/50">
+                    <span className="tabular-nums text-xs text-fg/50">
                       {here}/{g.people.length}
                     </span>
                     {here < g.people.length && (
@@ -968,7 +968,7 @@ function CodeCard({ code }: { code: string }) {
   return (
     <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
       <Label id={`${id}-title`}>출석 코드</Label>
-      <p className="mt-2 font-mono text-5xl font-semibold tracking-[0.3em]">{code}</p>
+      <p className="mt-2 tabular-nums text-5xl font-bold tracking-[0.3em]">{code}</p>
       <p className="mt-1 text-xs text-fg/50">현장 화면에 띄워 주세요. 바꾸면 참가자 화면에 바로 적용됩니다.</p>
       <form
         onSubmit={(e) => {
@@ -988,7 +988,7 @@ function CodeCard({ code }: { code: string }) {
           maxLength={4}
           placeholder="새 코드"
           autoComplete="off"
-          className="w-28 border border-fg/20 bg-fg/[0.04] px-3 py-2 text-center font-mono tracking-[0.3em] text-fg outline-none placeholder:tracking-normal placeholder:text-fg/30 focus:border-fg/60"
+          className="w-28 border border-fg/20 bg-fg/[0.04] px-3 py-2 text-center tabular-nums tracking-[0.3em] text-fg outline-none placeholder:tracking-normal placeholder:text-fg/30 focus:border-fg/60"
         />
         <button type="submit" disabled={value.length < 4} className={primaryBtn}>
           변경
@@ -1024,7 +1024,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
       <div className="grid gap-4 md:grid-cols-2">
         <section aria-labelledby="pool" className="border border-fg/15 p-5">
           <Label id="pool">전체 투자금</Label>
-          <p className="mt-2 font-mono text-3xl font-semibold tabular-nums">{won(grand)}</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums">{won(grand)}</p>
           <p className="mt-1 text-sm text-fg/60">
             발행 가능 총액 {won(pool)} 중 {pool ? Math.round((grand / pool) * 100) : 0}% 투자됨
           </p>
@@ -1036,9 +1036,9 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
         <section aria-labelledby="publish" className="border border-fg/15 bg-fg/[0.04] p-5">
           <div className="flex items-center justify-between gap-3">
             <Label id="publish">참가자 화면 발행</Label>
-            <span className="font-mono text-xs text-fg/50">틱 {state.ticks.length}개</span>
+            <span className="tabular-nums text-xs text-fg/50">틱 {state.ticks.length}개</span>
           </div>
-          <p className="mt-2 text-lg font-semibold">{snap ? `최근 발행 ${timeLabel(snap.at)}` : "아직 발행하지 않았습니다"}</p>
+          <p className="mt-2 text-lg font-bold">{snap ? `최근 발행 ${timeLabel(snap.at)}` : "아직 발행하지 않았습니다"}</p>
           <p role="status" className="mt-1 flex items-center gap-2 text-sm text-fg/60">
             {snap && changed && <span className="h-2 w-2 shrink-0 bg-[var(--g-yellow)]" aria-hidden="true" />}
             {!snap
@@ -1075,7 +1075,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
       <section aria-labelledby="live-rank">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-4">
           <Label id="live-rank">실시간 투자 현황</Label>
-          <span className="font-mono text-xs text-fg/50">운영진 전용 · 확정된 투자만 집계</span>
+          <span className="tabular-nums text-xs text-fg/50">운영진 전용 · 확정된 투자만 집계</span>
         </div>
         <ol className="grid gap-px border border-fg/10 bg-fg/10">
           {rows.map(({ team: t, total, investors }, i) => {
@@ -1089,17 +1089,17 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
               <li key={t.id} className="bg-page">
                 <details className="group">
                   <summary className="grid cursor-pointer list-none grid-cols-[2rem_1fr_auto] items-center gap-x-4 gap-y-2 p-4 [&::-webkit-details-marker]:hidden">
-                    <span className="font-mono text-lg font-semibold text-fg/60">{i + 1}</span>
+                    <span className="tabular-nums text-lg font-bold text-fg/60">{i + 1}</span>
                     <span className="min-w-0">
-                      <span className="block truncate font-semibold">{t.project || "프로젝트 미정"}</span>
+                      <span className="block truncate font-bold">{t.project || "프로젝트 미정"}</span>
                       <span className="block truncate text-xs text-fg/50">
                         {t.name} · 투자자 {investors}명
                       </span>
                     </span>
                     <span className="text-right">
-                      <span className="block font-mono text-sm font-semibold tabular-nums">{won(total)}</span>
+                      <span className="block text-sm font-bold tabular-nums">{won(total)}</span>
                       {snap && diff !== 0 && (
-                        <span className="block font-mono text-xs text-fg/50">
+                        <span className="block tabular-nums text-xs text-fg/50">
                           발행 대비 {diff > 0 ? "+" : "−"}
                           {won(Math.abs(diff))}
                         </span>
@@ -1117,7 +1117,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
                         {backers.map((b) => (
                           <li key={b.pid} className="flex justify-between gap-3">
                             <span>{nameOf(b.pid)}</span>
-                            <span className="font-mono tabular-nums text-fg/70">{won(b.amt)}</span>
+                            <span className="tabular-nums text-fg/70">{won(b.amt)}</span>
                           </li>
                         ))}
                       </ul>

@@ -2,18 +2,21 @@ export type School = {
   key: string;
   name: string;
   word: string;
+  main: string;
+  tint: string;
+  // Left and right bar of the pair in the color bar
   dark: string;
   light: string;
-  // Vertical positions (%) of each letter in the stripe
-  letters: number[];
+  // Thin strip under the pair in the color bar
+  strip: string;
 };
 
-// Darker tone sits on the left of each pair, as in the banner.
+// Bar order follows the design guide's color bar: the darker tone sits on the left of each pair.
 export const schools: School[] = [
-  { key: "ku", name: "Korea University", word: "KOREA", dark: "var(--ku-main)", light: "var(--ku-tint)", letters: [4, 22, 40, 58, 76] },
-  { key: "yu", name: "Yonsei University", word: "YONSEI", dark: "var(--yu-main)", light: "var(--yu-tint)", letters: [10, 25, 40, 55, 70, 85] },
-  { key: "skku", name: "Sungkyunkwan University", word: "SKKU", dark: "var(--skku-tint)", light: "var(--skku-main)", letters: [18, 38, 58, 78] },
-  { key: "kaist", name: "KAIST", word: "KAIST", dark: "var(--kaist-tint)", light: "var(--kaist-main)", letters: [6, 24, 42, 60, 78] },
+  { key: "ku", name: "Korea University", word: "KOREA", main: "var(--ku-main)", tint: "var(--ku-tint)", dark: "var(--ku-main)", light: "var(--ku-tint)", strip: "var(--ku-deep)" },
+  { key: "yu", name: "Yonsei University", word: "YONSEI", main: "var(--yu-main)", tint: "var(--yu-tint)", dark: "var(--yu-main)", light: "var(--yu-tint)", strip: "var(--yu-main)" },
+  { key: "skku", name: "Sungkyunkwan University", word: "SKKU", main: "var(--skku-main)", tint: "var(--skku-tint)", dark: "var(--skku-tint)", light: "var(--skku-main)", strip: "var(--skku-main)" },
+  { key: "kaist", name: "KAIST", word: "KAIST", main: "var(--kaist-main)", tint: "var(--kaist-tint)", dark: "var(--kaist-tint)", light: "var(--kaist-main)", strip: "var(--kaist-main)" },
 ];
 
 const googleColors = ["var(--g-red)", "var(--g-yellow)", "var(--g-blue)", "var(--g-green)"];
@@ -49,47 +52,66 @@ export function GoogleBar({ className = "", horizontal = false }: { className?: 
   );
 }
 
-export function LetterStripes() {
+// One school's pair of bars with the strip underneath (proportions from gdg-devfest-2026-color-bar.svg).
+function SchoolPair({ s }: { s: School }) {
   return (
-    <div className="grid h-full grid-cols-8" aria-hidden="true">
+    <div className="flex min-h-0 flex-col">
+      <div className="grid min-h-0 flex-[19] grid-cols-2">
+        <div style={{ background: s.dark }} />
+        <div style={{ background: s.light }} />
+      </div>
+      <div className="flex-1" style={{ background: s.strip }} />
+    </div>
+  );
+}
+
+function SchoolBars({ className = "" }: { className?: string }) {
+  return (
+    <div className={`grid grid-cols-4 ${className}`}>
       {schools.map((s) => (
-        <div key={s.key} className="col-span-2 grid grid-cols-2">
-          <div style={{ background: s.dark }} />
-          <div className="relative" style={{ background: s.light }}>
-            {s.word.split("").map((ch, i) => (
-              <span
-                key={i}
-                className="absolute left-[0.15em] text-[clamp(0.7rem,1.3vw,1.15rem)] font-medium leading-none"
-                style={{ top: `${s.letters[i]}%`, color: s.dark }}
-              >
-                {ch}
-              </span>
-            ))}
-          </div>
-        </div>
+        <SchoolPair key={s.key} s={s} />
       ))}
     </div>
   );
 }
 
-// Banner variant with folds and sawtooth notches.
-export function FoldStripes({ className = "" }: { className?: string }) {
-  return (
-    <div className={`grid grid-cols-8 ${className}`} aria-hidden="true">
-      {schools.map((s, si) => (
-        <div key={s.key} className="col-span-2 grid grid-cols-2">
-          <div className="relative" style={{ background: s.dark }}>
-            {si === 1 && <div className="teeth absolute right-0 top-1/4 h-1/2 w-1/2" style={{ background: "var(--yu-tint)" }} />}
-          </div>
-          <div className="relative overflow-hidden" style={{ background: s.light }}>
-            {si % 2 === 0 ? (
-              <div className="fold absolute bottom-0 left-0 h-1/3 w-full" style={{ background: s.dark }} />
-            ) : (
-              <div className="fold absolute left-0 top-0 h-1/3 w-full rotate-180" style={{ background: s.dark }} />
-            )}
-          </div>
+// The design guide's TV color bar. Size it from outside (e.g. `aspect-square w-96`).
+// "square": school bars over black / white / Google 4 colors (guide: Basic Concepts).
+// "wide": school bars, black over white, then a thin Google strip, for short spaces (guide: Color Bar Variations).
+// The school colors always take the largest share.
+export function ColorBar({ variant = "square", className = "" }: { variant?: "square" | "wide"; className?: string }) {
+  if (variant === "wide") {
+    return (
+      <div className={`flex ${className}`} aria-hidden="true">
+        <SchoolBars className="flex-[308]" />
+        <div className="flex flex-[205] flex-col">
+          <div className="ink-edge flex-[251] bg-ink" />
+          <div className="flex-[57] bg-paper" />
         </div>
-      ))}
+        <GoogleBar className="flex-[12]" />
+      </div>
+    );
+  }
+  return (
+    <div className={`flex flex-col ${className}`} aria-hidden="true">
+      <SchoolBars className="min-h-0 flex-[555]" />
+      <div className="flex min-h-0 flex-[269]">
+        <div className="ink-edge flex-[464] bg-ink" />
+        <div className="flex-[206] bg-paper" />
+        <GoogleBar className="flex-[154]" />
+      </div>
+    </div>
+  );
+}
+
+// Small 2×4 grid of school main/tint colors, used in the guide's content-wise header bar.
+export function SchoolMark({ className = "" }: { className?: string }) {
+  return (
+    <div className={`grid grid-cols-2 grid-rows-4 ${className}`} aria-hidden="true">
+      {schools.flatMap((s) => [
+        <span key={s.key + "-m"} style={{ background: s.main }} />,
+        <span key={s.key + "-t"} style={{ background: s.tint }} />,
+      ])}
     </div>
   );
 }

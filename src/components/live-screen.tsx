@@ -45,7 +45,7 @@ export function LiveScreen() {
             ) : (
               <section className="border border-fg/15 p-5 sm:p-7">
                 <Label>내 팀</Label>
-                <p className="mt-3 text-lg font-semibold">아직 팀이 배정되지 않았습니다.</p>
+                <p className="mt-3 text-lg font-bold">아직 팀이 배정되지 않았습니다.</p>
                 <p className="mt-1 text-sm text-fg/60">운영진이 팀을 배정하면 여기에 표시됩니다.</p>
               </section>
             )}
@@ -77,9 +77,9 @@ function MyTeamCard({ state, team }: { state: FestivalState; team: Team }) {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <Label id="my-team">내 팀</Label>
-            <p className="mt-2 break-words text-3xl font-semibold tracking-tight sm:text-4xl">{team.name}</p>
+            <p className="mt-2 break-words text-3xl font-bold tracking-tight sm:text-4xl">{team.name}</p>
             <p className="mt-1 text-sm text-fg/60">
-              테이블 <span className="font-mono text-fg">{team.table}</span>
+              테이블 <span className="tabular-nums text-fg">{team.table}</span>
               {mix.length > 0 && " · "}
               {mix.length > 1 ? `${mix.length}개 학교 연합` : mix[0] && `GDG on Campus ${mix[0].word}`}
             </p>
@@ -97,7 +97,7 @@ function MyTeamCard({ state, team }: { state: FestivalState; team: Team }) {
           <dl className="mt-6 grid gap-6 sm:grid-cols-2">
             <div>
               <dt className="text-xs text-fg/50">프로젝트</dt>
-              <dd className="mt-1 text-lg font-semibold">{team.project || "—"}</dd>
+              <dd className="mt-1 text-lg font-bold">{team.project || "—"}</dd>
               {team.desc && <dd className="mt-1 text-sm leading-relaxed text-fg/70">{team.desc}</dd>}
             </div>
             <div>
@@ -107,7 +107,7 @@ function MyTeamCard({ state, team }: { state: FestivalState; team: Team }) {
                   {members.map((m) => (
                     <li key={m.id} className="flex items-center gap-2 text-sm">
                       <SchoolChip s={school(m.school)} className="h-3 w-3" />
-                      <span className="font-medium">{m.name}</span>
+                      <span className="font-normal">{m.name}</span>
                       <span className="text-fg/40">{school(m.school).word}</span>
                     </li>
                   ))}
@@ -213,7 +213,7 @@ function AttendanceCard({ me, code: expected }: { me: Participant; code: string 
       </div>
 
       {me.checkedIn ? (
-        <p className="mt-4 text-lg font-semibold">{me.name}님, 출석이 확인되었습니다.</p>
+        <p className="mt-4 text-lg font-bold">{me.name}님, 출석이 확인되었습니다.</p>
       ) : (
         <form onSubmit={submit} className="mt-4" noValidate>
           <label htmlFor={`${id}-code`} className="text-sm text-fg/70">
@@ -233,7 +233,7 @@ function AttendanceCard({ me, code: expected }: { me: Participant; code: string 
               placeholder="0000"
               aria-invalid={!!error}
               aria-describedby={error ? `${id}-err` : undefined}
-              className="w-36 border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-center font-mono text-2xl tracking-[0.4em] text-fg outline-none transition placeholder:text-fg/20 focus:border-fg/60"
+              className="w-36 border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-center tabular-nums text-2xl tracking-[0.4em] text-fg outline-none transition placeholder:text-fg/20 focus:border-fg/60"
             />
             <button type="submit" disabled={code.length < 4} className={`${primaryBtn} px-5 text-base`}>
               출석하기
@@ -268,7 +268,7 @@ function TeamList({ state, myTeamId }: { state: FestivalState; myTeamId?: string
     <section aria-labelledby={`${id}-title`}>
       <div className="flex items-baseline justify-between gap-4">
         <Label id={`${id}-title`}>참가 팀</Label>
-        <span className="font-mono text-xs text-fg/50">{state.teams.length}팀</span>
+        <span className="tabular-nums text-xs text-fg/50">{state.teams.length}팀</span>
       </div>
       <label htmlFor={`${id}-q`} className="sr-only">
         팀 검색
@@ -291,10 +291,10 @@ function TeamList({ state, myTeamId }: { state: FestivalState; myTeamId?: string
               aria-current={mine ? "true" : undefined}
               className={`flex items-center gap-3 border-b border-fg/10 px-2 py-3 ${mine ? "bg-fg/[0.08] outline outline-1 outline-fg/40" : ""}`}
             >
-              <span className="w-10 shrink-0 font-mono text-xs text-fg/50">{t.table}</span>
+              <span className="w-10 shrink-0 tabular-nums text-xs text-fg/50">{t.table}</span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
-                  <span className="truncate font-semibold">{t.name}</span>
+                  <span className="truncate font-bold">{t.name}</span>
                   {mine && <span className="shrink-0 bg-fg px-1.5 py-0.5 text-[10px] font-bold text-page">MY</span>}
                 </span>
                 <span className="mt-1 flex items-center gap-2 text-xs text-fg/50">
@@ -353,7 +353,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           <div>
             <Label id="invest-summary">내 투자금</Label>
             <p
-              className={`mt-2 font-mono text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl ${over ? "text-[var(--g-red)]" : ""}`}
+              className={`mt-2  text-4xl font-bold tracking-tight tabular-nums sm:text-5xl ${over ? "text-[var(--g-red)]" : ""}`}
             >
               {over ? `−${won(-left)}` : won(left)}
             </p>
@@ -362,8 +362,8 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
             </p>
           </div>
           {upToDate ? (
-            <span className="inline-flex items-center gap-2 border border-[var(--g-green)] px-4 py-2 text-sm font-semibold text-[var(--g-green)]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--g-green)]" />
+            <span className="inline-flex items-center gap-2 border border-[var(--g-green)] px-4 py-2 text-sm font-bold text-[var(--g-green)]">
+              <span className="h-1.5 w-1.5 bg-[var(--g-green)]" />
               확정됨
             </span>
           ) : (
@@ -391,12 +391,12 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           ))}
         </div>
         {over ? (
-          <p role="alert" className="mt-3 flex items-center gap-2 text-xs font-semibold text-fg">
+          <p role="alert" className="mt-3 flex items-center gap-2 text-xs font-bold text-fg">
             <span className="h-2 w-2 shrink-0 bg-[var(--g-red)]" aria-hidden="true" />
             운영진이 전체 투자금을 {won(budget)}으로 조정했습니다. {won(-left)}을 줄여야 확정할 수 있습니다.
           </p>
         ) : saved !== null && dirty ? (
-          <p role="status" className="mt-3 flex items-center gap-2 text-xs font-semibold text-fg">
+          <p role="status" className="mt-3 flex items-center gap-2 text-xs font-bold text-fg">
             <span className="h-2 w-2 shrink-0 bg-[var(--g-yellow)]" aria-hidden="true" />
             확정 후 바뀐 내용이 있습니다. 다시 확정해야 반영됩니다.
           </p>
@@ -412,7 +412,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
       <section aria-labelledby="invest-projects">
         <div className="mb-4 flex items-baseline justify-between gap-4">
           <Label id="invest-projects">프로젝트</Label>
-          <span className="font-mono text-xs text-fg/50">
+          <span className="tabular-nums text-xs text-fg/50">
             {targets.length}개 · 투자 {invested.length}
           </span>
         </div>
@@ -462,10 +462,10 @@ function InvestCard({
     <li className={`flex flex-col border ${amount > 0 ? "border-fg/50 bg-fg/[0.06]" : "border-fg/15"}`}>
       <MemberStripe people={members} className="h-1.5" />
       <div className="flex flex-1 flex-col p-5">
-        <p className="font-mono text-xs text-fg/50">
+        <p className="tabular-nums text-xs text-fg/50">
           {team.table} · {team.name}
         </p>
-        <h3 className="mt-2 text-xl font-semibold leading-snug">{team.project}</h3>
+        <h3 className="mt-2 text-xl font-bold leading-snug">{team.project}</h3>
         {team.desc && <p className="mt-1 text-sm leading-relaxed text-fg/60">{team.desc}</p>}
 
         <div className="mt-auto pt-5">
@@ -490,7 +490,7 @@ function InvestCard({
               placeholder="0"
               onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")) || 0)}
               onBlur={() => set(Math.round(amount / INVEST_STEP) * INVEST_STEP)}
-              className="h-11 min-w-0 flex-1 border border-fg/20 bg-fg/[0.04] px-3 text-right font-mono text-lg tabular-nums text-fg outline-none transition placeholder:text-fg/25 focus:border-fg/60"
+              className="h-11 min-w-0 flex-1 border border-fg/20 bg-fg/[0.04] px-3 text-right text-lg tabular-nums text-fg outline-none transition placeholder:text-fg/25 focus:border-fg/60"
             />
             <button
               type="button"
@@ -502,7 +502,7 @@ function InvestCard({
               +
             </button>
           </div>
-          <p className="mt-2 flex justify-between gap-2 font-mono text-xs text-fg/40">
+          <p className="mt-2 flex justify-between gap-2 tabular-nums text-xs text-fg/40">
             <span className={`flex items-center gap-1.5 ${changed ? "text-fg/70" : ""}`}>
               {changed ? (
                 <>

@@ -97,7 +97,7 @@ export function PublishedStatus({
               type="button"
               aria-pressed={asTable === v}
               onClick={() => setAsTable(v)}
-              className={`border px-3 py-1 text-xs font-semibold transition ${asTable === v ? "border-fg bg-fg text-page" : "border-fg/20 text-fg/70 hover:border-fg/50"}`}
+              className={`border px-3 py-1 text-xs font-bold transition ${asTable === v ? "border-fg bg-fg text-page" : "border-fg/20 text-fg/70 hover:border-fg/50"}`}
             >
               {l}
             </button>
@@ -147,9 +147,9 @@ export function PublishedStatus({
 function Tile({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="min-w-0 bg-page px-4 py-3">
-      <dt className="font-mono text-[11px] uppercase tracking-[0.15em] text-fg/50">{label}</dt>
-      <dd className="mt-1 truncate text-xl font-semibold">{value}</dd>
-      <dd className="font-mono text-xs tabular-nums text-fg/60">{sub}</dd>
+      <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-fg/50">{label}</dt>
+      <dd className="mt-1 truncate text-xl font-bold">{value}</dd>
+      <dd className="text-xs tabular-nums text-fg/60">{sub}</dd>
     </div>
   );
 }
@@ -245,7 +245,7 @@ function TickChart({
           {yTicks.map((v) => (
             <g key={v}>
               <line x1={M.left} x2={width - M.right} y1={y(v)} y2={y(v)} stroke="currentColor" strokeOpacity={v === 0 ? 0.3 : 0.08} />
-              <text x={M.left - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-current font-mono text-[10px]" fillOpacity={0.5}>
+              <text x={M.left - 8} y={y(v)} dy="0.32em" textAnchor="end" className="fill-current tabular-nums text-[10px]" fillOpacity={0.5}>
                 {v === 0 ? "0" : man(v)}
               </text>
             </g>
@@ -259,7 +259,7 @@ function TickChart({
                 x={x(i)}
                 y={H - 8}
                 textAnchor={n === 1 ? "middle" : i === 0 ? "start" : i === n - 1 ? "end" : "middle"}
-                className="fill-current font-mono text-[10px]"
+                className="fill-current tabular-nums text-[10px]"
                 fillOpacity={hi === i ? 0.9 : 0.5}
               >
                 {clockLabel(t.at)}
@@ -326,10 +326,10 @@ function TickChart({
       {hi !== null && width > 0 && (
         <div
           role="status"
-          className="pointer-events-none absolute top-2 z-10 w-56 border border-fg/15 bg-page px-3 py-2 text-xs shadow-lg"
+          className="pointer-events-none absolute top-2 z-10 w-56 border border-fg/15 bg-page px-3 py-2 text-xs"
           style={x(hi) > width / 2 ? { left: Math.max(0, x(hi) - 232) } : { left: Math.min(width - 224, x(hi) + 12) }}
         >
-          <p className="mb-1.5 font-mono text-[11px] text-fg/50">
+          <p className="mb-1.5 tabular-nums text-[11px] text-fg/50">
             틱 {hi + 1} · {clockLabel(ticks[hi].at)}
           </p>
           <ul className="grid gap-1">
@@ -342,10 +342,10 @@ function TickChart({
                     style={{ background: stroke(t.id), opacity: strong ? 1 : 0.35 }}
                     aria-hidden="true"
                   />
-                  <span className={`w-16 shrink-0 text-right font-mono tabular-nums ${strong ? "font-semibold text-fg" : "text-fg/70"}`}>
+                  <span className={`w-16 shrink-0 text-right  tabular-nums ${strong ? "font-bold text-fg" : "text-fg/70"}`}>
                     {man(v)}
                   </span>
-                  <span className={`truncate ${strong ? "font-semibold text-fg" : "text-fg/60"}`}>{t.project}</span>
+                  <span className={`truncate ${strong ? "font-bold text-fg" : "text-fg/60"}`}>{t.project}</span>
                 </li>
               );
             })}
@@ -410,8 +410,8 @@ function RankList({
                 onClick={() => onPick(picked === r.team.id ? null : r.team.id)}
                 className={`grid w-full grid-cols-[1.5rem_2rem_1fr_auto] items-center gap-2 border-b border-fg/10 px-2 py-2.5 text-left transition hover:bg-fg/[0.05] ${on ? "bg-fg/[0.07]" : ""}`}
               >
-                <span className="font-mono text-sm font-semibold text-fg/60">{r.rank}</span>
-                <span className="font-mono text-[11px] tabular-nums text-fg/60">
+                <span className="tabular-nums text-sm font-bold text-fg/60">{r.rank}</span>
+                <span className="text-[11px] tabular-nums text-fg/60">
                   {!hasPrev || move === 0 ? (
                     <span className="text-fg/30">–</span>
                   ) : move > 0 ? (
@@ -440,15 +440,15 @@ function RankList({
                   />
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5">
-                      <span className={`truncate text-sm ${on || mine ? "font-semibold" : ""}`}>{r.team.project || r.team.name}</span>
+                      <span className={`truncate text-sm ${on || mine ? "font-bold" : ""}`}>{r.team.project || r.team.name}</span>
                       {mine && <span className="shrink-0 bg-fg px-1 py-px text-[9px] font-bold text-page">MY</span>}
                     </span>
                     <span className="block truncate text-[11px] text-fg/50">{r.team.name}</span>
                   </span>
                 </span>
                 <span className="text-right">
-                  <span className="block font-mono text-sm font-semibold tabular-nums">{man(r.total)}</span>
-                  {hasPrev && <span className="block font-mono text-[11px] tabular-nums text-fg/50">{signed(delta)}</span>}
+                  <span className="block text-sm font-bold tabular-nums">{man(r.total)}</span>
+                  {hasPrev && <span className="block text-[11px] tabular-nums text-fg/50">{signed(delta)}</span>}
                 </span>
               </button>
             </li>
@@ -467,9 +467,9 @@ function TickTable({ teams, ticks, myTeamId }: { teams: Team[]; ticks: Snapshot[
       <table className="w-full border-t border-fg/15 text-left text-sm">
         <thead className="text-xs text-fg/50">
           <tr className="border-b border-fg/15">
-            <th className="sticky left-0 bg-page py-2 pr-3 font-medium">프로젝트</th>
+            <th className="sticky left-0 bg-page py-2 pr-3 font-normal">프로젝트</th>
             {ticks.map((t, i) => (
-              <th key={t.at + "-" + i} className="whitespace-nowrap px-2 py-2 text-right font-mono font-medium">
+              <th key={t.at + "-" + i} className="whitespace-nowrap px-2 py-2 text-right tabular-nums font-normal">
                 {clockLabel(t.at)}
               </th>
             ))}
@@ -477,13 +477,13 @@ function TickTable({ teams, ticks, myTeamId }: { teams: Team[]; ticks: Snapshot[
         </thead>
         <tbody>
           {teams.map((team) => (
-            <tr key={team.id} className={`border-b border-fg/10 ${team.id === myTeamId ? "font-semibold" : ""}`}>
+            <tr key={team.id} className={`border-b border-fg/10 ${team.id === myTeamId ? "font-bold" : ""}`}>
               <td className="sticky left-0 whitespace-nowrap bg-page py-2.5 pr-3">
                 {team.project || team.name}
                 {team.id === myTeamId && <span className="ml-2 bg-fg px-1.5 py-0.5 text-[10px] font-bold text-page">MY</span>}
               </td>
               {ticks.map((t, i) => (
-                <td key={t.at + "-" + i} className="whitespace-nowrap px-2 py-2.5 text-right font-mono tabular-nums text-fg/80">
+                <td key={t.at + "-" + i} className="whitespace-nowrap px-2 py-2.5 text-right tabular-nums text-fg/80">
                   {man(t.totals[team.id] ?? 0)}
                 </td>
               ))}

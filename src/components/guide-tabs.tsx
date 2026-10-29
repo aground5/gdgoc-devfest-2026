@@ -91,7 +91,7 @@ export function GuideTabs() {
                 aria-controls={`${base}-panel-${t.id}`}
                 tabIndex={selected ? 0 : -1}
                 onClick={() => goTo(t.id)}
-                className={`relative shrink-0 px-3 py-4 text-sm font-semibold transition sm:px-4 sm:text-base ${
+                className={`relative shrink-0 px-3 py-4 text-sm font-bold transition sm:px-4 sm:text-base ${
                   selected ? "text-fg" : "text-fg/50 hover:text-fg/80"
                 }`}
               >
@@ -124,7 +124,7 @@ export function GuideTabs() {
 function SectionTitle({ title }: { title: string }) {
   return (
     <div className="mb-6">
-      <h2 className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">{title}</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">{title}</h2>
     </div>
   );
 }
@@ -152,9 +152,9 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
                 className="group flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-fg/[0.04]"
               >
                 <span className="flex items-start gap-3">
-                  <span className="mt-1 h-4 w-1" style={{ background: schools[i].light }} />
+                  <span className="mt-1 h-4 w-1" style={{ background: schools[i].main }} />
                   <span>
-                    <span className="block text-lg font-semibold text-fg">{s.title}</span>
+                    <span className="block text-lg font-bold text-fg">{s.title}</span>
                     <span className="block text-sm text-fg/60">{s.desc}</span>
                   </span>
                 </span>
@@ -171,7 +171,7 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
           <p className="max-w-2xl leading-relaxed text-fg/70">{event.concept}</p>
           <p className="mt-3 max-w-2xl leading-relaxed text-fg/70">
             고려대 · 연세대 · 성균관대 · KAIST의 GDG on Campus가 함께 준비했고, {event.venue}에서 열립니다. 올해의 주제{" "}
-            <strong className="font-semibold text-fg">{event.theme}</strong>
+            <strong className="font-bold text-fg">{event.theme}</strong>
           </p>
           <ul className="mt-6 flex flex-wrap gap-2">
             {schools.map((s) => (
@@ -192,9 +192,9 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
         <ul className="border-t border-fg/15">
           {notices.map((n) => (
             <li key={n.title} className="flex items-baseline gap-4 border-b border-fg/15 py-4">
-              <span className="w-12 shrink-0 font-mono text-xs text-fg/50">{n.date}</span>
+              <span className="w-12 shrink-0 tabular-nums text-xs text-fg/50">{n.date}</span>
               <span className="text-fg">{n.title}</span>
-              {n.tag && <span className="ml-auto bg-[var(--g-red)] px-1.5 py-0.5 text-[10px] font-bold text-white">{n.tag}</span>}
+              {n.tag && <span className="ml-auto bg-[var(--g-red)] px-1.5 py-0.5 text-[10px] font-bold text-paper">{n.tag}</span>}
             </li>
           ))}
         </ul>
@@ -224,7 +224,7 @@ function Timetable() {
                 on ? "border-fg bg-fg text-page" : "border-fg/20 text-fg/70 hover:border-fg/50"
               }`}
             >
-              <span className="font-mono">{d.date}</span> · {d.label}
+              <span className="tabular-nums">{d.date}</span> · {d.label}
             </button>
           );
         })}
@@ -243,12 +243,12 @@ function Timetable() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.time + r.title} className="border-b border-fg/15 align-top">
-                <td className="w-32 py-4 pr-4 font-mono text-sm text-fg">
+                <td className="w-32 py-4 pr-4 tabular-nums text-sm text-fg">
                   {r.time}
                   <span className="text-fg/40"> – {r.end}</span>
                 </td>
                 <td className="py-4">
-                  <p className="font-semibold text-fg">{r.title}</p>
+                  <p className="font-bold text-fg">{r.title}</p>
                   {r.desc && <p className="mt-0.5 text-sm text-fg/60">{r.desc}</p>}
                 </td>
               </tr>
@@ -269,9 +269,9 @@ function Program() {
         <ol className="grid gap-px border border-fg/10 bg-fg/10 md:grid-cols-5">
           {steps.map((st, i) => (
             <li key={st.title} className="flex flex-col bg-page p-5">
-              <span className="h-1 w-8" style={{ background: schools[i % schools.length].light }} aria-hidden="true" />
-              <p className="mt-4 font-mono text-xs text-fg/50">{st.date}</p>
-              <h3 className="mt-1 text-lg font-semibold text-fg">{st.title}</h3>
+              <span className="h-1 w-8" style={{ background: schools[i % schools.length].main }} aria-hidden="true" />
+              <p className="mt-4 tabular-nums text-xs text-fg/50">{st.date}</p>
+              <h3 className="mt-1 text-lg font-bold text-fg">{st.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-fg/60">{st.desc}</p>
             </li>
           ))}
@@ -310,7 +310,7 @@ function Program() {
           <dl className="border-t border-fg/15">
             {criteria.map((c) => (
               <div key={c.name} className="grid grid-cols-[6.5rem_1fr] gap-4 border-b border-fg/15 py-4">
-                <dt className="font-semibold text-fg">{c.name}</dt>
+                <dt className="font-bold text-fg">{c.name}</dt>
                 <dd className="text-fg/70">{c.desc}</dd>
               </div>
             ))}
@@ -323,7 +323,7 @@ function Program() {
         <SectionTitle title="시상" />
         <ul className="flex flex-wrap gap-2">
           {awards.map((a) => (
-            <li key={a} className="border border-fg/15 bg-surface px-4 py-2 font-semibold text-fg">
+            <li key={a} className="border border-fg/15 bg-surface px-4 py-2 font-bold text-fg">
               {a}
             </li>
           ))}
@@ -348,7 +348,7 @@ function Venue() {
           ))}
         </dl>
         <div className="mt-6 border border-fg/15 bg-surface p-5">
-          <p className="font-semibold text-fg">체크인 안내</p>
+          <p className="font-bold text-fg">체크인 안내</p>
           <p className="mt-1 text-sm leading-relaxed text-fg/70">
             {event.checkIn} 체크인할 수 있고, 체크인 후 Demo Market이 시작됩니다. 체크인 방법은 추후 안내됩니다.
           </p>
@@ -368,7 +368,7 @@ function Venue() {
         <div className="absolute inset-0 grid place-items-center text-center">
           <div>
             <span className="mx-auto block h-4 w-4 rotate-45" style={{ background: "var(--g-red)" }} />
-            <p className="mt-3 font-semibold text-fg">{event.venue}</p>
+            <p className="mt-3 font-bold text-fg">{event.venue}</p>
             <p className="text-sm text-fg/50">지도는 추후 공개됩니다</p>
           </div>
         </div>
@@ -384,7 +384,7 @@ function FaqList() {
       <div className="border-t border-fg/15">
         {faqs.map((f) => (
           <details key={f.q} className="group border-b border-fg/15">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-semibold text-fg [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-bold text-fg [&::-webkit-details-marker]:hidden">
               {f.q}
               <span className="text-xl leading-none text-fg/50 transition group-open:rotate-45" aria-hidden="true">
                 +
