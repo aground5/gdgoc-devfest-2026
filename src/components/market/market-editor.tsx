@@ -17,7 +17,7 @@ import {
   type DemoInput,
 } from "@/lib/db/queries";
 import { ASSET_RULES, contentTypeOf, formatBytes, storagePath, type AssetKind } from "@/lib/market-rules";
-import { Label, fieldCls, primaryBtn, smallBtn } from "../festival-ui";
+import { Label, btn, fieldCls, secondaryBtn, textareaCls } from "../festival-ui";
 import { StatusChip } from "./market-view";
 
 const toInput = (e?: DemoEntry): DemoInput => ({
@@ -73,7 +73,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
     <label htmlFor={`${id}-${key}`} className="text-xs text-subtle">
       {label}
       {required && <span className="text-danger"> *</span>}
-      <input id={`${id}-${key}`} value={form[key]} onChange={set(key)} className={`${fieldCls} text-base`} placeholder={hint} />
+      <input id={`${id}-${key}`} value={form[key]} onChange={set(key)} className={fieldCls} placeholder={hint} />
     </label>
   );
 
@@ -81,12 +81,12 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
     <label htmlFor={`${id}-${key}`} className="text-xs text-subtle">
       {label}
       {required && <span className="text-danger"> *</span>}
-      <textarea id={`${id}-${key}`} value={form[key]} onChange={set(key)} rows={rows} placeholder={hint} className={`${fieldCls} text-base`} />
+      <textarea id={`${id}-${key}`} value={form[key]} onChange={set(key)} rows={rows} placeholder={hint} className={textareaCls} />
     </label>
   );
 
   return (
-    <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04]">
+    <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-fg/10 px-5 py-4 sm:px-7">
         <div className="flex items-center gap-2">
           <Label id={`${id}-title`}>우리 팀 데모</Label>
@@ -121,24 +121,24 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
         <div className="flex flex-wrap items-center gap-2">
           {published ? (
             <>
-              <button type="submit" disabled={busy || missing.length > 0} className={`${primaryBtn} px-5 py-2.5`}>
+              <button type="submit" disabled={busy || missing.length > 0} className={btn("primary", "lg")}>
                 변경사항 저장
               </button>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => entry && void act(() => unpublishDemo(entry.id), "비공개로 바꿨습니다.")}
-                className={smallBtn}
+                className={secondaryBtn}
               >
                 비공개로 전환
               </button>
             </>
           ) : (
             <>
-              <button type="button" disabled={busy || missing.length > 0} onClick={() => void save(true)} className={`${primaryBtn} px-5 py-2.5`}>
+              <button type="button" disabled={busy || missing.length > 0} onClick={() => void save(true)} className={btn("primary", "lg")}>
                 공개하기
               </button>
-              <button type="button" disabled={busy} onClick={() => void save(false)} className={smallBtn}>
+              <button type="button" disabled={busy} onClick={() => void save(false)} className={secondaryBtn}>
                 임시 저장
               </button>
             </>
@@ -153,16 +153,16 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
                     if (await act(() => deleteDemo(entry), "삭제했습니다.", patch.removeDemo(entry.id))) setForm(toInput());
                     setArmDelete(false);
                   }}
-                  className="border border-danger px-2.5 py-1.5 text-sm font-bold text-danger"
+                  className={btn("danger")}
                 >
                   삭제 확인
                 </button>
-                <button type="button" onClick={() => setArmDelete(false)} className={smallBtn}>
+                <button type="button" onClick={() => setArmDelete(false)} className={secondaryBtn}>
                   취소
                 </button>
               </span>
             ) : (
-              <button type="button" onClick={() => setArmDelete(true)} className={`${smallBtn} ml-auto text-subtle`}>
+              <button type="button" onClick={() => setArmDelete(true)} className={`${secondaryBtn} ml-auto text-subtle`}>
                 데모 삭제
               </button>
             ))}
@@ -239,7 +239,7 @@ function Uploads({ kind, title, entry }: { kind: AssetKind; title: string; entry
       />
       <label
         htmlFor={`${id}-file`}
-        className={`${smallBtn} mt-2 inline-flex cursor-pointer items-center gap-2 py-2 peer-focus-visible:outline peer-focus-visible:outline-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-30`}
+        className={`${secondaryBtn} mt-2 cursor-pointer peer-focus-visible:outline peer-focus-visible:outline-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-30`}
       >
         <span aria-hidden="true">＋</span>
         {busy ? "올리는 중…" : kind === "image" ? "사진 올리기" : "파일 올리기"}

@@ -13,21 +13,47 @@ export const school = (key: SchoolKey) => schools.find((s) => s.key === key) as 
 // Schools represented in a group of people, in the standard school order
 export const schoolsOf = (people: Participant[]) => schools.filter((s) => people.some((p) => p.school === s.key));
 
+// One height scale for every control, so fields, selects and buttons in a row line up:
+// sm 36px (inside tables and lists), md 40px (forms), lg 48px (a screen's main action).
+export type ControlSize = "sm" | "md" | "lg";
+
 // Form fields stay at 16px text: iOS Safari zooms the page into any smaller field on focus.
 // Field borders are fg/50 (about 3.3:1), enough to see where a field is (WCAG 1.4.11).
-export const fieldCls =
-  "mt-1.5 w-full border border-fg/50 bg-page px-3 py-2.5 text-base text-fg placeholder:text-subtle outline-none transition focus:border-fg";
+const fieldBase = "border border-fg/50 bg-page text-fg placeholder:text-subtle outline-none transition focus:border-fg";
+const fieldSize: Record<ControlSize, string> = { sm: "h-9 text-base", md: "h-10 text-base", lg: "h-12 text-lg" };
 
-export const selectCls =
-  "border border-fg/50 bg-page px-2 py-2 text-base sm:text-sm text-fg outline-none transition focus:border-fg";
+// A bare field; the caller sets its width
+export const field = (size: ControlSize = "md") => `${fieldBase} ${fieldSize[size]} px-3`;
 
-export const smallBtn = "border border-fg/25 px-3 py-1.5 text-sm font-bold transition hover:bg-fg/10 disabled:opacity-30";
+// A full-width field under its label text
+export const fieldCls = `mt-1.5 w-full ${field()}`;
 
-export const primaryBtn = "bg-fg px-4 py-2 text-sm font-bold text-page transition hover:opacity-85 disabled:opacity-30";
+export const textareaCls = `mt-1.5 w-full ${fieldBase} px-3 py-2 text-base`;
+
+// Selects drop the native look (macOS draws its own arrow and padding) and take the
+// field's border, height and a square chevron (.select-chevron in globals.css).
+export const select = (size: ControlSize = "md") =>
+  `${fieldBase} ${fieldSize[size]} select-chevron cursor-pointer appearance-none pl-3 pr-9`;
+
+const btnBase = "inline-flex shrink-0 items-center justify-center gap-2 font-bold transition disabled:opacity-30";
+const btnSize: Record<ControlSize, string> = { sm: "h-9 px-3 text-sm", md: "h-10 px-4 text-sm", lg: "h-12 px-5 text-base" };
+const btnKind = {
+  primary: "bg-fg text-page hover:opacity-85",
+  secondary: "border border-fg/25 hover:bg-fg/10",
+  danger: "border border-danger text-danger hover:bg-fg/10",
+  // Filled KU red for a step that deletes data (bulk import with deletions)
+  destructive: "bg-ku text-paper hover:opacity-85",
+};
+
+export const btn = (kind: keyof typeof btnKind, size: ControlSize = "md") => `${btnBase} ${btnSize[size]} ${btnKind[kind]}`;
+
+export const primaryBtn = btn("primary");
+
+export const secondaryBtn = btn("secondary");
 
 export function Label({ id, children }: { id?: string; children: ReactNode }) {
   return (
-    <h2 id={id} className="tabular-nums text-xs font-bold uppercase tracking-[0.2em] text-subtle">
+    <h2 id={id} className="tabular-nums text-sm font-bold text-fg">
       {children}
     </h2>
   );

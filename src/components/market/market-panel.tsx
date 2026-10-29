@@ -5,7 +5,7 @@
 import { useId, useState } from "react";
 import type { DemoEntry } from "@/lib/db/queries";
 import { membersOf, type FestivalState } from "@/lib/festival-store";
-import { Label, fieldCls } from "../festival-ui";
+import { Label, field } from "../festival-ui";
 import { MarketEditor } from "./market-editor";
 import { MarketCard, MarketDetail, entryTitle } from "./market-view";
 
@@ -43,7 +43,7 @@ export function MarketPanel({ state, entries, myTeamId }: { state: FestivalState
   }
 
   return (
-    <div className="grid gap-10">
+    <div className="grid grid-cols-1 gap-10">
       {myTeam ? (
         <MarketEditor key={mine?.id ?? "new"} team={myTeam} entry={mine} />
       ) : (
@@ -65,7 +65,7 @@ export function MarketPanel({ state, entries, myTeamId }: { state: FestivalState
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="데모, 팀명, 프로젝트 검색"
-          className={`${fieldCls} mt-4`}
+          className={`${field()} mt-4 w-full`}
         />
         <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((e) => (

@@ -287,7 +287,7 @@ function Timetable() {
       <p className="mb-3 text-sm text-subtle">
         {current.date} · {current.where}
       </p>
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[28rem] border-t border-fg/15 text-left">
           <thead className="sr-only">
             <tr>

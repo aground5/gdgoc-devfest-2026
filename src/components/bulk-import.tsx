@@ -8,7 +8,7 @@ import type { Participant, Team } from "@/data/guide";
 import { downloadCsv, downloadXlsx, parseFiles, plan, type Parsed } from "@/lib/bulk-import";
 import { run } from "@/lib/db/hooks";
 import { bulkImport, type ImportCounts } from "@/lib/db/queries";
-import { Label, primaryBtn, smallBtn } from "./festival-ui";
+import { Label, btn, primaryBtn, secondaryBtn } from "./festival-ui";
 
 export function BulkImportPanel({ people, teams }: { people: Participant[]; teams: Team[] }) {
   const id = useId();
@@ -56,7 +56,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
   }
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-1 gap-8">
       <section aria-labelledby={`${id}-tpl`} className="border border-fg/15 p-5">
         <Label id={`${id}-tpl`}>1. 양식 내려받기</Label>
         <p className="mt-2 text-sm text-subtle">지금 등록된 팀과 참가자가 채워진 양식입니다. 이 파일을 고쳐서 다시 올리면 됩니다.</p>
@@ -64,10 +64,10 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
           <button type="button" onClick={() => void downloadXlsx(people, teams)} className={primaryBtn}>
             엑셀 (.xlsx, 팀·참가자 시트)
           </button>
-          <button type="button" onClick={() => downloadCsv("teams", people, teams)} className={smallBtn}>
+          <button type="button" onClick={() => downloadCsv("teams", people, teams)} className={secondaryBtn}>
             팀 CSV
           </button>
-          <button type="button" onClick={() => downloadCsv("people", people, teams)} className={smallBtn}>
+          <button type="button" onClick={() => downloadCsv("people", people, teams)} className={secondaryBtn}>
             참가자 CSV
           </button>
         </div>
@@ -147,7 +147,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
           </dl>
 
           {p.errors.length > 0 && (
-            <div role="alert" className="mt-4 border border-danger/50 bg-danger/[0.06] p-4 text-sm">
+            <div role="alert" className="mt-4 border border-fg/15 border-l-[3px] border-l-danger bg-surface p-4 text-sm">
               <p className="font-bold text-danger">고쳐야 적용할 수 있습니다 ({p.errors.length})</p>
               <ul className="mt-2 grid gap-1 text-muted">
                 {p.errors.slice(0, 30).map((e, i) => (
@@ -179,7 +179,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
                 type="button"
                 disabled={p.errors.length > 0}
                 onClick={() => setConfirmDelete(true)}
-                className="border border-danger px-4 py-2 text-sm font-bold text-danger disabled:opacity-30"
+                className={btn("danger")}
               >
                 {deletes}건 삭제 포함하여 적용…
               </button>
@@ -189,7 +189,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
                 onClick={() => void apply()}
                 disabled={busy || p.errors.length > 0 || changes === 0}
                 className={
-                  deletes > 0 ? "bg-ku px-4 py-2 text-sm font-bold text-paper disabled:opacity-30" : primaryBtn
+                  deletes > 0 ? btn("destructive") : primaryBtn
                 }
               >
                 {busy
@@ -208,7 +208,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
                 setFiles([]);
                 setConfirmDelete(false);
               }}
-              className={smallBtn}
+              className={secondaryBtn}
             >
               취소
             </button>

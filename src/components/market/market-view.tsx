@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import type { Participant, Team } from "@/data/guide";
 import type { DemoEntry } from "@/lib/db/queries";
 import { formatBytes } from "@/lib/market-rules";
-import { Label, MemberStripe, smallBtn } from "../festival-ui";
+import { Label, MemberStripe, secondaryBtn } from "../festival-ui";
 
 export const entryTitle = (e: DemoEntry, team?: Team) => e.title || team?.project || team?.name || "제목 없음";
 
@@ -27,7 +27,7 @@ export function ExternalLink({ href, children, strong = false }: { href: string;
       className={
         strong
           ? "inline-flex items-center gap-2 bg-fg px-4 py-2 text-sm font-bold text-page transition hover:opacity-85"
-          : `${smallBtn} inline-flex items-center gap-1.5`
+          : secondaryBtn
       }
     >
       {children}
@@ -74,7 +74,7 @@ export function MarketCard({
               서비스 열기
             </ExternalLink>
           )}
-          <button type="button" onClick={onOpen} className={smallBtn}>
+          <button type="button" onClick={onOpen} className={secondaryBtn}>
             자세히 · 테스트 방법
           </button>
         </div>
@@ -97,9 +97,9 @@ export function MarketDetail({
   actions?: ReactNode;
 }) {
   return (
-    <article aria-labelledby="market-detail" className="grid gap-8">
+    <article aria-labelledby="market-detail" className="grid grid-cols-1 gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button type="button" onClick={onBack} className={smallBtn}>
+        <button type="button" onClick={onBack} className={secondaryBtn}>
           ← 목록
         </button>
         {actions}
@@ -158,7 +158,7 @@ export function MarketDetail({
         </div>
 
         <aside className="grid content-start gap-6">
-          <section aria-labelledby="md-test" className="border border-fg/15 bg-fg/[0.04] p-5">
+          <section aria-labelledby="md-test" className="border border-fg/15 bg-surface p-5">
             <Label id="md-test">테스트 방법</Label>
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed">{entry.testInstructions || "—"}</p>
             {entry.credentials && (
