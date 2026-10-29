@@ -3,7 +3,7 @@
 // Admin screen (/organize): participants, teams, attendance, live investment status,
 // and publishing investment ticks (snapshots) that participants see.
 
-import { useId, useState, type FormEvent } from "react";
+import { useId, useState, useSyncExternalStore, type FormEvent } from "react";
 import { schools } from "./brand";
 import { INVEST_BUDGET, INVEST_STEP, type Participant, type SchoolKey, type Team } from "@/data/guide";
 import {
@@ -19,6 +19,7 @@ import {
   won,
   type FestivalState,
 } from "@/lib/festival-store";
+import { signInWithGoogle, staffSignOut, useStaffSession } from "@/lib/staff-session";
 import {
   Label,
   MemberStripe,
@@ -107,7 +108,81 @@ function removeTeam(id: string) {
 
 /* ---------- Screen ---------- */
 
+// Staff gate: Google sign-in, then the email must be on the staff_emails whitelist.
+// The panels themselves still run on the localStorage mock.
 export function AdminScreen() {
+  const session = useStaffSession();
+  if (session.status === "in") return <AdminPanels email={session.email} />;
+
+  return (
+    <ScreenFrame badge="운영진" tabs={NO_TABS} active="" onTab={() => {}}>
+      {session.status === "loading" ? (
+        <p className="py-10 text-fg/50" role="status">
+          불러오는 중…
+        </p>
+      ) : (
+        <StaffLogin denied={session.status === "denied" ? session.email : null} />
+      )}
+    </ScreenFrame>
+  );
+}
+
+const NO_TABS: readonly { id: ""; label: string }[] = [];
+
+function subscribeNothing() {
+  return () => {};
+}
+
+function StaffLogin({ denied }: { denied: string | null }) {
+  const [busy, setBusy] = useState(false);
+  const failed = useSyncExternalStore(
+    subscribeNothing,
+    () => new URLSearchParams(window.location.search).has("login_error"),
+    () => false,
+  );
+
+  return (
+    <section aria-labelledby="staff-login" className="mx-auto max-w-md border border-fg/15 p-6 sm:p-8">
+      <Label id="staff-login">운영진 로그인</Label>
+      {denied ? (
+        <>
+          <p className="mt-3 text-2xl font-semibold tracking-tight">접근 권한이 없습니다</p>
+          <p className="mt-2 text-sm text-fg/60">
+            <span className="font-semibold text-fg">{denied}</span> 계정은 운영진 목록에 없습니다. 다른 계정으로 로그인하거나 운영진
+            관리자에게 추가를 요청해 주세요.
+          </p>
+          <button type="button" className={`${primaryBtn} mt-6 w-full py-3 text-base`} onClick={() => void staffSignOut()}>
+            다른 계정으로 로그인
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="mt-3 text-2xl font-semibold tracking-tight">Google 계정으로 로그인</p>
+          <p className="mt-1 text-sm text-fg/60">운영진으로 등록된 Google 계정만 들어올 수 있습니다.</p>
+          {failed && (
+            <p role="alert" className="mt-4 text-sm font-semibold text-[var(--g-red)]">
+              로그인에 실패했습니다. 다시 시도해 주세요.
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={busy}
+            className={`${primaryBtn} mt-6 w-full py-3 text-base`}
+            onClick={() => {
+              setBusy(true);
+              void signInWithGoogle();
+            }}
+          >
+            {busy ? "Google로 이동 중…" : "Google로 로그인"}
+          </button>
+          <p className="mt-4 text-xs text-fg/50">참가자 입장 중인 브라우저라면 참가자 로그인은 로그아웃됩니다.</p>
+        </>
+      )}
+    </section>
+  );
+}
+
+function AdminPanels({ email }: { email: string }) {
   const state = useFestival();
   const [view, setView] = useHashTab(VIEWS, "people");
 
@@ -115,7 +190,25 @@ export function AdminScreen() {
   const investors = state.participants.filter((p) => Object.values(state.investments[p.id] ?? {}).some((v) => v > 0)).length;
 
   return (
-    <ScreenFrame badge="운영진" tabs={VIEWS} active={view} onTab={setView} actions={<ResetButton />}>
+    <ScreenFrame
+      badge="운영진"
+      tabs={VIEWS}
+      active={view}
+      onTab={setView}
+      actions={
+        <>
+          <ResetButton />
+          <button
+            type="button"
+            onClick={() => void staffSignOut()}
+            title={`${email}로 로그인됨`}
+            className="inline-flex h-10 items-center border border-fg/25 px-3 text-sm font-semibold transition hover:bg-fg/10"
+          >
+            로그아웃
+          </button>
+        </>
+      }
+    >
       <dl className="mb-8 grid grid-cols-2 gap-px border border-fg/10 bg-fg/10 sm:grid-cols-4">
         {[
           ["참가자", `${state.participants.length}명`],
@@ -158,7 +251,12 @@ function ResetButton() {
       </button>
     </span>
   ) : (
-    <button type="button" onClick={() => setArm(true)} className={`hidden h-10 sm:block ${smallBtn}`} title="목업 데이터를 처음 상태로 되돌립니다">
+    <button
+      type="button"
+      onClick={() => setArm(true)}
+      className={`hidden h-10 sm:block ${smallBtn}`}
+      title="목업 데이터를 처음 상태로 되돌립니다"
+    >
       목업 초기화
     </button>
   );
@@ -169,7 +267,11 @@ function DeleteButton({ label, onConfirm }: { label: string; onConfirm: () => vo
   const [arm, setArm] = useState(false);
   return arm ? (
     <span className="inline-flex gap-1">
-      <button type="button" onClick={onConfirm} className="border border-[var(--g-red)] px-2.5 py-1.5 text-sm font-semibold text-[var(--g-red)]">
+      <button
+        type="button"
+        onClick={onConfirm}
+        className="border border-[var(--g-red)] px-2.5 py-1.5 text-sm font-semibold text-[var(--g-red)]"
+      >
         삭제 확인
       </button>
       <button type="button" onClick={() => setArm(false)} className={smallBtn}>
@@ -207,7 +309,12 @@ function TeamSelect({
   label: string;
 }) {
   return (
-    <select aria-label={label} value={value ?? ""} onChange={(e) => onChange(e.target.value || null)} className={`${selectCls} max-w-[12rem]`}>
+    <select
+      aria-label={label}
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value || null)}
+      className={`${selectCls} max-w-[12rem]`}
+    >
       <option value="">미배정</option>
       {teams.map((t) => (
         <option key={t.id} value={t.id}>
@@ -581,9 +688,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
           </table>
         </div>
         {rows.length === 0 && <p className="py-6 text-sm text-fg/50">조건에 맞는 참가자가 없습니다.</p>}
-        <p className="mt-3 text-xs text-fg/40">
-          이미 확정한 금액보다 낮추면 해당 참가자는 금액을 줄이기 전까지 다시 확정할 수 없습니다.
-        </p>
+        <p className="mt-3 text-xs text-fg/40">이미 확정한 금액보다 낮추면 해당 참가자는 금액을 줄이기 전까지 다시 확정할 수 없습니다.</p>
       </section>
     </div>
   );
@@ -822,7 +927,13 @@ function AddTeam() {
         </label>
         <label htmlFor={`${id}-table`} className="w-24 text-xs text-fg/60">
           테이블
-          <input id={`${id}-table`} value={table} onChange={(e) => setTable(e.target.value)} placeholder="D-01" className={`${fieldCls} py-2`} />
+          <input
+            id={`${id}-table`}
+            value={table}
+            onChange={(e) => setTable(e.target.value)}
+            placeholder="D-01"
+            className={`${fieldCls} py-2`}
+          />
         </label>
         <label htmlFor={`${id}-project`} className="min-w-[10rem] flex-1 text-xs text-fg/60">
           프로젝트명
@@ -862,9 +973,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
         <CodeCard code={state.attendanceCode} />
         <section aria-labelledby="att-rate" className="border border-fg/15 p-5">
           <Label id="att-rate">출석률</Label>
-          <p className="mt-2 font-mono text-4xl font-semibold tabular-nums">
-            {total ? Math.round((present / total) * 100) : 0}%
-          </p>
+          <p className="mt-2 font-mono text-4xl font-semibold tabular-nums">{total ? Math.round((present / total) * 100) : 0}%</p>
           <p className="mt-1 text-sm text-fg/60">
             {total}명 중 {present}명 출석 · 미출석 {total - present}명
           </p>
@@ -993,11 +1102,7 @@ function CodeCard({ code }: { code: string }) {
         <button type="submit" disabled={value.length < 4} className={primaryBtn}>
           변경
         </button>
-        <button
-          type="button"
-          onClick={() => apply(String(Math.floor(Math.random() * 10000)).padStart(4, "0"))}
-          className={smallBtn}
-        >
+        <button type="button" onClick={() => apply(String(Math.floor(Math.random() * 10000)).padStart(4, "0"))} className={smallBtn}>
           랜덤 생성
         </button>
       </form>
@@ -1056,12 +1161,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
             >
               새 틱 발행하기
             </button>
-            {snap && (
-              <DeleteButton
-                label="최근 틱 삭제"
-                onConfirm={() => updateFestival((s) => ({ ...s, ticks: s.ticks.slice(0, -1) }))}
-              />
-            )}
+            {snap && <DeleteButton label="최근 틱 삭제" onConfirm={() => updateFestival((s) => ({ ...s, ticks: s.ticks.slice(0, -1) }))} />}
           </div>
           <p className="mt-2 text-xs text-fg/40">
             발행할 때마다 틱이 하나씩 쌓이고, 참가자는 발행된 틱들만 그래프로 볼 수 있습니다. 삭제는 가장 최근 틱만 지웁니다.

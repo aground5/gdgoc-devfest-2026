@@ -13,7 +13,6 @@ export type SessionParticipant = {
   name: string;
   school: SchoolKey;
   team_id: string | null;
-  checked_in: boolean;
 };
 
 export type ParticipantSession = { status: "loading" } | { status: "out" } | { status: "in"; participant: SessionParticipant };
@@ -38,7 +37,12 @@ async function load() {
   const sb = client();
   const { data: claims } = await sb.auth.getClaims();
   if (!claims) return set(OUT);
-  const { data } = await sb.from("participants").select("id, name, school, team_id, checked_in").maybeSingle();
+  // Staff can read every row, so filter to the participant bound to this user
+  const { data } = await sb
+    .from("participants")
+    .select("id, name, school, team_id")
+    .eq("user_id", claims.claims.sub)
+    .maybeSingle();
   set(data ? { status: "in", participant: data as SessionParticipant } : OUT);
 }
 
@@ -67,7 +71,9 @@ export function useParticipantSession(): ParticipantSession {
 export async function login(name: string, code: string): Promise<string | null> {
   const sb = client();
   const { data: claims } = await sb.auth.getClaims();
-  if (!claims) {
+  // Participants log in on an anonymous session; drop a staff (Google) session first
+  if (claims && !claims.claims.is_anonymous) await sb.auth.signOut();
+  if (!claims || !claims.claims.is_anonymous) {
     const { error } = await sb.auth.signInAnonymously();
     if (error) return "로그인 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.";
   }

@@ -18,9 +18,8 @@ begin
     ('Sprout', 'C-01', 'PlantPal', '사진 한 장으로 식물 상태 진단'),
     ('Orbit', 'C-02', 'SpaceQuiz', '우주 과학 퀴즈로 배우는 물리');
 
-  insert into public.participants (name, school, team_id, access_code, checked_in)
-  select v.name, v.school, t.id, v.code, v.checked_in
-  from (values
+  create temp table seed_people (name text, school text, table_label text, code text, checked_in boolean) on commit drop;
+  insert into seed_people values
     ('김민준', 'ku', 'A-01', 'G9CT38', true),
     ('이서연', 'yu', 'A-01', 'WSTHDQ', true),
     ('박도윤', 'kaist', 'A-01', 'B2HJVZ', true),
@@ -48,8 +47,18 @@ begin
     ('남지우', 'kaist', 'C-02', 'DBK2VY', false),
     ('심하준', 'ku', 'C-02', 'Q2P2X5', false),
     ('류다인', 'kaist', 'C-02', 'FKFS47', false),
-    ('이도현', 'yu', null, '4MYZJV', false)
-  ) as v(name, school, table_label, code, checked_in)
+    ('이도현', 'yu', null, '4MYZJV', false);
+
+  insert into public.participants (name, school, team_id, access_code)
+  select v.name, v.school, t.id, v.code
+  from seed_people v
   left join public.teams t on t.table_label = v.table_label;
+
+  -- Mock check-ins (checked_in = true in guide.ts)
+  insert into public.attendance (participant_id, method)
+  select p.id, 'staff'
+  from seed_people v
+  join public.participants p on p.access_code = v.code
+  where v.checked_in;
 end
 $$;
