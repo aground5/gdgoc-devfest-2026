@@ -30,6 +30,41 @@ function pageLinkTarget(e: MouseEvent): URL | null {
   return url;
 }
 
+// A little depth on each column, from the site's original folded stripes (FoldStripes):
+// the column reads as a sheet creased down the middle (left half in shade), with a
+// diagonal fold at its end, alternating bottom/top; the second column also has the
+// sawtooth notch. Drawn with translucent guide black/white over the school color,
+// so the palette stays the four main colors plus black and white.
+const SHADE = "color-mix(in srgb, var(--black) 14%, transparent)";
+const FOLD = "color-mix(in srgb, var(--black) 24%, transparent)";
+const LIGHT = "color-mix(in srgb, var(--white) 18%, transparent)";
+
+function Folds({ index }: { index: number }) {
+  const bottom = index % 2 === 0;
+  return (
+    <>
+      <span className="absolute inset-y-0 left-0 w-1/2" style={{ background: SHADE }} />
+      <span
+        className="absolute inset-x-0 h-1/3"
+        style={{
+          [bottom ? "bottom" : "top"]: 0,
+          background: FOLD,
+          clipPath: bottom ? "polygon(0 100%, 100% 0, 100% 100%)" : "polygon(0 0, 100% 0, 0 100%)",
+        }}
+      />
+      {index === 1 && (
+        <span
+          className="absolute right-1/2 top-1/4 h-1/2 w-1/4"
+          style={{
+            background: LIGHT,
+            clipPath: "polygon(100% 0, 0 16.6%, 100% 33.3%, 0 50%, 100% 66.6%, 0 83.3%, 100% 100%)",
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 export function PageTransition() {
   const router = useRouter();
   const pathname = usePathname();
@@ -73,13 +108,15 @@ export function PageTransition() {
       {schools.map((s, i) => (
         <div
           key={s.key}
-          className="h-full flex-1 will-change-transform"
+          className="relative h-full flex-1 overflow-hidden will-change-transform"
           style={{
             background: s.main,
             transform: covered ? "translateY(0)" : "translateY(-100%)",
             transition: `transform ${DURATION}ms cubic-bezier(0.7, 0, 0.3, 1) ${i * STAGGER}ms`,
           }}
-        />
+        >
+          <Folds index={i} />
+        </div>
       ))}
     </div>
   );
