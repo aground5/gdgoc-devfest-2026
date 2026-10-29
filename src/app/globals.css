@@ -2,6 +2,8 @@
 
 /* GDG DevFest 2026 palette (gdg-devfest-2026-RGB.ase) */
 :root {
+  /* Strip under the KU pair in the color bar (gdg-devfest-2026-color-bar.svg only) */
+  --ku-deep: #7d001a;
   --ku-main: #761227;
   --ku-tint: #a32a43;
   --yu-main: #003876;
@@ -33,9 +35,9 @@
 /* Dark theme: follows the system unless the user picked light */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --page: #000000;
-    --surface: var(--black);
-    --fg: #f4f4f4;
+    --page: var(--black);
+    --surface: color-mix(in srgb, var(--white) 6%, var(--black));
+    --fg: var(--white);
     --contrast: var(--white);
     --on-contrast: var(--black);
     --raised: var(--white);
@@ -45,9 +47,9 @@
 }
 
 :root[data-theme="dark"] {
-  --page: #000000;
-  --surface: var(--black);
-  --fg: #f4f4f4;
+  --page: var(--black);
+  --surface: color-mix(in srgb, var(--white) 6%, var(--black));
+  --fg: var(--white);
   --contrast: var(--white);
   --on-contrast: var(--black);
   --raised: var(--white);
@@ -75,8 +77,10 @@
   --color-g-yellow: var(--g-yellow);
   --color-g-blue: var(--g-blue);
   --color-g-green: var(--g-green);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Fixed (not theme-flipped) guide black and white, e.g. the content-wise header bar */
+  --color-ink: var(--black);
+  --color-paper: var(--white);
+  --font-sans: var(--font-google-sans), var(--font-noto-kr), sans-serif;
 }
 
 html {
@@ -127,15 +131,18 @@ html {
   transition: none !important;
 }
 
-/* Diagonal fold at the bottom of a stripe */
-.fold {
-  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+/* The design guide's content-wise header bar: guide black with white text in both themes.
+   Re-pointing --fg/--page lets fg/page utilities inside it (buttons, ThemeToggle) just work. */
+.ink-bar {
+  --fg: var(--white);
+  --page: var(--black);
+  background: var(--black);
+  color: var(--fg);
+  color-scheme: dark;
 }
 
-/* Sawtooth notches */
-.teeth {
-  clip-path: polygon(
-    0 0, 100% 16.6%, 0 33.3%, 100% 50%, 0 66.6%, 100% 83.3%, 0 100%
-  );
+/* Hairline that is invisible on the light page but keeps the color bar's black block
+   from melting into the guide-black page in dark mode */
+.ink-edge {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 14%, transparent);
 }
-

@@ -50,7 +50,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       type="button"
       onClick={() => setTheme(next)}
       aria-label={next === "dark" ? "다크 모드로 전환" : "라이트 모드로 전환"}
-      className={`grid h-8 w-8 place-items-center rounded-full border border-fg/20 text-fg transition hover:bg-fg/10 ${className}`}
+      className={`grid h-8 w-8 place-items-center border border-fg/20 text-fg transition hover:bg-fg/10 ${className}`}
     >
       {theme === "dark" ? (
         // Sun

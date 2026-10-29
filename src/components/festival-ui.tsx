@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useRef, useSyncExternalStore, type ReactNode } from "react";
-import { GdgLogo, GoogleBar, schools, type School } from "./brand";
+import { GdgLogo, GoogleBar, SchoolMark, schools, type School } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
 import { event, type Participant, type SchoolKey } from "@/data/guide";
 
@@ -18,13 +18,13 @@ export const fieldCls =
 
 export const selectCls = "border border-fg/20 bg-page px-2 py-2 text-sm text-fg outline-none transition focus:border-fg/60";
 
-export const smallBtn = "border border-fg/25 px-3 py-1.5 text-sm font-semibold transition hover:bg-fg/10 disabled:opacity-30";
+export const smallBtn = "border border-fg/25 px-3 py-1.5 text-sm font-bold transition hover:bg-fg/10 disabled:opacity-30";
 
-export const primaryBtn = "bg-fg px-4 py-2 text-sm font-semibold text-page transition hover:opacity-85 disabled:opacity-30";
+export const primaryBtn = "bg-fg px-4 py-2 text-sm font-bold text-page transition hover:opacity-85 disabled:opacity-30";
 
 export function Label({ id, children }: { id?: string; children: ReactNode }) {
   return (
-    <h2 id={id} className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-fg/60">
+    <h2 id={id} className="tabular-nums text-xs font-bold uppercase tracking-[0.2em] text-fg/60">
       {children}
     </h2>
   );
@@ -52,13 +52,13 @@ export function MemberStripe({ people, className = "h-2" }: { people: Participan
 
 export function Status({ on }: { on: boolean }) {
   return on ? (
-    <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-[var(--g-green)]">
-      <span className="h-1.5 w-1.5 rounded-full bg-[var(--g-green)]" />
+    <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-[var(--g-green)]">
+      <span className="h-1.5 w-1.5 bg-[var(--g-green)]" />
       출석
     </span>
   ) : (
     <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-fg/40">
-      <span className="h-1.5 w-1.5 rounded-full bg-fg/30" />
+      <span className="h-1.5 w-1.5 bg-fg/30" />
       미출석
     </span>
   );
@@ -119,21 +119,25 @@ export function ScreenFrame<T extends string>({
   return (
     <div className="flex min-h-svh flex-col bg-page text-fg">
       <header className="sticky top-0 z-10 border-b border-fg/10 bg-page">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 pt-4 sm:px-8">
-          <p className="flex min-w-0 items-center gap-2 text-sm font-semibold sm:text-base">
-            <GdgLogo className="h-3 w-6 shrink-0" />
-            <span className="truncate">{event.series}</span>
-            {badge && <span className="shrink-0 bg-fg px-1.5 py-0.5 text-[11px] font-bold text-page">{badge}</span>}
-          </p>
-          <div className="flex shrink-0 items-center gap-2">
-            {actions}
-            <ThemeToggle className="h-10 w-10" />
-            <Link
-              href="/"
-              className="inline-flex h-10 items-center gap-2 border border-fg/25 px-4 text-sm font-semibold transition hover:bg-fg/10"
-            >
-              나가기 <span aria-hidden="true">✕</span>
-            </Link>
+        {/* Header bar from the design guide's content-wise designs: school-color mark, wordmark, GDG brackets */}
+        <div className="ink-bar flex items-stretch">
+          <SchoolMark className="w-12 shrink-0 sm:w-16" />
+          <div className="mx-auto flex min-w-0 max-w-6xl flex-1 items-center justify-between gap-4 px-4 py-3 sm:px-8">
+            <p className="flex min-w-0 items-center gap-2 text-lg font-bold tracking-tight sm:text-2xl">
+              <span className="truncate">GDG DevFest.</span>
+              {badge && <span className="shrink-0 bg-fg px-1.5 py-0.5 text-[11px] font-bold tracking-normal text-page">{badge}</span>}
+            </p>
+            <div className="flex shrink-0 items-center gap-2">
+              {actions}
+              <ThemeToggle className="h-10 w-10" />
+              <Link
+                href="/"
+                className="inline-flex h-10 items-center gap-2 border border-fg/25 px-4 text-sm font-bold transition hover:bg-fg/10"
+              >
+                나가기 <span aria-hidden="true">✕</span>
+              </Link>
+              <GdgLogo className="ml-2 hidden h-4 w-8 sm:block" title={event.series} />
+            </div>
           </div>
         </div>
         <div role="tablist" onKeyDown={onKey} className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 sm:px-8">
@@ -151,7 +155,7 @@ export function ScreenFrame<T extends string>({
                 aria-controls="screen-panel"
                 tabIndex={on ? 0 : -1}
                 onClick={() => onTab(t.id)}
-                className={`relative shrink-0 px-3 py-3 text-sm font-semibold transition sm:text-base ${on ? "text-fg" : "text-fg/50 hover:text-fg/80"}`}
+                className={`relative shrink-0 px-3 py-3 text-sm font-bold transition sm:text-base ${on ? "text-fg" : "text-fg/50 hover:text-fg/80"}`}
               >
                 {t.label}
                 {on && <span className="absolute inset-x-3 bottom-0 h-[3px] bg-fg" />}
