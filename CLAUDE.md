@@ -79,6 +79,12 @@ There is no test framework set up.
 - **Write pattern (follow it for every Supabase write):** call `run(write, optimistic)` from `src/lib/db/hooks.tsx`, with the request from `queries.ts` and a cache patch from `patch` (`person`, `removePerson`, `attendance`, `team`, `removeTeam`, `venueCode`; add one when a new write needs it).
   - `run` cancels in-flight queries, applies the patch so the UI changes at once, then sends the write. On failure it restores the cache and shows the error toast. Don't wait for a refetch to update the screen: a controlled input bound to query data would snap back to the old value, which is the flicker this pattern fixes.
   - While any write is in flight, refetches are held back: Realtime events, post-write invalidation and polling (`poll()`). This keeps a refetch between two quick edits from showing the server state without the second edit. After the last write settles, everything is refetched once. Route new refetch triggers through `refresh()`, never call `invalidateQueries` directly.
+  - **Free-text fields that save as you type** (e.g. the staff note, `StaffNote` in `admin-screen.tsx`) debounce instead of writing on every keystroke:
+    - Keep a local `draft`, and render `draft ?? serverValue`.
+    - On change, restart a timer (`NOTE_DEBOUNCE`, 600 ms). Flush right away on blur and Enter; Escape cancels the timer and drops the draft.
+    - Saving goes through `run()` with an optimistic patch, like any other write. Skip the write if the trimmed value equals the server value.
+    - After the save, clear the draft only if it still equals the saved value (`setDraft((d) => (d === value ? null : d))`). Otherwise typing that continued while the request was in flight would be wiped.
+    - Clear the timer on unmount.
   - Writes whose result the server decides (insert with a generated id or code, `check_in`) skip `optimistic`. Show the result after `run` returns, and patch the cache then if needed (see `AttendanceCard`).
 - `supabase/seed.sql` holds the sample teams/participants (originally the guide.ts mock) with fixed test access codes (applied with `supabase db push --include-seed`; it skips if teams has rows). Replace before the real event.
 - Participant login (`src/lib/participant-session.ts`): sign in anonymously, then RPC `claim_participant(p_name, p_code)` matches name + code and binds the row to `auth.uid()`; `release_participant()` on logout. `/onfestival` is gated by it. Behind the gates, everything comes from Supabase.
