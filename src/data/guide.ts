@@ -111,7 +111,8 @@ export const venueInfo = [
   { label: "문의", value: "GDG on Campus 운영진" },
 ];
 
-// Live screen (/onfestival) and admin (/organize) mock seed data — replace with real data.
+// Types for the festival screens (/onfestival, /organize). The data itself is in
+// Supabase; supabase/seed.sql has the sample teams and participants.
 
 export type SchoolKey = "ku" | "yu" | "skku" | "kaist";
 
@@ -121,7 +122,9 @@ export type Participant = {
   name: string;
   school: SchoolKey;
   teamId: string | null; // assigned by staff
-  checkedIn: boolean;
+  checkedIn: boolean; // checked in today (staff see everyone's, a participant only their own)
+  accessCode?: string; // personal login code; only loaded for staff
+  budget?: number | null; // staff-set investment budget; null = default. Staff see everyone's, a participant only their own
 };
 
 export type Team = {
@@ -132,62 +135,3 @@ export type Team = {
   desc: string;
 };
 
-export const seedTeams: Team[] = [
-  { id: "t01", name: "Vision Makers", table: "A-01", project: "SightLine", desc: "시각장애인을 위한 Gemini 기반 길 안내 앱" },
-  { id: "t02", name: "Blue Byte", table: "A-02", project: "StudyMate", desc: "강의 녹음을 요약해 주는 학습 도우미" },
-  { id: "t03", name: "Green Light", table: "A-03", project: "EcoRoute", desc: "탄소 배출이 가장 적은 경로 추천" },
-  { id: "t04", name: "Sky Lab", table: "B-01", project: "LabNote", desc: "실험 노트를 자동으로 정리하는 AI" },
-  { id: "t05", name: "Crimson Code", table: "B-02", project: "CampusEats", desc: "학식 메뉴와 혼잡도를 한눈에" },
-  { id: "t06", name: "Eagle Eye", table: "B-03", project: "SafeWalk", desc: "야간 귀갓길 안심 동행 서비스" },
-  { id: "t07", name: "Sprout", table: "C-01", project: "PlantPal", desc: "사진 한 장으로 식물 상태 진단" },
-  { id: "t08", name: "Orbit", table: "C-02", project: "SpaceQuiz", desc: "우주 과학 퀴즈로 배우는 물리" },
-];
-
-const p = (id: string, name: string, school: SchoolKey, teamId: string | null, checkedIn: boolean): Participant => ({
-  id,
-  name,
-  school,
-  teamId,
-  checkedIn,
-});
-
-export const seedParticipants: Participant[] = [
-  p("p01", "김민준", "ku", "t01", true),
-  p("p02", "이서연", "yu", "t01", true),
-  p("p03", "박도윤", "kaist", "t01", true),
-  p("p04", "최하은", "ku", "t01", false),
-  p("p05", "정지호", "yu", "t02", true),
-  p("p06", "강수아", "yu", "t02", true),
-  p("p07", "윤시우", "yu", "t02", false),
-  p("p08", "조예준", "skku", "t03", false),
-  p("p09", "한지민", "ku", "t03", false),
-  p("p10", "오서준", "kaist", "t03", false),
-  p("p11", "신유나", "skku", "t03", false),
-  p("p12", "임건우", "kaist", "t04", true),
-  p("p13", "서하린", "kaist", "t04", true),
-  p("p14", "황준서", "skku", "t04", false),
-  p("p15", "송지안", "ku", "t05", false),
-  p("p16", "문채원", "ku", "t05", false),
-  p("p17", "배현우", "ku", "t05", false),
-  p("p18", "권도현", "yu", "t06", true),
-  p("p19", "유소율", "skku", "t06", true),
-  p("p20", "장민서", "ku", "t06", true),
-  p("p21", "노은우", "kaist", "t06", false),
-  p("p22", "홍예린", "skku", "t07", true),
-  p("p23", "전시윤", "skku", "t07", true),
-  p("p24", "고태윤", "yu", "t07", false),
-  p("p25", "남지우", "kaist", "t08", false),
-  p("p26", "심하준", "ku", "t08", false),
-  p("p27", "류다인", "kaist", "t08", false),
-  p("p28", "이도현", "yu", null, false),
-];
-
-// The participant viewing /onfestival in this mockup.
-export const myParticipantId = "p09";
-
-// Mock attendance code shown to staff at the venue; staff can change it on /organize.
-export const seedAttendanceCode = "1106";
-
-// Mock investment rules: each participant splits a virtual budget across other teams' projects.
-export const INVEST_BUDGET = 1_000_000;
-export const INVEST_STEP = 50_000;

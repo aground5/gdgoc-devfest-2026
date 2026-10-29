@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DbProvider } from "@/lib/db/hooks";
 import { AdminScreen } from "@/components/admin-screen";
 
 export const metadata: Metadata = {
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function OrganizePage() {
-  return <AdminScreen />;
+  return (
+    <DbProvider>
+      <AdminScreen />
+    </DbProvider>
+  );
 }

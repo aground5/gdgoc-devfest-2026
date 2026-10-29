@@ -4,9 +4,12 @@
 // their own team and attendance, the team list, their own investments, and the
 // investment ticks staff have published (never live totals).
 
-import { useId, useState, type FormEvent } from "react";
-import { INVEST_STEP, myParticipantId, type Participant, type Team } from "@/data/guide";
-import { budgetOf, membersOf, updateFestival, useFestival, won, type FestivalState } from "@/lib/festival-store";
+import { useId, useMemo, useState, type FormEvent } from "react";
+import { type Participant, type Team } from "@/data/guide";
+import { budgetOf, buildState, membersOf, won, type FestivalState } from "@/lib/festival-store";
+import { login, logout, useParticipantSession, type SessionParticipant } from "@/lib/participant-session";
+import { patch, run, useInvestSettings, useInvestments, useMyBudget, usePeople, useTeams, useTicks } from "@/lib/db/hooks";
+import { checkIn, confirmInvestments, updateMyTeam } from "@/lib/db/queries";
 import {
   Label,
   MemberStripe,
@@ -27,15 +30,148 @@ const VIEWS = [
   { id: "invest", label: "투자" },
 ] as const;
 
+// Entry gate: log in with name + personal access code (Supabase), then show the
+// festival screen. The screen itself still runs on the localStorage mock, so the
+// logged-in participant is matched to the mock participant with the same name.
 export function LiveScreen() {
-  const state = useFestival();
-  const [view, setView] = useHashTab(VIEWS, "team");
-  const me = state.participants.find((p) => p.id === myParticipantId);
-  const myTeam = me?.teamId ? state.teams.find((t) => t.id === me.teamId) : undefined;
+  const session = useParticipantSession();
+
+  if (session.status !== "in") {
+    return (
+      <ScreenFrame tabs={NO_TABS} active="" onTab={() => {}}>
+        {session.status === "loading" ? (
+          <p className="py-10 text-fg/50" role="status">
+            불러오는 중…
+          </p>
+        ) : (
+          <LoginCard />
+        )}
+      </ScreenFrame>
+    );
+  }
+  return <Festival who={session.participant} />;
+}
+
+const NO_TABS: readonly { id: ""; label: string }[] = [];
+
+function LoginCard() {
+  const nameId = useId();
+  const codeId = useId();
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const err = await login(name, code);
+    setBusy(false);
+    if (err) setError(err);
+  }
 
   return (
-    <ScreenFrame tabs={VIEWS} active={view} onTab={setView}>
-      {!me ? (
+    <section aria-labelledby="login-title" className="mx-auto max-w-md border border-fg/15 p-6 sm:p-8">
+      <Label id="login-title">입장하기</Label>
+      <p className="mt-3 text-2xl font-bold tracking-tight">참가자 확인</p>
+      <p className="mt-1 text-sm text-fg/60">이름과 운영진에게 받은 참가자 코드를 입력해 주세요.</p>
+      <form onSubmit={onSubmit} className="mt-6 grid gap-4">
+        <div>
+          <label htmlFor={nameId} className="text-sm font-bold">
+            이름
+          </label>
+          <input
+            id={nameId}
+            className={fieldCls}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            required
+            placeholder="홍길동"
+          />
+        </div>
+        <div>
+          <label htmlFor={codeId} className="text-sm font-bold">
+            참가자 코드
+          </label>
+          <input
+            id={codeId}
+            className={`${fieldCls} tabular-nums text-lg uppercase tracking-[0.3em]`}
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ""))}
+            maxLength={6}
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            required
+            placeholder="ABC123"
+          />
+        </div>
+        {error && (
+          <p role="alert" className="text-sm font-bold text-[var(--g-red)]">
+            {error}
+          </p>
+        )}
+        <button type="submit" className={`${primaryBtn} py-3 text-base`} disabled={busy || !name.trim() || code.length < 6}>
+          {busy ? "확인 중…" : "입장하기"}
+        </button>
+      </form>
+      <p className="mt-4 text-xs text-fg/50">코드를 모르면 현장 운영진에게 문의해 주세요.</p>
+    </section>
+  );
+}
+
+function Festival({ who }: { who: SessionParticipant }) {
+  const people = usePeople("participant");
+  const teams = useTeams("participant");
+  const settings = useInvestSettings("participant");
+  const investments = useInvestments("participant"); // RLS: only my own
+  const ticks = useTicks("participant");
+  const myBudget = useMyBudget(who.id);
+  const state = useMemo(() => {
+    if (myBudget.data === undefined) return null;
+    // The directory has no budgets; add mine so budgetOf() works
+    const withMine = people.data?.map((p) => (p.id === who.id ? { ...p, budget: myBudget.data } : p));
+    return buildState(withMine, teams.data, settings.data, investments.data, ticks.data);
+  }, [people.data, teams.data, settings.data, investments.data, ticks.data, myBudget.data, who.id]);
+  const [view, setView] = useHashTab(VIEWS, "team");
+  const me = state?.participants.find((p) => p.id === who.id);
+  const myTeam = me?.teamId ? state?.teams.find((t) => t.id === me.teamId) : undefined;
+  const failed = people.error ?? teams.error ?? settings.error ?? investments.error ?? ticks.error ?? myBudget.error;
+  const [leaving, setLeaving] = useState(false);
+
+  return (
+    <ScreenFrame
+      tabs={VIEWS}
+      active={view}
+      onTab={setView}
+      actions={
+        <button
+          type="button"
+          onClick={async () => {
+            setLeaving(true);
+            await logout();
+          }}
+          disabled={leaving}
+          className="inline-flex h-10 items-center border border-fg/25 px-3 text-sm font-bold transition hover:bg-fg/10 disabled:opacity-40"
+          title={`${who.name}님으로 로그인됨`}
+        >
+          <span className="hidden sm:inline">{who.name} ·&nbsp;</span>로그아웃
+        </button>
+      }
+    >
+      {!state ? (
+        failed ? (
+          <p role="alert" className="py-10 text-[var(--g-red)]">
+            데이터를 불러오지 못했습니다. {failed.message}
+          </p>
+        ) : (
+          <p className="py-10 text-fg/50" role="status">
+            불러오는 중…
+          </p>
+        )
+      ) : !me ? (
         <p className="py-10 text-lg text-fg/60">참가자 정보를 찾을 수 없습니다. 운영진에게 문의해 주세요.</p>
       ) : view === "team" ? (
         <div className="grid gap-10 lg:grid-cols-[1fr_26rem]">
@@ -49,7 +185,7 @@ export function LiveScreen() {
                 <p className="mt-1 text-sm text-fg/60">운영진이 팀을 배정하면 여기에 표시됩니다.</p>
               </section>
             )}
-            <AttendanceCard me={me} code={state.attendanceCode} />
+            <AttendanceCard me={me} />
           </div>
           <TeamList state={state} myTeamId={myTeam?.id} />
         </div>
@@ -128,13 +264,16 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
   const [project, setProject] = useState(team.project);
   const [desc, setDesc] = useState(team.desc);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) return setError("팀명을 입력해 주세요.");
-    const patch = { name: name.trim(), project: project.trim(), desc: desc.trim() };
-    updateFestival((s) => ({ ...s, teams: s.teams.map((t) => (t.id === team.id ? { ...t, ...patch } : t)) }));
-    onDone();
+    setBusy(true);
+    const t = { name: name.trim(), project: project.trim(), desc: desc.trim() };
+    const saved = await run(() => updateMyTeam(t), patch.team(team.id, t));
+    setBusy(false);
+    if (saved) onDone();
   }
 
   return (
@@ -173,8 +312,8 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
         </p>
       )}
       <div className="flex gap-2">
-        <button type="submit" className={primaryBtn}>
-          저장
+        <button type="submit" disabled={busy} className={primaryBtn}>
+          {busy ? "저장 중…" : "저장"}
         </button>
         <button type="button" onClick={onDone} className={smallBtn}>
           취소
@@ -186,23 +325,25 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
 
 /* ---------- Attendance ---------- */
 
-function AttendanceCard({ me, code: expected }: { me: Participant; code: string }) {
+function AttendanceCard({ me }: { me: Participant }) {
   const id = useId();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
-    if (code !== expected) {
-      setError("출석 코드가 올바르지 않습니다. 운영진에게 다시 확인해 주세요.");
-      return;
-    }
+    setBusy(true);
+    let accepted = false;
+    const sent = await run(async () => {
+      accepted = await checkIn(code);
+    });
+    setBusy(false);
+    if (!sent) return;
+    if (!accepted) return setError("출석 코드가 올바르지 않거나 출석이 마감되었습니다. 운영진에게 확인해 주세요.");
+    patch.attendance([me.id], true)(); // show it now; the refetch confirms
     setError("");
     setCode("");
-    updateFestival((s) => ({
-      ...s,
-      participants: s.participants.map((p) => (p.id === me.id ? { ...p, checkedIn: true } : p)),
-    }));
   }
 
   return (
@@ -235,8 +376,8 @@ function AttendanceCard({ me, code: expected }: { me: Participant; code: string 
               aria-describedby={error ? `${id}-err` : undefined}
               className="w-36 border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-center tabular-nums text-2xl tracking-[0.4em] text-fg outline-none transition placeholder:text-fg/20 focus:border-fg/60"
             />
-            <button type="submit" disabled={code.length < 4} className={`${primaryBtn} px-5 text-base`}>
-              출석하기
+            <button type="submit" disabled={code.length < 4 || busy} className={`${primaryBtn} px-5 text-base`}>
+              {busy ? "확인 중…" : "출석하기"}
             </button>
           </div>
           {error && (
@@ -244,7 +385,6 @@ function AttendanceCard({ me, code: expected }: { me: Participant; code: string 
               {error}
             </p>
           )}
-          <p className="mt-3 text-xs text-fg/40">목업용 코드: {expected} (운영진 화면에서 변경 가능)</p>
         </form>
       )}
     </section>
@@ -323,7 +463,24 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
   // Confirmed amounts live in the shared store; edits stay in a local draft until confirmed.
   const saved = state.investments[me.id] ?? null;
   const [draft, setDraft] = useState<Record<string, number> | null>(null);
-  const amounts = draft ?? saved ?? {};
+  const [busy, setBusy] = useState(false);
+  const closed = !state.investOpen;
+
+  // When staff close investing, unconfirmed edits are dropped so the screen
+  // only shows what was actually confirmed. (State adjusted during render on
+  // the open -> closed change, the React-recommended way to reset on a prop.)
+  const [wasOpen, setWasOpen] = useState(state.investOpen);
+  const [discarded, setDiscarded] = useState(false);
+  if (wasOpen !== state.investOpen) {
+    setWasOpen(state.investOpen);
+    if (closed && draft) {
+      setDraft(null);
+      setDiscarded(true);
+    }
+    if (!closed) setDiscarded(false);
+  }
+  // Also ignore any draft while closed (e.g. a confirm that failed because it just closed)
+  const amounts = (closed ? null : draft) ?? saved ?? {};
 
   // Total budget is set per person by staff
   const budget = budgetOf(state, me.id);
@@ -340,10 +497,15 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
     setDraft({ ...amounts, [teamId]: v });
   }
 
-  function confirm() {
-    const clean = Object.fromEntries(targets.map((t) => [t.id, amounts[t.id] ?? 0]).filter(([, v]) => (v as number) > 0));
-    updateFestival((s) => ({ ...s, investments: { ...s.investments, [me.id]: clean } }));
-    setDraft(null);
+  // On failure the draft stays, so nothing typed is lost
+  async function confirm() {
+    const clean: Record<string, number> = Object.fromEntries(
+      targets.map((t) => [t.id, amounts[t.id] ?? 0]).filter(([, v]) => (v as number) > 0),
+    );
+    setBusy(true);
+    const ok = await run(() => confirmInvestments(clean), patch.myInvestments(me.id, clean));
+    setBusy(false);
+    if (ok) setDraft(null);
   }
 
   return (
@@ -353,7 +515,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           <div>
             <Label id="invest-summary">내 투자금</Label>
             <p
-              className={`mt-2  text-4xl font-bold tracking-tight tabular-nums sm:text-5xl ${over ? "text-[var(--g-red)]" : ""}`}
+              className={`mt-2 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl ${over ? "text-[var(--g-red)]" : ""}`}
             >
               {over ? `−${won(-left)}` : won(left)}
             </p>
@@ -367,8 +529,13 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               확정됨
             </span>
           ) : (
-            <button type="button" onClick={confirm} disabled={over || (saved === null && used === 0)} className={`${primaryBtn} px-5 py-2.5 text-base`}>
-              {saved === null ? "투자 확정하기" : "변경사항 확정하기"}
+            <button
+              type="button"
+              onClick={confirm}
+              disabled={closed || busy || over || (saved === null && used === 0)}
+              className={`${primaryBtn} px-5 py-2.5 text-base`}
+            >
+              {busy ? "확정 중…" : saved === null ? "투자 확정하기" : "변경사항 확정하기"}
             </button>
           )}
         </div>
@@ -390,7 +557,14 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
             />
           ))}
         </div>
-        {over ? (
+        {closed ? (
+          <p role="status" className="mt-3 flex items-center gap-2 text-xs font-bold text-fg">
+            <span className="h-2 w-2 shrink-0 bg-[var(--g-red)]" aria-hidden="true" />
+            {discarded
+              ? "투자가 마감되어 확정하지 않은 변경사항은 취소되었습니다. 마지막으로 확정한 투자가 반영됩니다."
+              : "투자가 마감되었습니다. 확정된 투자는 그대로 유지됩니다."}
+          </p>
+        ) : over ? (
           <p role="alert" className="mt-3 flex items-center gap-2 text-xs font-bold text-fg">
             <span className="h-2 w-2 shrink-0 bg-[var(--g-red)]" aria-hidden="true" />
             운영진이 전체 투자금을 {won(budget)}으로 조정했습니다. {won(-left)}을 줄여야 확정할 수 있습니다.
@@ -404,7 +578,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           <p role="status" className="mt-3 text-xs text-fg/40">
             {upToDate
               ? "확정된 투자입니다. 언제든 다시 바꾸고 확정할 수 있습니다."
-              : `${won(INVEST_STEP)} 단위로 투자할 수 있습니다. 내 팀 프로젝트에는 투자할 수 없습니다.`}
+              : `${won(state.step)} 단위로 투자할 수 있습니다. 내 팀 프로젝트에는 투자할 수 없습니다.`}
           </p>
         )}
       </section>
@@ -425,6 +599,8 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               amount={amounts[t.id] ?? 0}
               max={(amounts[t.id] ?? 0) + Math.max(0, left)}
               budget={budget}
+              step={state.step}
+              disabled={closed}
               savedAmount={saved ? (saved[t.id] ?? 0) : undefined}
               onChange={(v) => change(t.id, v)}
             />
@@ -442,6 +618,8 @@ function InvestCard({
   max,
   savedAmount,
   budget,
+  step,
+  disabled,
   onChange,
 }: {
   team: Team;
@@ -450,6 +628,8 @@ function InvestCard({
   max: number;
   savedAmount?: number;
   budget: number;
+  step: number;
+  disabled: boolean;
   onChange: (amount: number) => void;
 }) {
   const id = useId();
@@ -475,9 +655,9 @@ function InvestCard({
           <div className="mt-1.5 flex gap-1.5">
             <button
               type="button"
-              aria-label={`${team.project} 투자금 ${won(INVEST_STEP)} 줄이기`}
-              disabled={amount === 0}
-              onClick={() => set(amount - INVEST_STEP)}
+              aria-label={`${team.project} 투자금 ${won(step)} 줄이기`}
+              disabled={disabled || amount === 0}
+              onClick={() => set(amount - step)}
               className={stepBtn}
             >
               −
@@ -488,15 +668,16 @@ function InvestCard({
               autoComplete="off"
               value={amount ? amount.toLocaleString("ko-KR") : ""}
               placeholder="0"
+              disabled={disabled}
               onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")) || 0)}
-              onBlur={() => set(Math.round(amount / INVEST_STEP) * INVEST_STEP)}
+              onBlur={() => set(Math.round(amount / step) * step)}
               className="h-11 min-w-0 flex-1 border border-fg/20 bg-fg/[0.04] px-3 text-right text-lg tabular-nums text-fg outline-none transition placeholder:text-fg/25 focus:border-fg/60"
             />
             <button
               type="button"
-              aria-label={`${team.project} 투자금 ${won(INVEST_STEP)} 늘리기`}
-              disabled={amount >= max}
-              onClick={() => set(amount + INVEST_STEP)}
+              aria-label={`${team.project} 투자금 ${won(step)} 늘리기`}
+              disabled={disabled || amount >= max}
+              onClick={() => set(amount + step)}
               className={stepBtn}
             >
               +
