@@ -25,6 +25,13 @@ const HINTS: Record<string, string> = {
   own_team: "내 팀 프로젝트에는 투자할 수 없습니다.",
   step: "투자 단위에 맞지 않는 금액이 있습니다.",
   unchanged: "마지막 발행 이후 바뀐 투자가 없습니다.",
+  dup_table: "파일에 같은 팀 테이블이 두 번 이상 있습니다.",
+  dup_person: "파일에 이름과 학교가 같은 참가자가 두 번 이상 있습니다.",
+  ambiguous_person: "이름과 학교가 같은 참가자가 이미 여러 명 있어 누구인지 알 수 없습니다.",
+  team_required: "팀의 테이블과 팀명은 비워 둘 수 없습니다.",
+  person_required: "참가자 이름은 비워 둘 수 없습니다.",
+  bad_school: "알 수 없는 학교가 있습니다.",
+  bad_table: "팀 목록에 없는 팀 테이블을 쓴 참가자가 있습니다.",
 };
 
 function fail(error: PostgrestError): never {
@@ -259,6 +266,21 @@ export async function updateStaffNote(email: string, note: string) {
 export async function removeStaffEmail(email: string) {
   const rows = ok(await sb().from("staff_emails").delete().eq("email", email).select("email"));
   if (rows.length === 0) throw new DbError("본인 이메일은 삭제할 수 없습니다.");
+}
+
+/* ---------- Bulk import ---------- */
+
+export type ImportCounts = Record<"teams" | "people", { added: number; updated: number; deleted: number }>;
+
+// Applies a whole file in one transaction (see the bulk_import migration)
+export async function bulkImport(
+  teams: { table: string; name: string; project: string; desc: string }[],
+  people: { name: string; school: string; table: string }[],
+  deleteMissing: boolean,
+): Promise<ImportCounts> {
+  return ok(
+    await sb().rpc("bulk_import", { p_teams: teams, p_people: people, p_delete_missing: deleteMissing }),
+  ) as unknown as ImportCounts;
 }
 
 /* ---------- Participant RPCs ---------- */

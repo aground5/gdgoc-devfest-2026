@@ -5,6 +5,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { schools } from "./brand";
+import { BulkImportPanel } from "./bulk-import";
 import { type Participant, type SchoolKey, type Team } from "@/data/guide";
 import {
   budgetOf,
@@ -70,6 +71,7 @@ import { PublishedStatus } from "./investment-status";
 const VIEWS = [
   { id: "people", label: "참가자" },
   { id: "teams", label: "팀" },
+  { id: "bulk", label: "일괄 수정" },
   { id: "attendance", label: "출석" },
   { id: "budget", label: "투자금" },
   { id: "invest", label: "투자 현황" },
@@ -251,6 +253,7 @@ function Panels({ state, view, email }: { state: FestivalState; view: (typeof VI
       {view === "attendance" && <AttendancePanel state={state} />}
       {view === "budget" && <BudgetPanel state={state} />}
       {view === "invest" && <InvestStatusPanel state={state} />}
+      {view === "bulk" && <BulkImportPanel people={state.participants} teams={state.teams} />}
       {view === "staff" && <StaffPanel me={email} />}
     </>
   );

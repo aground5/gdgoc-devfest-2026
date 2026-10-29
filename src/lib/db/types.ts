@@ -1,542 +1,584 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.18";
-  };
+    PostgrestVersion: "14.18"
+  }
   public: {
     Tables: {
       attendance: {
         Row: {
-          checked_at: string;
-          checked_by: string | null;
-          day: string;
-          id: string;
-          method: string;
-          participant_id: string;
-        };
+          checked_at: string
+          checked_by: string | null
+          day: string
+          id: string
+          method: string
+          participant_id: string
+        }
         Insert: {
-          checked_at?: string;
-          checked_by?: string | null;
-          day?: string;
-          id?: string;
-          method: string;
-          participant_id: string;
-        };
+          checked_at?: string
+          checked_by?: string | null
+          day?: string
+          id?: string
+          method: string
+          participant_id: string
+        }
         Update: {
-          checked_at?: string;
-          checked_by?: string | null;
-          day?: string;
-          id?: string;
-          method?: string;
-          participant_id?: string;
-        };
+          checked_at?: string
+          checked_by?: string | null
+          day?: string
+          id?: string
+          method?: string
+          participant_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "attendance_participant_id_fkey";
-            columns: ["participant_id"];
-            isOneToOne: false;
-            referencedRelation: "participants";
-            referencedColumns: ["id"];
+            foreignKeyName: "attendance_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       attendance_settings: {
         Row: {
-          code: string | null;
-          id: boolean;
-          updated_at: string;
-        };
+          code: string | null
+          id: boolean
+          updated_at: string
+        }
         Insert: {
-          code?: string | null;
-          id?: boolean;
-          updated_at?: string;
-        };
+          code?: string | null
+          id?: boolean
+          updated_at?: string
+        }
         Update: {
-          code?: string | null;
-          id?: boolean;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          code?: string | null
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invest_settings: {
         Row: {
-          default_budget: number;
-          id: boolean;
-          open: boolean;
-          step: number;
-          updated_at: string;
-        };
+          default_budget: number
+          id: boolean
+          open: boolean
+          step: number
+          updated_at: string
+        }
         Insert: {
-          default_budget?: number;
-          id?: boolean;
-          open?: boolean;
-          step?: number;
-          updated_at?: string;
-        };
+          default_budget?: number
+          id?: boolean
+          open?: boolean
+          step?: number
+          updated_at?: string
+        }
         Update: {
-          default_budget?: number;
-          id?: boolean;
-          open?: boolean;
-          step?: number;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          default_budget?: number
+          id?: boolean
+          open?: boolean
+          step?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invest_tick_allocations: {
         Row: {
-          amount: number;
-          participant_id: string;
-          team_id: string;
-          tick_id: number;
-        };
+          amount: number
+          participant_id: string
+          team_id: string
+          tick_id: number
+        }
         Insert: {
-          amount: number;
-          participant_id: string;
-          team_id: string;
-          tick_id: number;
-        };
+          amount: number
+          participant_id: string
+          team_id: string
+          tick_id: number
+        }
         Update: {
-          amount?: number;
-          participant_id?: string;
-          team_id?: string;
-          tick_id?: number;
-        };
+          amount?: number
+          participant_id?: string
+          team_id?: string
+          tick_id?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "invest_tick_allocations_participant_id_fkey";
-            columns: ["participant_id"];
-            isOneToOne: false;
-            referencedRelation: "participants";
-            referencedColumns: ["id"];
+            foreignKeyName: "invest_tick_allocations_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "invest_tick_allocations_team_id_fkey";
-            columns: ["team_id"];
-            isOneToOne: false;
-            referencedRelation: "teams";
-            referencedColumns: ["id"];
+            foreignKeyName: "invest_tick_allocations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "invest_tick_allocations_tick_id_fkey";
-            columns: ["tick_id"];
-            isOneToOne: false;
-            referencedRelation: "invest_ticks";
-            referencedColumns: ["id"];
+            foreignKeyName: "invest_tick_allocations_tick_id_fkey"
+            columns: ["tick_id"]
+            isOneToOne: false
+            referencedRelation: "invest_ticks"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       invest_tick_totals: {
         Row: {
-          investors: number;
-          team_id: string;
-          tick_id: number;
-          total: number;
-        };
+          investors: number
+          team_id: string
+          tick_id: number
+          total: number
+        }
         Insert: {
-          investors: number;
-          team_id: string;
-          tick_id: number;
-          total: number;
-        };
+          investors: number
+          team_id: string
+          tick_id: number
+          total: number
+        }
         Update: {
-          investors?: number;
-          team_id?: string;
-          tick_id?: number;
-          total?: number;
-        };
+          investors?: number
+          team_id?: string
+          tick_id?: number
+          total?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "invest_tick_totals_team_id_fkey";
-            columns: ["team_id"];
-            isOneToOne: false;
-            referencedRelation: "teams";
-            referencedColumns: ["id"];
+            foreignKeyName: "invest_tick_totals_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "invest_tick_totals_tick_id_fkey";
-            columns: ["tick_id"];
-            isOneToOne: false;
-            referencedRelation: "invest_ticks";
-            referencedColumns: ["id"];
+            foreignKeyName: "invest_tick_totals_tick_id_fkey"
+            columns: ["tick_id"]
+            isOneToOne: false
+            referencedRelation: "invest_ticks"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       invest_ticks: {
         Row: {
-          id: number;
-          published_at: string;
-          published_by: string | null;
-        };
+          id: number
+          published_at: string
+          published_by: string | null
+        }
         Insert: {
-          id?: never;
-          published_at?: string;
-          published_by?: string | null;
-        };
+          id?: never
+          published_at?: string
+          published_by?: string | null
+        }
         Update: {
-          id?: never;
-          published_at?: string;
-          published_by?: string | null;
-        };
-        Relationships: [];
-      };
+          id?: never
+          published_at?: string
+          published_by?: string | null
+        }
+        Relationships: []
+      }
       investment_confirmations: {
         Row: {
-          allocation: Json;
-          budget: number;
-          confirmed_at: string;
-          id: number;
-          participant_id: string;
-          total: number;
-        };
+          allocation: Json
+          budget: number
+          confirmed_at: string
+          id: number
+          participant_id: string
+          total: number
+        }
         Insert: {
-          allocation: Json;
-          budget: number;
-          confirmed_at?: string;
-          id?: never;
-          participant_id: string;
-          total: number;
-        };
+          allocation: Json
+          budget: number
+          confirmed_at?: string
+          id?: never
+          participant_id: string
+          total: number
+        }
         Update: {
-          allocation?: Json;
-          budget?: number;
-          confirmed_at?: string;
-          id?: never;
-          participant_id?: string;
-          total?: number;
-        };
+          allocation?: Json
+          budget?: number
+          confirmed_at?: string
+          id?: never
+          participant_id?: string
+          total?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "investment_confirmations_participant_id_fkey";
-            columns: ["participant_id"];
-            isOneToOne: false;
-            referencedRelation: "participants";
-            referencedColumns: ["id"];
+            foreignKeyName: "investment_confirmations_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       investments: {
         Row: {
-          amount: number;
-          participant_id: string;
-          team_id: string;
-          updated_at: string;
-        };
+          amount: number
+          participant_id: string
+          team_id: string
+          updated_at: string
+        }
         Insert: {
-          amount: number;
-          participant_id: string;
-          team_id: string;
-          updated_at?: string;
-        };
+          amount: number
+          participant_id: string
+          team_id: string
+          updated_at?: string
+        }
         Update: {
-          amount?: number;
-          participant_id?: string;
-          team_id?: string;
-          updated_at?: string;
-        };
+          amount?: number
+          participant_id?: string
+          team_id?: string
+          updated_at?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "investments_participant_id_fkey";
-            columns: ["participant_id"];
-            isOneToOne: false;
-            referencedRelation: "participants";
-            referencedColumns: ["id"];
+            foreignKeyName: "investments_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "investments_team_id_fkey";
-            columns: ["team_id"];
-            isOneToOne: false;
-            referencedRelation: "teams";
-            referencedColumns: ["id"];
+            foreignKeyName: "investments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       participants: {
         Row: {
-          access_code: string;
-          created_at: string;
-          id: string;
-          invest_budget: number | null;
-          name: string;
-          school: string;
-          team_id: string | null;
-          user_id: string | null;
-        };
+          access_code: string
+          created_at: string
+          id: string
+          invest_budget: number | null
+          name: string
+          school: string
+          team_id: string | null
+          user_id: string | null
+        }
         Insert: {
-          access_code?: string;
-          created_at?: string;
-          id?: string;
-          invest_budget?: number | null;
-          name: string;
-          school: string;
-          team_id?: string | null;
-          user_id?: string | null;
-        };
+          access_code?: string
+          created_at?: string
+          id?: string
+          invest_budget?: number | null
+          name: string
+          school: string
+          team_id?: string | null
+          user_id?: string | null
+        }
         Update: {
-          access_code?: string;
-          created_at?: string;
-          id?: string;
-          invest_budget?: number | null;
-          name?: string;
-          school?: string;
-          team_id?: string | null;
-          user_id?: string | null;
-        };
+          access_code?: string
+          created_at?: string
+          id?: string
+          invest_budget?: number | null
+          name?: string
+          school?: string
+          team_id?: string | null
+          user_id?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "participants_team_id_fkey";
-            columns: ["team_id"];
-            isOneToOne: false;
-            referencedRelation: "teams";
-            referencedColumns: ["id"];
+            foreignKeyName: "participants_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
+      site_content: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       staff_emails: {
         Row: {
-          added_by: string | null;
-          created_at: string;
-          email: string;
-          note: string;
-        };
+          added_by: string | null
+          created_at: string
+          email: string
+          note: string
+        }
         Insert: {
-          added_by?: string | null;
-          created_at?: string;
-          email: string;
-          note?: string;
-        };
+          added_by?: string | null
+          created_at?: string
+          email: string
+          note?: string
+        }
         Update: {
-          added_by?: string | null;
-          created_at?: string;
-          email?: string;
-          note?: string;
-        };
-        Relationships: [];
-      };
+          added_by?: string | null
+          created_at?: string
+          email?: string
+          note?: string
+        }
+        Relationships: []
+      }
       teams: {
         Row: {
-          created_at: string;
-          description: string;
-          id: string;
-          name: string;
-          project: string;
-          table_label: string;
-        };
+          created_at: string
+          description: string
+          id: string
+          name: string
+          project: string
+          table_label: string
+        }
         Insert: {
-          created_at?: string;
-          description?: string;
-          id?: string;
-          name: string;
-          project?: string;
-          table_label?: string;
-        };
+          created_at?: string
+          description?: string
+          id?: string
+          name: string
+          project?: string
+          table_label?: string
+        }
         Update: {
-          created_at?: string;
-          description?: string;
-          id?: string;
-          name?: string;
-          project?: string;
-          table_label?: string;
-        };
-        Relationships: [];
-      };
-    };
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          project?: string
+          table_label?: string
+        }
+        Relationships: []
+      }
+    }
     Views: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Functions: {
-      check_in: { Args: { p_code: string }; Returns: string };
+      bulk_import: {
+        Args: { p_delete_missing?: boolean; p_people: Json; p_teams: Json }
+        Returns: Json
+      }
+      check_in: { Args: { p_code: string }; Returns: string }
       claim_participant: {
-        Args: { p_code: string; p_name: string };
+        Args: { p_code: string; p_name: string }
         Returns: {
-          id: string;
-          name: string;
-          school: string;
-          team_id: string;
-        }[];
-      };
+          id: string
+          name: string
+          school: string
+          team_id: string
+        }[]
+      }
       confirm_investments: {
-        Args: { p_alloc: Json };
+        Args: { p_alloc: Json }
         Returns: {
-          allocation: Json;
-          budget: number;
-          confirmed_at: string;
-          id: number;
-          participant_id: string;
-          total: number;
-        };
+          allocation: Json
+          budget: number
+          confirmed_at: string
+          id: number
+          participant_id: string
+          total: number
+        }
         SetofOptions: {
-          from: "*";
-          to: "investment_confirmations";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
-      generate_access_code: { Args: { len?: number }; Returns: string };
-      is_participant: { Args: never; Returns: boolean };
-      is_staff: { Args: never; Returns: boolean };
-      my_email: { Args: never; Returns: string };
+          from: "*"
+          to: "investment_confirmations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      generate_access_code: { Args: { len?: number }; Returns: string }
+      is_participant: { Args: never; Returns: boolean }
+      is_staff: { Args: never; Returns: boolean }
+      my_email: { Args: never; Returns: string }
       participant_directory: {
-        Args: never;
+        Args: never
         Returns: {
-          id: string;
-          name: string;
-          school: string;
-          team_id: string;
-        }[];
-      };
+          id: string
+          name: string
+          school: string
+          team_id: string
+        }[]
+      }
       publish_tick: {
-        Args: never;
+        Args: never
         Returns: {
-          id: number;
-          published_at: string;
-          published_by: string | null;
-        };
+          id: number
+          published_at: string
+          published_by: string | null
+        }
         SetofOptions: {
-          from: "*";
-          to: "invest_ticks";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
-      release_participant: { Args: never; Returns: undefined };
+          from: "*"
+          to: "invest_ticks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      release_participant: { Args: never; Returns: undefined }
       update_my_team: {
-        Args: { p_description: string; p_name: string; p_project: string };
+        Args: { p_description: string; p_name: string; p_project: string }
         Returns: {
-          created_at: string;
-          description: string;
-          id: string;
-          name: string;
-          project: string;
-          table_label: string;
-        };
+          created_at: string
+          description: string
+          id: string
+          name: string
+          project: string
+          table_label: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "teams";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
-    };
+          from: "*"
+          to: "teams"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+    }
     Enums: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
-};
+      [_ in never]: never
+    }
+  }
+}
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    keyof (DefaultSchema["Tables"] & DefaultSchema["Views"]) | { schema: keyof DatabaseWithoutInternals },
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R;
+      Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R;
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
       }
       ? R
       : never
-    : never;
+    : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I;
+      Insert: infer I
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I;
+        Insert: infer I
       }
       ? I
       : never
-    : never;
+    : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U;
+      Update: infer U
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U;
+        Update: infer U
       }
       ? U
       : never
-    : never;
+    : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never;
+    : never
 
 export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never;
+    : never
 
 export const Constants = {
   public: {
     Enums: {},
   },
-} as const;
+} as const
