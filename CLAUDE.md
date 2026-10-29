@@ -39,4 +39,14 @@ There is no test framework set up.
 ## Conventions
 
 - Import alias `@/*` → `src/*`.
-- `.env*` files are gitignored; `.env.local` only holds a Vercel CLI token.
+- `.env*` files are gitignored; `.env.local` holds a Vercel CLI token plus `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+
+## Supabase (in progress on `feat/supabase-auth`)
+
+- Clients via `@supabase/ssr` in `src/utils/supabase/`: `client.ts` (Client Components), `server.ts` (`createClient(await cookies())` in Server Components/Actions/Route Handlers), `middleware.ts` (`updateSession`).
+- `src/proxy.ts` (Next 16's renamed middleware) calls `updateSession` on every non-static request to refresh the auth cookies. Don't add code between `createServerClient` and `auth.getClaims()` there.
+- CLI is linked to project `gdg-devfest-2026` (`fiotlwpevozdaulqaifx`); schema changes go in `supabase/migrations/` and are applied with `supabase db push`.
+- `public.participants` (name, school, team_id, unique `access_code`, checked_in, `user_id` → auth.users). RLS: an authenticated user reads only the row bound to them; no client writes. Codes are 6 chars without look-alikes (`generate_access_code()`).
+- `public.teams` (name, `table_label`, project, description); `participants.team_id` → teams (on delete set null). RLS: any authenticated user can read teams; no client writes.
+- `supabase/seed.sql` holds the guide.ts mock teams/participants with fixed test access codes (applied with `supabase db push --include-seed`; it skips if teams has rows). Replace before the real event.
+- Login plan: sign in anonymously, then call RPC `claim_participant(p_name, p_code)` (security definer), which matches name + code and binds the row to `auth.uid()`. Needs Anonymous sign-ins enabled in the project. The login UI isn't built yet; the festival mockup still runs on localStorage.

@@ -5,8 +5,9 @@
 // investment ticks staff have published (never live totals).
 
 import { useId, useState, type FormEvent } from "react";
-import { INVEST_STEP, myParticipantId, type Participant, type Team } from "@/data/guide";
+import { INVEST_STEP, type Participant, type Team } from "@/data/guide";
 import { budgetOf, membersOf, updateFestival, useFestival, won, type FestivalState } from "@/lib/festival-store";
+import { login, logout, useParticipantSession, type SessionParticipant } from "@/lib/participant-session";
 import {
   Label,
   MemberStripe,
@@ -27,14 +28,125 @@ const VIEWS = [
   { id: "invest", label: "투자" },
 ] as const;
 
+// Entry gate: log in with name + personal access code (Supabase), then show the
+// festival screen. The screen itself still runs on the localStorage mock, so the
+// logged-in participant is matched to the mock participant with the same name.
 export function LiveScreen() {
-  const state = useFestival();
-  const [view, setView] = useHashTab(VIEWS, "team");
-  const me = state.participants.find((p) => p.id === myParticipantId);
-  const myTeam = me?.teamId ? state.teams.find((t) => t.id === me.teamId) : undefined;
+  const session = useParticipantSession();
+
+  if (session.status !== "in") {
+    return (
+      <ScreenFrame tabs={NO_TABS} active="" onTab={() => {}}>
+        {session.status === "loading" ? (
+          <p className="py-10 text-fg/50" role="status">
+            불러오는 중…
+          </p>
+        ) : (
+          <LoginCard />
+        )}
+      </ScreenFrame>
+    );
+  }
+  return <Festival who={session.participant} />;
+}
+
+const NO_TABS: readonly { id: ""; label: string }[] = [];
+
+function LoginCard() {
+  const nameId = useId();
+  const codeId = useId();
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const err = await login(name, code);
+    setBusy(false);
+    if (err) setError(err);
+  }
 
   return (
-    <ScreenFrame tabs={VIEWS} active={view} onTab={setView}>
+    <section aria-labelledby="login-title" className="mx-auto max-w-md border border-fg/15 p-6 sm:p-8">
+      <Label id="login-title">입장하기</Label>
+      <p className="mt-3 text-2xl font-semibold tracking-tight">참가자 확인</p>
+      <p className="mt-1 text-sm text-fg/60">이름과 운영진에게 받은 참가자 코드를 입력해 주세요.</p>
+      <form onSubmit={onSubmit} className="mt-6 grid gap-4">
+        <div>
+          <label htmlFor={nameId} className="text-sm font-semibold">
+            이름
+          </label>
+          <input
+            id={nameId}
+            className={fieldCls}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            required
+            placeholder="홍길동"
+          />
+        </div>
+        <div>
+          <label htmlFor={codeId} className="text-sm font-semibold">
+            참가자 코드
+          </label>
+          <input
+            id={codeId}
+            className={`${fieldCls} font-mono text-lg uppercase tracking-[0.3em]`}
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ""))}
+            maxLength={6}
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            required
+            placeholder="ABC123"
+          />
+        </div>
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-[var(--g-red)]">
+            {error}
+          </p>
+        )}
+        <button type="submit" className={`${primaryBtn} py-3 text-base`} disabled={busy || !name.trim() || code.length < 6}>
+          {busy ? "확인 중…" : "입장하기"}
+        </button>
+      </form>
+      <p className="mt-4 text-xs text-fg/50">코드를 모르면 현장 운영진에게 문의해 주세요.</p>
+    </section>
+  );
+}
+
+function Festival({ who }: { who: SessionParticipant }) {
+  const state = useFestival();
+  const [view, setView] = useHashTab(VIEWS, "team");
+  const me = state.participants.find((p) => p.name === who.name);
+  const myTeam = me?.teamId ? state.teams.find((t) => t.id === me.teamId) : undefined;
+  const [leaving, setLeaving] = useState(false);
+
+  return (
+    <ScreenFrame
+      tabs={VIEWS}
+      active={view}
+      onTab={setView}
+      actions={
+        <button
+          type="button"
+          onClick={async () => {
+            setLeaving(true);
+            await logout();
+          }}
+          disabled={leaving}
+          className="inline-flex h-10 items-center border border-fg/25 px-3 text-sm font-semibold transition hover:bg-fg/10 disabled:opacity-40"
+          title={`${who.name}님으로 로그인됨`}
+        >
+          <span className="hidden sm:inline">{who.name} ·&nbsp;</span>로그아웃
+        </button>
+      }
+    >
       {!me ? (
         <p className="py-10 text-lg text-fg/60">참가자 정보를 찾을 수 없습니다. 운영진에게 문의해 주세요.</p>
       ) : view === "team" ? (
@@ -367,7 +479,12 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               확정됨
             </span>
           ) : (
-            <button type="button" onClick={confirm} disabled={over || (saved === null && used === 0)} className={`${primaryBtn} px-5 py-2.5 text-base`}>
+            <button
+              type="button"
+              onClick={confirm}
+              disabled={over || (saved === null && used === 0)}
+              className={`${primaryBtn} px-5 py-2.5 text-base`}
+            >
               {saved === null ? "투자 확정하기" : "변경사항 확정하기"}
             </button>
           )}

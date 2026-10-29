@@ -136,35 +136,36 @@ export function ScreenFrame<T extends string>({
             </Link>
           </div>
         </div>
-        <div role="tablist" onKeyDown={onKey} className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 sm:px-8">
-          {tabs.map((t, i) => {
-            const on = t.id === active;
-            return (
-              <button
-                key={t.id}
-                ref={(el) => {
-                  refs.current[i] = el;
-                }}
-                role="tab"
-                id={`tab-${t.id}`}
-                aria-selected={on}
-                aria-controls="screen-panel"
-                tabIndex={on ? 0 : -1}
-                onClick={() => onTab(t.id)}
-                className={`relative shrink-0 px-3 py-3 text-sm font-semibold transition sm:text-base ${on ? "text-fg" : "text-fg/50 hover:text-fg/80"}`}
-              >
-                {t.label}
-                {on && <span className="absolute inset-x-3 bottom-0 h-[3px] bg-fg" />}
-              </button>
-            );
-          })}
-        </div>
+        {tabs.length > 0 && (
+          <div role="tablist" onKeyDown={onKey} className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 sm:px-8">
+            {tabs.map((t, i) => {
+              const on = t.id === active;
+              return (
+                <button
+                  key={t.id}
+                  ref={(el) => {
+                    refs.current[i] = el;
+                  }}
+                  role="tab"
+                  id={`tab-${t.id}`}
+                  aria-selected={on}
+                  aria-controls="screen-panel"
+                  tabIndex={on ? 0 : -1}
+                  onClick={() => onTab(t.id)}
+                  className={`relative shrink-0 px-3 py-3 text-sm font-semibold transition sm:text-base ${on ? "text-fg" : "text-fg/50 hover:text-fg/80"}`}
+                >
+                  {t.label}
+                  {on && <span className="absolute inset-x-3 bottom-0 h-[3px] bg-fg" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {tabs.length === 0 && <div className="h-4" />}
       </header>
 
       <div
-        role="tabpanel"
-        id="screen-panel"
-        aria-labelledby={`tab-${active}`}
+        {...(tabs.length > 0 ? { role: "tabpanel", id: "screen-panel", "aria-labelledby": `tab-${active}` } : {})}
         className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 sm:py-10"
       >
         {children}
