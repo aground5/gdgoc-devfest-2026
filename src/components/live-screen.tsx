@@ -8,6 +8,7 @@ import { useId, useMemo, useState, type FormEvent } from "react";
 import { type Participant, type Team } from "@/data/guide";
 import { budgetOf, buildState, membersOf, won, type FestivalState } from "@/lib/festival-store";
 import { login, logout, useParticipantSession, type SessionParticipant } from "@/lib/participant-session";
+import { signInWithGoogle } from "@/lib/staff-session";
 import { patch, run, useDemos, useInvestSettings, useInvestments, useMyBudget, usePeople, useTeams, useTicks } from "@/lib/db/hooks";
 import { checkIn, confirmInvestments, updateMyTeam } from "@/lib/db/queries";
 import {
@@ -119,7 +120,31 @@ function LoginCard() {
         </button>
       </form>
       <p className="mt-4 text-xs text-subtle">코드를 모르면 현장 운영진에게 문의해 주세요.</p>
+      <StaffEntry />
     </section>
+  );
+}
+
+// Staff don't use a participant code: Google sign-in, checked against the
+// staff_emails whitelist, then on to /organize (see staff-session.ts).
+function StaffEntry() {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="mt-8 border-t border-fg/15 pt-6">
+      <h2 className="text-sm font-bold">운영진이신가요?</h2>
+      <p className="mt-1 text-sm text-subtle">운영진으로 등록된 Google 계정으로 로그인해 주세요.</p>
+      <button
+        type="button"
+        disabled={busy}
+        className={`${smallBtn} mt-4 w-full py-3 text-base`}
+        onClick={() => {
+          setBusy(true);
+          void signInWithGoogle();
+        }}
+      >
+        {busy ? "Google로 이동 중…" : "Google로 운영진 로그인"}
+      </button>
+    </div>
   );
 }
 
