@@ -123,6 +123,7 @@ export type Participant = {
   teamId: string | null; // assigned by staff
   checkedIn: boolean; // checked in today (staff see everyone's, a participant only their own)
   accessCode?: string; // personal login code; only loaded for staff
+  budget?: number | null; // staff-set investment budget; null = default. Only loaded for staff
 };
 
 export type Team = {

@@ -61,11 +61,204 @@ export type Database = {
         };
         Relationships: [];
       };
+      invest_settings: {
+        Row: {
+          default_budget: number;
+          id: boolean;
+          open: boolean;
+          step: number;
+          updated_at: string;
+        };
+        Insert: {
+          default_budget?: number;
+          id?: boolean;
+          open?: boolean;
+          step?: number;
+          updated_at?: string;
+        };
+        Update: {
+          default_budget?: number;
+          id?: boolean;
+          open?: boolean;
+          step?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      invest_tick_allocations: {
+        Row: {
+          amount: number;
+          participant_id: string;
+          team_id: string;
+          tick_id: number;
+        };
+        Insert: {
+          amount: number;
+          participant_id: string;
+          team_id: string;
+          tick_id: number;
+        };
+        Update: {
+          amount?: number;
+          participant_id?: string;
+          team_id?: string;
+          tick_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invest_tick_allocations_participant_id_fkey";
+            columns: ["participant_id"];
+            isOneToOne: false;
+            referencedRelation: "participants";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invest_tick_allocations_team_id_fkey";
+            columns: ["team_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invest_tick_allocations_tick_id_fkey";
+            columns: ["tick_id"];
+            isOneToOne: false;
+            referencedRelation: "invest_ticks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      invest_tick_totals: {
+        Row: {
+          investors: number;
+          team_id: string;
+          tick_id: number;
+          total: number;
+        };
+        Insert: {
+          investors: number;
+          team_id: string;
+          tick_id: number;
+          total: number;
+        };
+        Update: {
+          investors?: number;
+          team_id?: string;
+          tick_id?: number;
+          total?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invest_tick_totals_team_id_fkey";
+            columns: ["team_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invest_tick_totals_tick_id_fkey";
+            columns: ["tick_id"];
+            isOneToOne: false;
+            referencedRelation: "invest_ticks";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      invest_ticks: {
+        Row: {
+          id: number;
+          published_at: string;
+          published_by: string | null;
+        };
+        Insert: {
+          id?: never;
+          published_at?: string;
+          published_by?: string | null;
+        };
+        Update: {
+          id?: never;
+          published_at?: string;
+          published_by?: string | null;
+        };
+        Relationships: [];
+      };
+      investment_confirmations: {
+        Row: {
+          allocation: Json;
+          budget: number;
+          confirmed_at: string;
+          id: number;
+          participant_id: string;
+          total: number;
+        };
+        Insert: {
+          allocation: Json;
+          budget: number;
+          confirmed_at?: string;
+          id?: never;
+          participant_id: string;
+          total: number;
+        };
+        Update: {
+          allocation?: Json;
+          budget?: number;
+          confirmed_at?: string;
+          id?: never;
+          participant_id?: string;
+          total?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "investment_confirmations_participant_id_fkey";
+            columns: ["participant_id"];
+            isOneToOne: false;
+            referencedRelation: "participants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      investments: {
+        Row: {
+          amount: number;
+          participant_id: string;
+          team_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount: number;
+          participant_id: string;
+          team_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          participant_id?: string;
+          team_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "investments_participant_id_fkey";
+            columns: ["participant_id"];
+            isOneToOne: false;
+            referencedRelation: "participants";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "investments_team_id_fkey";
+            columns: ["team_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       participants: {
         Row: {
           access_code: string;
           created_at: string;
           id: string;
+          invest_budget: number | null;
           name: string;
           school: string;
           team_id: string | null;
@@ -75,6 +268,7 @@ export type Database = {
           access_code?: string;
           created_at?: string;
           id?: string;
+          invest_budget?: number | null;
           name: string;
           school: string;
           team_id?: string | null;
@@ -84,6 +278,7 @@ export type Database = {
           access_code?: string;
           created_at?: string;
           id?: string;
+          invest_budget?: number | null;
           name?: string;
           school?: string;
           team_id?: string | null;
@@ -159,7 +354,25 @@ export type Database = {
           team_id: string;
         }[];
       };
+      confirm_investments: {
+        Args: { p_alloc: Json };
+        Returns: {
+          allocation: Json;
+          budget: number;
+          confirmed_at: string;
+          id: number;
+          participant_id: string;
+          total: number;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "investment_confirmations";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       generate_access_code: { Args: { len?: number }; Returns: string };
+      is_participant: { Args: never; Returns: boolean };
       is_staff: { Args: never; Returns: boolean };
       participant_directory: {
         Args: never;
@@ -169,6 +382,20 @@ export type Database = {
           school: string;
           team_id: string;
         }[];
+      };
+      publish_tick: {
+        Args: never;
+        Returns: {
+          id: number;
+          published_at: string;
+          published_by: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "invest_ticks";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       release_participant: { Args: never; Returns: undefined };
       update_my_team: {

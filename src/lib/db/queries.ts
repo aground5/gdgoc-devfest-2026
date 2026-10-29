@@ -5,6 +5,7 @@
 
 import type { PostgrestError } from "@supabase/supabase-js";
 import type { Participant, SchoolKey, Team } from "@/data/guide";
+import type { Investments, Snapshot } from "@/lib/festival-store";
 import { createClient } from "@/utils/supabase/client";
 
 // createBrowserClient returns one shared client per page
@@ -50,12 +51,12 @@ export async function fetchTeams(): Promise<Team[]> {
 // directory. Attendance comes back only for rows the caller may see: everyone
 // for staff, just themselves for a participant.
 export async function fetchPeople(mode: Mode): Promise<Participant[]> {
-  type Row = { id: string; name: string; school: string; team_id: string | null; access_code?: string };
+  type Row = { id: string; name: string; school: string; team_id: string | null; access_code?: string; invest_budget?: number | null };
   const [rows, attendance] = await Promise.all([
     mode === "staff"
       ? sb()
           .from("participants")
-          .select("id, name, school, team_id, access_code")
+          .select("id, name, school, team_id, access_code, invest_budget")
           .order("name")
           .then(ok<Row[]>)
       : sb()
@@ -75,6 +76,7 @@ export async function fetchPeople(mode: Mode): Promise<Participant[]> {
     teamId: r.team_id,
     checkedIn: here.has(r.id),
     accessCode: r.access_code,
+    budget: r.invest_budget,
   }));
 }
 
@@ -158,6 +160,65 @@ export async function setAttendance(ids: string[], present: boolean) {
 
 export async function setVenueCode(code: string | null) {
   ok(await sb().from("attendance_settings").update({ code, updated_at: new Date().toISOString() }).eq("id", true));
+}
+
+/* ---------- Investments (staff) ---------- */
+
+export type InvestSettings = { defaultBudget: number; step: number; open: boolean };
+
+export async function fetchInvestSettings(): Promise<InvestSettings> {
+  const r = ok<{ default_budget: number; step: number; open: boolean }>(
+    await sb().from("invest_settings").select("default_budget, step, open").single(),
+  );
+  return { defaultBudget: r.default_budget, step: r.step, open: r.open };
+}
+
+export async function setInvestSettings(patch: Partial<Pick<InvestSettings, "defaultBudget" | "open">>) {
+  ok(
+    await sb()
+      .from("invest_settings")
+      .update({
+        ...(patch.defaultBudget !== undefined && { default_budget: patch.defaultBudget }),
+        ...(patch.open !== undefined && { open: patch.open }),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", true),
+  );
+}
+
+// Current allocations: participantId -> teamId -> amount (staff see everyone)
+export async function fetchInvestments(): Promise<Investments> {
+  const rows = ok(await sb().from("investments").select("participant_id, team_id, amount"));
+  const out: Investments = {};
+  for (const r of rows) (out[r.participant_id] ??= {})[r.team_id] = r.amount;
+  return out;
+}
+
+// Published ticks, oldest first
+export async function fetchTicks(): Promise<Snapshot[]> {
+  const rows = ok(
+    await sb().from("invest_ticks").select("id, published_at, invest_tick_totals(team_id, total, investors)").order("published_at"),
+  );
+  return rows.map((t) => ({
+    id: t.id,
+    at: new Date(t.published_at).getTime(),
+    totals: Object.fromEntries(t.invest_tick_totals.map((x) => [x.team_id, x.total])),
+    investors: Object.fromEntries(t.invest_tick_totals.map((x) => [x.team_id, x.investors])),
+  }));
+}
+
+// null = back to the default budget
+export async function setBudgets(ids: string[], amount: number | null) {
+  if (ids.length === 0) return;
+  ok(await sb().from("participants").update({ invest_budget: amount }).in("id", ids));
+}
+
+export async function publishTick() {
+  ok(await sb().rpc("publish_tick"));
+}
+
+export async function deleteTick(id: number) {
+  ok(await sb().from("invest_ticks").delete().eq("id", id));
 }
 
 /* ---------- Participant RPCs ---------- */

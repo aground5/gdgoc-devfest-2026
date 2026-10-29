@@ -1,31 +1,41 @@
 "use client";
 
-// Admin screen (/organize): participants, teams, attendance, live investment status,
-// and publishing investment ticks (snapshots) that participants see.
+// Admin screen (/organize): participants, teams, attendance, budgets, live
+// investment status and publishing ticks. All data comes from Supabase.
 
-import { useId, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useId, useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
 import { schools } from "./brand";
-import { INVEST_BUDGET, INVEST_STEP, type Participant, type SchoolKey, type Team } from "@/data/guide";
+import { type Participant, type SchoolKey, type Team } from "@/data/guide";
 import {
   budgetOf,
   investedBy,
   latestTick,
   liveTotals,
   membersOf,
-  resetFestival,
   timeLabel,
-  updateFestival,
-  useFestival,
   won,
   type FestivalState,
 } from "@/lib/festival-store";
-import { patch as optimisticPatch, run, usePeople, useTeams, useVenueCode } from "@/lib/db/hooks";
+import {
+  patch as optimisticPatch,
+  run,
+  useInvestSettings,
+  useInvestments,
+  usePeople,
+  useTeams,
+  useTicks,
+  useVenueCode,
+} from "@/lib/db/hooks";
 import {
   addParticipant,
   addTeam,
   deleteParticipant,
   deleteTeam,
+  deleteTick,
+  publishTick,
   setAttendance,
+  setBudgets as saveBudgets,
+  setInvestSettings,
   setVenueCode,
   updateParticipant,
   updateTeam,
@@ -63,66 +73,25 @@ const VIEWS = [
 
 const setParticipant = (id: string, patch: PersonPatch) => run(() => updateParticipant(id, patch), optimisticPatch.person(id, patch));
 
-function removeParticipant(id: string) {
-  return run(async () => {
-    await deleteParticipant(id);
-    updateFestival((s) => {
-      const investments = { ...s.investments };
-      delete investments[id];
-      const budgets = { ...s.budgets };
-      delete budgets[id];
-      return { ...s, investments, budgets };
-    });
-  }, optimisticPatch.removePerson(id));
-}
+// Investments, budgets and ticks are cleaned up by the database: rows cascade
+// on delete, and moving someone into a team drops their investment in it.
+const removeParticipant = (id: string) => run(() => deleteParticipant(id), optimisticPatch.removePerson(id));
 
-// Moving someone to a team drops any investment they made in that team.
-function assignTeam(id: string, teamId: string | null) {
-  return run(
-    async () => {
-      await updateParticipant(id, { teamId });
-      updateFestival((s) => {
-        const mine = s.investments[id];
-        if (!mine || !teamId || !mine[teamId]) return s;
-        const rest = { ...mine };
-        delete rest[teamId];
-        return { ...s, investments: { ...s.investments, [id]: rest } };
-      });
-    },
-    optimisticPatch.person(id, { teamId }),
-  );
-}
+const assignTeam = (id: string, teamId: string | null) =>
+  run(() => updateParticipant(id, { teamId }), optimisticPatch.person(id, { teamId }));
 
-// Budgets equal to the default are stored as "no override"
-function setBudgets(ids: string[], amount: number) {
-  const v = Math.max(0, Math.round(amount / INVEST_STEP) * INVEST_STEP);
-  updateFestival((s) => {
-    const budgets = { ...s.budgets };
-    for (const id of ids) {
-      if (v === INVEST_BUDGET) delete budgets[id];
-      else budgets[id] = v;
-    }
-    return { ...s, budgets };
-  });
+type BudgetCfg = Pick<FestivalState, "step" | "defaultBudget">;
+
+// Rounded to the step; a budget equal to the default is stored as "no override"
+function setBudgets(cfg: BudgetCfg, ids: string[], amount: number) {
+  const v = Math.max(0, Math.round(amount / cfg.step) * cfg.step);
+  const stored = v === cfg.defaultBudget ? null : v;
+  return run(() => saveBudgets(ids, stored), optimisticPatch.budgets(ids, stored));
 }
 
 const setTeam = (id: string, patch: TeamPatch) => run(() => updateTeam(id, patch), optimisticPatch.team(id, patch));
 
-function removeTeam(id: string) {
-  return run(async () => {
-    await deleteTeam(id);
-    updateFestival((s) => ({
-      ...s,
-      investments: Object.fromEntries(
-        Object.entries(s.investments).map(([pid, byTeam]) => {
-          const rest = { ...byTeam };
-          delete rest[id];
-          return [pid, rest];
-        }),
-      ),
-    }));
-  }, optimisticPatch.removeTeam(id));
-}
+const removeTeam = (id: string) => run(() => deleteTeam(id), optimisticPatch.removeTeam(id));
 
 /* ---------- Screen ---------- */
 
@@ -203,9 +172,27 @@ function StaffLogin({ denied }: { denied: string | null }) {
 function AdminPanels({ email }: { email: string }) {
   const people = usePeople("staff");
   const teams = useTeams("staff");
-  const state = useFestival(people.data, teams.data);
+  const settings = useInvestSettings();
+  const investments = useInvestments();
+  const ticks = useTicks();
   const [view, setView] = useHashTab(VIEWS, "people");
-  const failed = people.error ?? teams.error;
+  const failed = people.error ?? teams.error ?? settings.error ?? investments.error ?? ticks.error;
+
+  // Everything on this screen comes from Supabase, investments included
+  const state = useMemo<FestivalState | null>(() => {
+    if (!people.data || !teams.data || !settings.data || !investments.data || !ticks.data) return null;
+    return {
+      participants: people.data,
+      teams: teams.data,
+      investments: investments.data,
+      budgets: Object.fromEntries(people.data.flatMap((p) => (p.budget != null ? [[p.id, p.budget]] : []))),
+      ticks: ticks.data,
+      idsFrom: "supabase",
+      defaultBudget: settings.data.defaultBudget,
+      step: settings.data.step,
+      investOpen: settings.data.open,
+    };
+  }, [people.data, teams.data, settings.data, investments.data, ticks.data]);
 
   return (
     <ScreenFrame
@@ -215,7 +202,6 @@ function AdminPanels({ email }: { email: string }) {
       onTab={setView}
       actions={
         <>
-          <ResetButton />
           <button
             type="button"
             onClick={() => void staffSignOut()}
@@ -268,36 +254,6 @@ function Panels({ state, view }: { state: FestivalState; view: (typeof VIEWS)[nu
       {view === "budget" && <BudgetPanel state={state} />}
       {view === "invest" && <InvestStatusPanel state={state} />}
     </>
-  );
-}
-
-function ResetButton() {
-  const [arm, setArm] = useState(false);
-  return arm ? (
-    <span className="hidden items-center gap-1 sm:flex">
-      <button
-        type="button"
-        onClick={() => {
-          resetFestival();
-          setArm(false);
-        }}
-        className="h-10 border border-[var(--g-red)] px-3 text-sm font-semibold text-[var(--g-red)] transition hover:bg-[var(--g-red)]/10"
-      >
-        초기화 확인
-      </button>
-      <button type="button" onClick={() => setArm(false)} className={`h-10 ${smallBtn}`}>
-        취소
-      </button>
-    </span>
-  ) : (
-    <button
-      type="button"
-      onClick={() => setArm(true)}
-      className={`hidden h-10 sm:block ${smallBtn}`}
-      title="투자 목업 데이터(투자, 투자금, 틱)를 처음 상태로 되돌립니다. 참가자와 팀은 그대로입니다."
-    >
-      투자 목업 초기화
-    </button>
   );
 }
 
@@ -518,10 +474,10 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
 
 const short = (n: number) => `${(n / 10_000).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}만`;
 
-function BudgetCell({ id, name, budget }: { id: string; name: string; budget: number }) {
+function BudgetCell({ cfg, id, name, budget }: { cfg: BudgetCfg; id: string; name: string; budget: number }) {
   const [draft, setDraft] = useState<string | null>(null);
   const commit = () => {
-    if (draft !== null) setBudgets([id], Number(draft.replace(/\D/g, "")) || 0);
+    if (draft !== null) void setBudgets(cfg, [id], Number(draft.replace(/\D/g, "")) || 0);
     setDraft(null);
   };
   const stepBtn = "grid h-8 w-7 shrink-0 place-items-center border border-fg/20 text-sm transition hover:bg-fg/10 disabled:opacity-25";
@@ -531,9 +487,9 @@ function BudgetCell({ id, name, budget }: { id: string; name: string; budget: nu
       <div className="flex">
         <button
           type="button"
-          aria-label={`${name} 투자금 ${won(INVEST_STEP)} 줄이기`}
+          aria-label={`${name} 투자금 ${won(cfg.step)} 줄이기`}
           disabled={budget <= 0}
-          onClick={() => setBudgets([id], budget - INVEST_STEP)}
+          onClick={() => void setBudgets(cfg, [id], budget - cfg.step)}
           className={stepBtn}
         >
           −
@@ -549,12 +505,12 @@ function BudgetCell({ id, name, budget }: { id: string; name: string; budget: nu
             if (e.key === "Enter") commit();
             if (e.key === "Escape") setDraft(null);
           }}
-          className={`h-8 w-24 border-y border-fg/20 bg-fg/[0.04] px-2 text-right font-mono text-xs tabular-nums text-fg outline-none focus:border-fg/60 ${budget !== INVEST_BUDGET ? "font-semibold" : ""}`}
+          className={`h-8 w-24 border-y border-fg/20 bg-fg/[0.04] px-2 text-right font-mono text-xs tabular-nums text-fg outline-none focus:border-fg/60 ${budget !== cfg.defaultBudget ? "font-semibold" : ""}`}
         />
         <button
           type="button"
-          aria-label={`${name} 투자금 ${won(INVEST_STEP)} 늘리기`}
-          onClick={() => setBudgets([id], budget + INVEST_STEP)}
+          aria-label={`${name} 투자금 ${won(cfg.step)} 늘리기`}
+          onClick={() => void setBudgets(cfg, [id], budget + cfg.step)}
           className={stepBtn}
         >
           +
@@ -564,7 +520,7 @@ function BudgetCell({ id, name, budget }: { id: string; name: string; budget: nu
   );
 }
 
-function BulkBudget({ ids, filtered }: { ids: string[]; filtered: boolean }) {
+function BulkBudget({ cfg, ids, filtered }: { cfg: BudgetCfg; ids: string[]; filtered: boolean }) {
   const fid = useId();
   const [value, setValue] = useState("");
   const amount = Number(value) || 0;
@@ -574,7 +530,7 @@ function BulkBudget({ ids, filtered }: { ids: string[]; filtered: boolean }) {
       onSubmit={(e) => {
         e.preventDefault();
         if (value) {
-          setBudgets(ids, amount);
+          void setBudgets(cfg, ids, amount);
           setValue("");
         }
       }}
@@ -589,22 +545,63 @@ function BulkBudget({ ids, filtered }: { ids: string[]; filtered: boolean }) {
         autoComplete="off"
         value={value ? Number(value).toLocaleString("ko-KR") : ""}
         onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
-        placeholder={INVEST_BUDGET.toLocaleString("ko-KR")}
+        placeholder={cfg.defaultBudget.toLocaleString("ko-KR")}
         className="h-9 w-32 border border-fg/20 bg-fg/[0.04] px-2 text-right font-mono text-sm tabular-nums text-fg outline-none placeholder:text-fg/30 focus:border-fg/60"
       />
       <span className="text-sm text-fg/50">원</span>
       <button type="submit" disabled={!value || ids.length === 0} className={primaryBtn}>
         {filtered ? `표시된 ${ids.length}명에게 적용` : `전체 ${ids.length}명에게 적용`}
       </button>
-      <button type="button" onClick={() => setBudgets(ids, INVEST_BUDGET)} disabled={ids.length === 0} className={smallBtn}>
-        기본값({short(INVEST_BUDGET)}원)으로
+      <button type="button" onClick={() => void setBudgets(cfg, ids, cfg.defaultBudget)} disabled={ids.length === 0} className={smallBtn}>
+        기본값({short(cfg.defaultBudget)}원)으로
       </button>
-      <span className="text-xs text-fg/40">{won(INVEST_STEP)} 단위로 맞춰집니다.</span>
+      <span className="text-xs text-fg/40">{won(cfg.step)} 단위로 맞춰집니다.</span>
     </form>
   );
 }
 
 /* ---------- 투자금 관리 ---------- */
+
+// The default applies to everyone without a personal budget
+function DefaultBudget({ cfg }: { cfg: BudgetCfg }) {
+  const id = useId();
+  const [value, setValue] = useState("");
+  const amount = Math.max(0, Math.round((Number(value) || 0) / cfg.step) * cfg.step);
+
+  return (
+    <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
+      <Label id={`${id}-title`}>기본 투자금</Label>
+      <p className="mt-2 font-mono text-3xl font-semibold tabular-nums">{won(cfg.defaultBudget)}</p>
+      <p className="mt-1 text-xs text-fg/50">개인 투자금을 따로 정하지 않은 모든 참가자에게 적용됩니다. 투자 단위 {won(cfg.step)}.</p>
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (!value) return;
+          if (await run(() => setInvestSettings({ defaultBudget: amount }), optimisticPatch.investSettings({ defaultBudget: amount })))
+            setValue("");
+        }}
+        className="mt-4 flex flex-wrap items-center gap-2"
+      >
+        <label htmlFor={`${id}-amt`} className="sr-only">
+          새 기본 투자금
+        </label>
+        <input
+          id={`${id}-amt`}
+          inputMode="numeric"
+          autoComplete="off"
+          value={value ? Number(value).toLocaleString("ko-KR") : ""}
+          onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
+          placeholder={cfg.defaultBudget.toLocaleString("ko-KR")}
+          className="h-9 w-36 border border-fg/20 bg-page px-2 text-right font-mono text-sm tabular-nums text-fg outline-none placeholder:text-fg/30 focus:border-fg/60"
+        />
+        <span className="text-sm text-fg/50">원</span>
+        <button type="submit" disabled={!value || amount === cfg.defaultBudget} className={primaryBtn}>
+          기본값 변경
+        </button>
+      </form>
+    </section>
+  );
+}
 
 function BudgetPanel({ state }: { state: FestivalState }) {
   const id = useId();
@@ -629,10 +626,12 @@ function BudgetPanel({ state }: { state: FestivalState }) {
   const pool = all.reduce((sum, r) => sum + r.budget, 0);
   const spent = all.reduce((sum, r) => sum + r.used, 0);
   const overCount = all.filter((r) => r.left < 0).length;
-  const custom = all.filter((r) => r.budget !== INVEST_BUDGET).length;
+  const custom = all.filter((r) => r.budget !== state.defaultBudget).length;
 
   return (
     <div className="grid gap-8">
+      <DefaultBudget cfg={state} />
+
       <dl className="grid grid-cols-2 gap-px border border-fg/10 bg-fg/10 sm:grid-cols-4">
         {[
           ["전체 투자금", won(pool)],
@@ -651,7 +650,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <Label id={`${id}-title`}>개인별 투자금</Label>
           <span className="font-mono text-xs text-fg/50">
-            {rows.length}명 표시 · 기본 {won(INVEST_BUDGET)}
+            {rows.length}명 표시 · 기본 {won(state.defaultBudget)}
           </span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -685,7 +684,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
           </button>
         </div>
 
-        <BulkBudget ids={rows.map((r) => r.p.id)} filtered={rows.length !== all.length} />
+        <BulkBudget cfg={state} ids={rows.map((r) => r.p.id)} filtered={rows.length !== all.length} />
 
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[44rem] border-t border-fg/15 text-left text-sm">
@@ -709,7 +708,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
                   </td>
                   <td className="py-2.5 pr-3 text-fg/60">{teamOf(p.teamId)?.name ?? "미배정"}</td>
                   <td className="py-2.5 pr-3">
-                    <BudgetCell id={p.id} name={p.name} budget={budget} />
+                    <BudgetCell cfg={state} id={p.id} name={p.name} budget={budget} />
                   </td>
                   <td className="py-2.5 pr-3 text-right font-mono text-xs tabular-nums text-fg/70">{won(used)}</td>
                   <td className="py-2.5 text-right font-mono text-xs tabular-nums">
@@ -1168,7 +1167,37 @@ function CodeCard() {
 
 /* ---------- 투자 현황 / 발행 ---------- */
 
+// Staff open and close investing; while closed, participants can't confirm
+function InvestOpen({ open }: { open: boolean }) {
+  const next = !open;
+  return (
+    <section
+      aria-labelledby="invest-open"
+      className={`flex flex-wrap items-center justify-between gap-3 border p-4 ${open ? "border-fg/15" : "border-[var(--g-red)]/60 bg-[var(--g-red)]/[0.06]"}`}
+    >
+      <div>
+        <Label id="invest-open">투자 접수</Label>
+        <p className="mt-1 text-lg font-semibold">
+          <span
+            className={`mr-2 inline-block h-2.5 w-2.5 rounded-full align-middle ${open ? "bg-[var(--g-green)]" : "bg-[var(--g-red)]"}`}
+            aria-hidden="true"
+          />
+          {open ? "열림 · 참가자가 투자를 확정할 수 있습니다" : "닫힘 · 참가자는 투자를 바꿀 수 없습니다"}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => void run(() => setInvestSettings({ open: next }), optimisticPatch.investSettings({ open: next }))}
+        className={open ? smallBtn : primaryBtn}
+      >
+        {open ? "투자 마감하기" : "투자 다시 열기"}
+      </button>
+    </section>
+  );
+}
+
 function InvestStatusPanel({ state }: { state: FestivalState }) {
+  const [publishing, setPublishing] = useState(false);
   const live = liveTotals(state);
   const snap = latestTick(state);
   const rows = state.teams
@@ -1182,6 +1211,8 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
 
   return (
     <div className="grid gap-8">
+      <InvestOpen open={state.investOpen} />
+
       <div className="grid gap-4 md:grid-cols-2">
         <section aria-labelledby="pool" className="border border-fg/15 p-5">
           <Label id="pool">전체 투자금</Label>
@@ -1211,13 +1242,22 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => updateFestival((s) => ({ ...s, ticks: [...s.ticks, liveTotals(state)] }))}
-              disabled={!changed}
+              onClick={async () => {
+                setPublishing(true);
+                await run(publishTick);
+                setPublishing(false);
+              }}
+              disabled={!changed || publishing}
               className={`${primaryBtn} px-5 py-2.5 text-base`}
             >
-              새 틱 발행하기
+              {publishing ? "발행 중…" : "새 틱 발행하기"}
             </button>
-            {snap && <DeleteButton label="최근 틱 삭제" onConfirm={() => updateFestival((s) => ({ ...s, ticks: s.ticks.slice(0, -1) }))} />}
+            {snap?.id !== undefined && (
+              <DeleteButton
+                label="최근 틱 삭제"
+                onConfirm={() => void run(() => deleteTick(snap.id!), optimisticPatch.removeTick(snap.id!))}
+              />
+            )}
           </div>
           <p className="mt-2 text-xs text-fg/40">
             발행할 때마다 틱이 하나씩 쌓이고, 참가자는 발행된 틱들만 그래프로 볼 수 있습니다. 삭제는 가장 최근 틱만 지웁니다.

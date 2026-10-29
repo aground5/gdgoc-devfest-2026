@@ -13,6 +13,7 @@ export type Investments = Record<string, Record<string, number>>;
 // One published investment status ("tick"). Participants only ever see published ticks,
 // never live totals.
 export type Snapshot = {
+  id?: number; // Supabase invest_ticks.id (published ticks)
   at: number;
   totals: Record<string, number>; // teamId -> amount
   investors: Record<string, number>; // teamId -> number of investors
@@ -27,8 +28,15 @@ export type MockState = {
   idsFrom: "mock" | "supabase";
 };
 
-// What screens read: the mock data plus participants and teams from Supabase
-export type FestivalState = MockState & { participants: Participant[]; teams: Team[] };
+// What screens read: investment data (mock, or Supabase on /organize) plus
+// participants and teams from Supabase
+export type FestivalState = MockState & {
+  participants: Participant[];
+  teams: Team[];
+  defaultBudget: number;
+  step: number;
+  investOpen: boolean;
+};
 
 const KEY = "devfest-festival-mock-v3";
 const EVENT = "festivalchange";
@@ -161,7 +169,10 @@ export function useFestival(people: Participant[] | undefined, teams: Team[] | u
     if (ready && mock.idsFrom !== "supabase") updateFestival((s) => (s.idsFrom === "supabase" ? s : rekey(s, people, teams)));
   }, [ready, mock.idsFrom, people, teams]);
   return useMemo(
-    () => (people && teams && mock.idsFrom === "supabase" ? { ...mock, participants: people, teams } : null),
+    () =>
+      people && teams && mock.idsFrom === "supabase"
+        ? { ...mock, participants: people, teams, defaultBudget: INVEST_BUDGET, step: INVEST_STEP, investOpen: true }
+        : null,
     [mock, people, teams],
   );
 }
@@ -184,7 +195,7 @@ export function resetFestival() {
 export const membersOf = (s: FestivalState, teamId: string) => s.participants.filter((p) => p.teamId === teamId);
 
 // A participant's total budget (staff can change it per person on /organize)
-export const budgetOf = (s: FestivalState, pid: string) => s.budgets[pid] ?? INVEST_BUDGET;
+export const budgetOf = (s: FestivalState, pid: string) => s.budgets[pid] ?? s.defaultBudget;
 
 // How much a participant has confirmed so far
 export const investedBy = (s: FestivalState, pid: string) => Object.values(s.investments[pid] ?? {}).reduce((sum, v) => sum + v, 0);
