@@ -144,17 +144,6 @@ html {
   transition: none !important;
 }
 
-/* The design guide's content-wise header bar: guide black with white text in both themes.
-   Re-pointing --fg/--page lets fg/page utilities inside it (buttons, ThemeToggle) just work. */
-.ink-bar {
-  --fg: var(--white);
-  --page: var(--black);
-  --muted: color-mix(in srgb, var(--white) 75%, var(--black));
-  --subtle: color-mix(in srgb, var(--white) 58%, var(--black));
-  background: var(--black);
-  color: var(--fg);
-  color-scheme: dark;
-}
 
 /* Home hero: the edge frame's bars slide in from the edges one after another,
    then the headline rises and the facts fade in. Visible at rest when motion is off. */

@@ -36,17 +36,6 @@ export function GdgLogo({ className = "", title }: { className?: string; title?:
   );
 }
 
-// A thin strip of the four school colors, e.g. along the bottom of a screen.
-export function SchoolBar({ className = "", vertical = false }: { className?: string; vertical?: boolean }) {
-  return (
-    <div className={`flex ${vertical ? "flex-col" : "flex-row"} ${className}`} aria-hidden="true">
-      {schools.map((s) => (
-        <span key={s.key} className="flex-1" style={{ background: s.main }} />
-      ))}
-    </div>
-  );
-}
-
 // Home hero frame: bars in the four school colors come in from the left and right
 // edges (four rows a side, mirrored) and frame the centered headline. They slide in
 // one after another on load (.edge-bar in globals.css). Hidden on phones, where they
@@ -81,17 +70,6 @@ export function EdgeFrame() {
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden sm:block">
       {side(true)}
       {side(false)}
-    </div>
-  );
-}
-
-// 2×2 mark of the four school colors, used in the content-wise header bar.
-export function SchoolMark({ className = "" }: { className?: string }) {
-  return (
-    <div className={`grid grid-cols-2 grid-rows-2 ${className}`} aria-hidden="true">
-      {schools.map((s) => (
-        <span key={s.key} style={{ background: s.main }} />
-      ))}
     </div>
   );
 }

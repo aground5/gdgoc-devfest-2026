@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useRef, useSyncExternalStore, type ReactNode } from "react";
-import { GdgLogo, SchoolBar, SchoolMark, schools, type School } from "./brand";
+import { GdgLogo, schools, type School } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
 import { event, type Participant, type SchoolKey } from "@/data/guide";
 
@@ -16,7 +16,7 @@ export const schoolsOf = (people: Participant[]) => schools.filter((s) => people
 // Form fields stay at 16px text: iOS Safari zooms the page into any smaller field on focus.
 // Field borders are fg/50 (about 3.3:1), enough to see where a field is (WCAG 1.4.11).
 export const fieldCls =
-  "mt-1.5 w-full border border-fg/50 bg-fg/[0.04] px-3 py-2.5 text-base text-fg placeholder:text-subtle outline-none transition focus:border-fg";
+  "mt-1.5 w-full border border-fg/50 bg-page px-3 py-2.5 text-base text-fg placeholder:text-subtle outline-none transition focus:border-fg";
 
 export const selectCls =
   "border border-fg/50 bg-page px-2 py-2 text-base sm:text-sm text-fg outline-none transition focus:border-fg";
@@ -118,28 +118,25 @@ export function ScreenFrame<T extends string>({
 
   return (
     <div className="flex min-h-svh flex-col bg-page text-fg">
-      <header className="sticky top-0 z-10 border-b border-fg/10 bg-page">
-        {/* Header bar from the design guide's content-wise designs: school-color mark, wordmark, GDG brackets */}
-        <div className="ink-bar flex items-stretch">
-          <SchoolMark className="w-12 shrink-0 sm:w-16" />
-          <div className="mx-auto flex min-w-0 max-w-6xl flex-1 items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-8">
-            <p className="flex min-w-0 items-center gap-2 text-base font-bold tracking-tight min-[400px]:text-lg sm:text-2xl">
-              <span className="truncate">GDG DevFest.</span>
-              {badge && <span className="shrink-0 bg-fg px-1.5 py-0.5 text-[11px] font-bold tracking-normal text-page">{badge}</span>}
-            </p>
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              {actions}
-              <ThemeToggle className="h-10 w-10" />
-              {/* Phones: icon only, so the wordmark isn't cut off */}
-              <Link
-                href="/"
-                aria-label="나가기"
-                className="inline-flex h-10 min-w-10 items-center justify-center gap-2 border border-fg/25 px-2.5 text-sm font-bold transition hover:bg-fg/10 sm:px-4"
-              >
-                <span className="hidden sm:inline">나가기</span> <span aria-hidden="true">✕</span>
-              </Link>
-              <GdgLogo className="ml-2 hidden h-4 w-8 sm:block" title={event.series} />
-            </div>
+      {/* Plain header in the page's own colors, like the home page's top row */}
+      <header className="sticky top-0 z-10 border-b border-fg/15 bg-page">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-8">
+          <Link href="/" className="flex min-w-0 items-center gap-2 text-sm font-bold sm:text-base">
+            <GdgLogo className="h-3 w-6 shrink-0" />
+            <span className="truncate">{event.series}</span>
+            {badge && <span className="shrink-0 bg-fg px-1.5 py-0.5 text-[11px] font-bold text-page">{badge}</span>}
+          </Link>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            {actions}
+            <ThemeToggle className="h-10 w-10" />
+            {/* Phones: icon only, so the name isn't cut off */}
+            <Link
+              href="/"
+              aria-label="나가기"
+              className="inline-flex h-10 min-w-10 items-center justify-center gap-2 border border-fg/25 px-2.5 text-sm font-bold transition hover:bg-fg/10 sm:px-4"
+            >
+              <span className="hidden sm:inline">나가기</span> <span aria-hidden="true">✕</span>
+            </Link>
           </div>
         </div>
         {tabs.length > 0 && (
@@ -167,7 +164,6 @@ export function ScreenFrame<T extends string>({
             })}
           </div>
         )}
-        {tabs.length === 0 && <div className="h-4" />}
       </header>
 
       <div
@@ -177,7 +173,6 @@ export function ScreenFrame<T extends string>({
         {children}
       </div>
 
-      <SchoolBar className="h-1.5 shrink-0" />
     </div>
   );
 }
