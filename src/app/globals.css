@@ -89,9 +89,10 @@ body {
   background: var(--page);
   color: var(--fg);
   transition: background-color 0.2s ease;
-  /* Korean: wrap between words, not syllables; still break long URLs instead of overflowing */
+  /* Korean: wrap between words, not syllables. break-word (not anywhere) only breaks a word
+     that would overflow, e.g. a long URL; `anywhere` also squeezed short labels like "NEW". */
   word-break: keep-all;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* Scrollbars: thin, theme-colored thumb on a page-colored track, so the
