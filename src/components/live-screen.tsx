@@ -75,8 +75,7 @@ function LoginCard() {
 
   return (
     <section aria-labelledby="login-title" className="mx-auto max-w-md border border-fg/15 p-6 sm:p-8">
-      <Label id="login-title">입장하기</Label>
-      <p className="mt-3 text-2xl font-bold tracking-tight">참가자 확인</p>
+      <h1 id="login-title" className="text-2xl font-bold tracking-tight">입장하기</h1>
       <p className="mt-1 text-sm text-subtle">이름과 운영진에게 받은 참가자 코드를 입력해 주세요.</p>
       <form onSubmit={onSubmit} className="mt-6 grid gap-4">
         <div>
