@@ -574,7 +574,9 @@ function DefaultBudget({ cfg }: { cfg: BudgetCfg }) {
     <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
       <Label id={`${id}-title`}>기본 투자금</Label>
       <p className="mt-2 text-3xl font-bold tabular-nums">{won(cfg.defaultBudget)}</p>
-      <p className="mt-1 text-xs text-fg/50">개인 투자금을 따로 정하지 않은 모든 참가자에게 적용됩니다. 투자 단위 {won(cfg.step)}.</p>
+      <p className="mt-1 text-xs text-fg/50">
+        개인 투자금을 따로 정하지 않은 모든 참가자에게 적용됩니다. {won(cfg.step)} 단위로 맞춰집니다.
+      </p>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -601,6 +603,62 @@ function DefaultBudget({ cfg }: { cfg: BudgetCfg }) {
           기본값 변경
         </button>
       </form>
+    </section>
+  );
+}
+
+// Investment step (투자 단위). Amounts already set that aren't a multiple of the
+// new step are listed before saving: participants must fix theirs before they
+// can confirm again, and budgets get rounded the next time staff edit them.
+function StepSetting({ state }: { state: FestivalState }) {
+  const id = useId();
+  const [value, setValue] = useState("");
+  const step = Number(value) || 0;
+  const off = (n: number) => step > 0 && n % step !== 0;
+  const badInvest = step ? Object.values(state.investments).filter((byTeam) => Object.values(byTeam).some(off)).length : 0;
+  const badBudgets = step ? Object.values(state.budgets).filter(off).length : 0;
+  const badDefault = off(state.defaultBudget);
+
+  return (
+    <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
+      <Label id={`${id}-title`}>투자 단위</Label>
+      <p className="mt-2 text-3xl font-bold tabular-nums">{won(state.step)}</p>
+      <p className="mt-1 text-xs text-fg/50">참가자가 이 금액 단위로만 투자할 수 있습니다. 투자금도 이 단위로 맞춰집니다.</p>
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (step <= 0 || step === state.step) return;
+          if (await run(() => setInvestSettings({ step }), optimisticPatch.investSettings({ step }))) setValue("");
+        }}
+        className="mt-4 flex flex-wrap items-center gap-2"
+      >
+        <label htmlFor={`${id}-amt`} className="sr-only">
+          새 투자 단위
+        </label>
+        <input
+          id={`${id}-amt`}
+          inputMode="numeric"
+          autoComplete="off"
+          value={value ? Number(value).toLocaleString("ko-KR") : ""}
+          onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
+          placeholder={state.step.toLocaleString("ko-KR")}
+          className="h-9 w-36 border border-fg/20 bg-page px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-fg/30 focus:border-fg/60"
+        />
+        <span className="text-sm text-fg/50">원</span>
+        <button type="submit" disabled={step <= 0 || step === state.step} className={primaryBtn}>
+          단위 변경
+        </button>
+      </form>
+      {(badInvest > 0 || badBudgets > 0 || badDefault) && (
+        <p role="status" className="mt-3 flex items-start gap-2 text-xs font-bold text-fg">
+          <span className="mt-1 h-2 w-2 shrink-0 bg-[var(--g-yellow)]" aria-hidden="true" />
+          <span>
+            {won(step)} 단위에 맞지 않는 금액: {badDefault && "기본 투자금 · "}
+            {badBudgets > 0 && `개인 투자금 ${badBudgets}명 · `}
+            {badInvest > 0 && `확정된 투자 ${badInvest}명`}. 바꾸면 해당 참가자는 금액을 단위에 맞춰야 다시 확정할 수 있습니다.
+          </span>
+        </p>
+      )}
     </section>
   );
 }
@@ -632,7 +690,10 @@ function BudgetPanel({ state }: { state: FestivalState }) {
 
   return (
     <div className="grid gap-8">
-      <DefaultBudget cfg={state} />
+      <div className="grid gap-4 md:grid-cols-2">
+        <DefaultBudget cfg={state} />
+        <StepSetting state={state} />
+      </div>
 
       <dl className="grid grid-cols-2 gap-px border border-fg/10 bg-fg/10 sm:grid-cols-4">
         {[

@@ -192,13 +192,14 @@ export async function fetchInvestSettings(): Promise<InvestSettings> {
   return { defaultBudget: r.default_budget, step: r.step, open: r.open };
 }
 
-export async function setInvestSettings(patch: Partial<Pick<InvestSettings, "defaultBudget" | "open">>) {
+export async function setInvestSettings(patch: Partial<InvestSettings>) {
   ok(
     await sb()
       .from("invest_settings")
       .update({
         ...(patch.defaultBudget !== undefined && { default_budget: patch.defaultBudget }),
         ...(patch.open !== undefined && { open: patch.open }),
+        ...(patch.step !== undefined && { step: patch.step }),
         updated_at: new Date().toISOString(),
       })
       .eq("id", true),
