@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { Team } from "@/data/guide";
 import { clockLabel, timeLabel, won, type FestivalState, type Snapshot } from "@/lib/festival-store";
-import { Label } from "./festival-ui";
+import { Label, btn } from "./festival-ui";
 
 // Compact Korean money: 2,150,000 -> 215만원
 const man = (n: number) =>
@@ -97,7 +97,7 @@ export function PublishedStatus({
               type="button"
               aria-pressed={asTable === v}
               onClick={() => setAsTable(v)}
-              className={`border px-3 py-1 text-xs font-bold transition ${asTable === v ? "border-fg bg-fg text-page" : "border-fg/20 text-muted hover:border-fg/50"}`}
+              className={btn(asTable === v ? "primary" : "secondary", "sm")}
             >
               {l}
             </button>
@@ -147,7 +147,7 @@ export function PublishedStatus({
 function Tile({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="min-w-0 bg-page px-4 py-3">
-      <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-subtle">{label}</dt>
+      <dt className="tabular-nums text-xs text-subtle">{label}</dt>
       <dd className="mt-1 truncate text-xl font-bold">{value}</dd>
       <dd className="text-xs tabular-nums text-subtle">{sub}</dd>
     </div>
@@ -462,7 +462,7 @@ function RankList({
 
 function TickTable({ teams, ticks, myTeamId }: { teams: Team[]; ticks: Snapshot[]; myTeamId?: string }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full border-t border-fg/15 text-left text-sm">
         <thead className="text-xs text-subtle">
           <tr className="border-b border-fg/15">

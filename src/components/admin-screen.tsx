@@ -63,8 +63,11 @@ import {
   fieldCls,
   primaryBtn,
   school,
-  selectCls,
-  smallBtn,
+  select,
+  btn,
+  field,
+  type ControlSize,
+  secondaryBtn,
   useHashTab,
 } from "./festival-ui";
 import { PublishedStatus } from "./investment-status";
@@ -152,7 +155,7 @@ function StaffLogin({ denied }: { denied: string | null }) {
             <span className="font-bold text-fg">{denied}</span> 계정은 운영진 목록에 없습니다. 다른 계정으로 로그인하거나 운영진 관리자에게
             추가를 요청해 주세요.
           </p>
-          <button type="button" className={`${primaryBtn} mt-6 w-full py-3 text-base`} onClick={() => void staffSignOut()}>
+          <button type="button" className={`${btn("primary", "lg")} mt-6 w-full`} onClick={() => void staffSignOut()}>
             다른 계정으로 로그인
           </button>
         </>
@@ -168,7 +171,7 @@ function StaffLogin({ denied }: { denied: string | null }) {
           <button
             type="button"
             disabled={busy}
-            className={`${primaryBtn} mt-6 w-full py-3 text-base`}
+            className={`${btn("primary", "lg")} mt-6 w-full`}
             onClick={() => {
               setBusy(true);
               void signInWithGoogle();
@@ -209,7 +212,7 @@ function AdminPanels({ email }: { email: string }) {
             type="button"
             onClick={() => void staffSignOut()}
             title={`${email}로 로그인됨`}
-            className="inline-flex h-10 items-center border border-fg/25 px-3 text-sm font-bold transition hover:bg-fg/10"
+            className={secondaryBtn}
           >
             로그아웃
           </button>
@@ -237,19 +240,22 @@ function Panels({ state, view, email }: { state: FestivalState; view: (typeof VI
 
   return (
     <>
-      <dl className="mb-8 grid grid-cols-2 gap-px border border-fg/10 bg-fg/10 sm:grid-cols-4">
-        {[
-          ["참가자", `${state.participants.length}명`],
-          ["팀", `${state.teams.length}팀`],
-          ["출석", `${present} / ${state.participants.length}`],
-          ["투자 확정", `${investors}명`],
-        ].map(([k, v]) => (
-          <div key={k} className="bg-page px-4 py-3">
-            <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-subtle">{k}</dt>
-            <dd className="mt-1 text-lg font-bold tabular-nums">{v}</dd>
-          </div>
-        ))}
-      </dl>
+      {/* Overall numbers, only on the first tab: the other tabs open on their own content */}
+      {view === "people" && (
+        <dl className="mb-8 grid grid-cols-2 gap-px border border-fg/10 bg-fg/10 sm:grid-cols-4">
+          {[
+            ["참가자", `${state.participants.length}명`],
+            ["팀", `${state.teams.length}팀`],
+            ["출석", `${present} / ${state.participants.length}`],
+            ["투자 확정", `${investors}명`],
+          ].map(([k, v]) => (
+            <div key={k} className="bg-page px-4 py-3">
+              <dt className="tabular-nums text-xs text-subtle">{k}</dt>
+              <dd className="mt-1 text-lg font-bold tabular-nums">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       {view === "people" && <PeoplePanel state={state} />}
       {view === "teams" && <TeamsPanel state={state} />}
@@ -281,31 +287,37 @@ function MarketTab({ state }: { state: FestivalState }) {
   return <MarketModeration state={state} entries={demos.data} />;
 }
 
-function DeleteButton({ label, onConfirm }: { label: string; onConfirm: () => void }) {
+function DeleteButton({ label, onConfirm, size = "sm" }: { label: string; onConfirm: () => void; size?: ControlSize }) {
   const [arm, setArm] = useState(false);
   return arm ? (
     <span className="inline-flex gap-1">
-      <button
-        type="button"
-        onClick={onConfirm}
-        className="border border-danger px-2.5 py-1.5 text-sm font-bold text-danger"
-      >
+      <button type="button" onClick={onConfirm} className={btn("danger", size)}>
         삭제 확인
       </button>
-      <button type="button" onClick={() => setArm(false)} className={smallBtn}>
+      <button type="button" onClick={() => setArm(false)} className={btn("secondary", size)}>
         취소
       </button>
     </span>
   ) : (
-    <button type="button" onClick={() => setArm(true)} aria-label={label} className={`${smallBtn} text-subtle`}>
+    <button type="button" onClick={() => setArm(true)} aria-label={label} className={`${btn("secondary", size)} text-subtle`}>
       삭제
     </button>
   );
 }
 
-function SchoolSelect({ value, onChange, label }: { value: SchoolKey; onChange: (v: SchoolKey) => void; label: string }) {
+function SchoolSelect({
+  value,
+  onChange,
+  label,
+  size = "md",
+}: {
+  value: SchoolKey;
+  onChange: (v: SchoolKey) => void;
+  label: string;
+  size?: ControlSize;
+}) {
   return (
-    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as SchoolKey)} className={selectCls}>
+    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as SchoolKey)} className={select(size)}>
       {schools.map((s) => (
         <option key={s.key} value={s.key}>
           {s.word}
@@ -320,18 +332,20 @@ function TeamSelect({
   value,
   onChange,
   label,
+  size = "md",
 }: {
   teams: Team[];
   value: string | null;
   onChange: (v: string | null) => void;
   label: string;
+  size?: ControlSize;
 }) {
   return (
     <select
       aria-label={label}
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value || null)}
-      className={`${selectCls} max-w-[12rem]`}
+      className={`${select(size)} max-w-[14rem]`}
     >
       <option value="">미배정</option>
       {teams.map((t) => (
@@ -360,7 +374,7 @@ function PeoplePanel({ state }: { state: FestivalState }) {
   const unassigned = state.participants.filter((p) => !p.teamId).length;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-1 gap-8">
       <AddParticipant teams={state.teams} />
 
       <section aria-labelledby={`${id}-title`}>
@@ -380,9 +394,9 @@ function PeoplePanel({ state }: { state: FestivalState }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="이름, 팀명 검색"
-            className={`${fieldCls} mt-0 min-w-0 flex-1`}
+            className={`${field()} min-w-0 flex-1`}
           />
-          <select aria-label="팀 필터" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} className={selectCls}>
+          <select aria-label="팀 필터" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} className={select()}>
             <option value="all">전체 팀</option>
             <option value="none">미배정</option>
             {state.teams.map((t) => (
@@ -393,7 +407,7 @@ function PeoplePanel({ state }: { state: FestivalState }) {
           </select>
         </div>
 
-        <div className="mt-3 overflow-x-auto">
+        <div className="relative mt-3 overflow-x-auto">
           <table className="w-full min-w-[46rem] border-t border-fg/15 text-left text-sm">
             <thead className="text-xs text-subtle">
               <tr className="border-b border-fg/15">
@@ -431,15 +445,15 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
   }
 
   return (
-    <tr className={`border-b border-fg/10 align-middle ${!p.teamId ? "bg-warn/[0.14]" : ""}`}>
-      <td className="py-2.5 pr-3">
+    <tr className={`border-b border-fg/10 align-middle ${!p.teamId ? "bg-surface" : ""}`}>
+      <td className={`py-2.5 pr-3 ${!p.teamId ? "border-l-[3px] border-l-warn pl-2" : ""}`}>
         {editing ? (
           <input
             aria-label="이름"
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && save()}
-            className={`${fieldCls} mt-0 py-1.5`}
+            className={`${field("sm")} w-full`}
           />
         ) : (
           <span className="font-bold">{p.name}</span>
@@ -447,7 +461,7 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
       </td>
       <td className="py-2.5 pr-3">
         {editing ? (
-          <SchoolSelect label="학교" value={sch} onChange={setSch} />
+          <SchoolSelect label="학교" value={sch} onChange={setSch} size="sm" />
         ) : (
           <span className="inline-flex items-center gap-2">
             <SchoolChip s={school(p.school)} className="h-3 w-3" />
@@ -456,7 +470,7 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
         )}
       </td>
       <td className="py-2.5 pr-3">
-        <TeamSelect label={`${p.name} 팀 배정`} teams={teams} value={p.teamId} onChange={(v) => assignTeam(p.id, v)} />
+        <TeamSelect label={`${p.name} 팀 배정`} teams={teams} value={p.teamId} onChange={(v) => assignTeam(p.id, v)} size="sm" />
       </td>
       <td className="py-2.5 pr-3">
         <Status on={p.checkedIn} />
@@ -466,7 +480,7 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
         <span className="inline-flex gap-1">
           {editing ? (
             <>
-              <button type="button" onClick={save} className={primaryBtn}>
+              <button type="button" onClick={save} className={btn("primary", "sm")}>
                 저장
               </button>
               <button
@@ -476,14 +490,14 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
                   setSch(p.school);
                   setEditing(false);
                 }}
-                className={smallBtn}
+                className={btn("secondary", "sm")}
               >
                 취소
               </button>
             </>
           ) : (
             <>
-              <button type="button" onClick={() => setEditing(true)} className={smallBtn}>
+              <button type="button" onClick={() => setEditing(true)} className={btn("secondary", "sm")}>
                 수정
               </button>
               <DeleteButton label={`${p.name} 삭제`} onConfirm={() => removeParticipant(p.id)} />
@@ -503,7 +517,7 @@ function BudgetCell({ cfg, id, name, budget }: { cfg: BudgetCfg; id: string; nam
     if (draft !== null) void setBudgets(cfg, [id], Number(draft.replace(/\D/g, "")) || 0);
     setDraft(null);
   };
-  const stepBtn = "grid h-8 w-7 shrink-0 place-items-center border border-fg/20 text-sm transition hover:bg-fg/10 disabled:opacity-25";
+  const stepBtn = "grid h-9 w-8 shrink-0 place-items-center border border-fg/50 text-sm transition hover:bg-fg/10 disabled:opacity-25";
 
   return (
     <div className="flex items-center gap-2">
@@ -528,7 +542,7 @@ function BudgetCell({ cfg, id, name, budget }: { cfg: BudgetCfg; id: string; nam
             if (e.key === "Enter") commit();
             if (e.key === "Escape") setDraft(null);
           }}
-          className={`h-8 w-24 border-y border-fg/50 bg-fg/[0.04] px-2 text-right text-xs tabular-nums text-fg outline-none focus:border-fg ${budget !== cfg.defaultBudget ? "font-bold" : ""}`}
+          className={`${field("sm")} -mx-px w-28 text-right tabular-nums focus:relative ${budget !== cfg.defaultBudget ? "font-bold" : ""}`}
         />
         <button
           type="button"
@@ -557,7 +571,7 @@ function BulkBudget({ cfg, ids, filtered }: { cfg: BudgetCfg; ids: string[]; fil
           setValue("");
         }
       }}
-      className="mt-3 flex flex-wrap items-center gap-2 border border-fg/10 bg-fg/[0.03] px-3 py-2.5"
+      className="mt-3 flex flex-wrap items-center gap-2 border border-fg/15 bg-surface p-3"
     >
       <label htmlFor={`${fid}-amt`} className="text-sm font-bold">
         투자금 일괄 설정
@@ -569,13 +583,13 @@ function BulkBudget({ cfg, ids, filtered }: { cfg: BudgetCfg; ids: string[]; fil
         value={value ? Number(value).toLocaleString("ko-KR") : ""}
         onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
         placeholder={cfg.defaultBudget.toLocaleString("ko-KR")}
-        className="h-9 w-32 border border-fg/50 bg-fg/[0.04] px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-subtle focus:border-fg"
+        className={`${field()} w-36 text-right tabular-nums`}
       />
       <span className="text-sm text-subtle">원</span>
       <button type="submit" disabled={!value || ids.length === 0} className={primaryBtn}>
         {filtered ? `표시된 ${ids.length}명에게 적용` : `전체 ${ids.length}명에게 적용`}
       </button>
-      <button type="button" onClick={() => void setBudgets(cfg, ids, cfg.defaultBudget)} disabled={ids.length === 0} className={smallBtn}>
+      <button type="button" onClick={() => void setBudgets(cfg, ids, cfg.defaultBudget)} disabled={ids.length === 0} className={secondaryBtn}>
         기본값({short(cfg.defaultBudget)}원)으로
       </button>
       <span className="text-xs text-subtle">{won(cfg.step)} 단위로 맞춰집니다.</span>
@@ -592,7 +606,7 @@ function DefaultBudget({ cfg }: { cfg: BudgetCfg }) {
   const amount = Math.max(0, Math.round((Number(value) || 0) / cfg.step) * cfg.step);
 
   return (
-    <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
+    <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-surface p-5">
       <Label id={`${id}-title`}>기본 투자금</Label>
       <p className="mt-2 text-3xl font-bold tabular-nums">{won(cfg.defaultBudget)}</p>
       <p className="mt-1 text-xs text-subtle">
@@ -617,7 +631,7 @@ function DefaultBudget({ cfg }: { cfg: BudgetCfg }) {
           value={value ? Number(value).toLocaleString("ko-KR") : ""}
           onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
           placeholder={cfg.defaultBudget.toLocaleString("ko-KR")}
-          className="h-9 w-36 border border-fg/20 bg-page px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-subtle focus:border-fg"
+          className={`${field()} w-36 text-right tabular-nums`}
         />
         <span className="text-sm text-subtle">원</span>
         <button type="submit" disabled={!value || amount === cfg.defaultBudget} className={primaryBtn}>
@@ -641,7 +655,7 @@ function StepSetting({ state }: { state: FestivalState }) {
   const badDefault = off(state.defaultBudget);
 
   return (
-    <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
+    <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-surface p-5">
       <Label id={`${id}-title`}>투자 단위</Label>
       <p className="mt-2 text-3xl font-bold tabular-nums">{won(state.step)}</p>
       <p className="mt-1 text-xs text-subtle">참가자가 이 금액 단위로만 투자할 수 있습니다. 투자금도 이 단위로 맞춰집니다.</p>
@@ -663,7 +677,7 @@ function StepSetting({ state }: { state: FestivalState }) {
           value={value ? Number(value).toLocaleString("ko-KR") : ""}
           onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
           placeholder={state.step.toLocaleString("ko-KR")}
-          className="h-9 w-36 border border-fg/20 bg-page px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-subtle focus:border-fg"
+          className={`${field()} w-36 text-right tabular-nums`}
         />
         <span className="text-sm text-subtle">원</span>
         <button type="submit" disabled={step <= 0 || step === state.step} className={primaryBtn}>
@@ -710,7 +724,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
   const custom = all.filter((r) => r.budget !== state.defaultBudget).length;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-1 gap-8">
       <div className="grid gap-4 md:grid-cols-2">
         <DefaultBudget cfg={state} />
         <StepSetting state={state} />
@@ -724,7 +738,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
           ["투자금 초과", `${overCount}명`],
         ].map(([k, v]) => (
           <div key={k} className="bg-page px-4 py-3">
-            <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-subtle">{k}</dt>
+            <dt className="tabular-nums text-xs text-subtle">{k}</dt>
             <dd className={`mt-1 font-bold tabular-nums ${k === "투자금 초과" && overCount > 0 ? "text-danger" : ""}`}>{v}</dd>
           </div>
         ))}
@@ -747,9 +761,9 @@ function BudgetPanel({ state }: { state: FestivalState }) {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="이름, 팀명 검색"
-            className={`${fieldCls} mt-0 min-w-0 flex-1`}
+            className={`${field()} min-w-0 flex-1`}
           />
-          <select aria-label="팀 필터" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} className={selectCls}>
+          <select aria-label="팀 필터" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} className={select()}>
             <option value="all">전체 팀</option>
             <option value="none">미배정</option>
             {state.teams.map((t) => (
@@ -762,7 +776,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
             type="button"
             aria-pressed={onlyOver}
             onClick={() => setOnlyOver((v) => !v)}
-            className={`border px-3 text-sm transition ${onlyOver ? "border-fg bg-fg text-page" : "border-fg/20 text-muted hover:border-fg/50"}`}
+            className={onlyOver ? primaryBtn : secondaryBtn}
           >
             초과만
           </button>
@@ -770,7 +784,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
 
         <BulkBudget cfg={state} ids={rows.map((r) => r.p.id)} filtered={rows.length !== all.length} />
 
-        <div className="mt-3 overflow-x-auto">
+        <div className="relative mt-3 overflow-x-auto">
           <table className="w-full min-w-[44rem] border-t border-fg/15 text-left text-sm">
             <thead className="text-xs text-subtle">
               <tr className="border-b border-fg/15">
@@ -783,8 +797,8 @@ function BudgetPanel({ state }: { state: FestivalState }) {
             </thead>
             <tbody>
               {rows.map(({ p, budget, used, left }) => (
-                <tr key={p.id} className={`border-b border-fg/10 align-middle ${left < 0 ? "bg-danger/[0.06]" : ""}`}>
-                  <td className="py-2.5 pr-3">
+                <tr key={p.id} className={`border-b border-fg/10 align-middle ${left < 0 ? "bg-surface" : ""}`}>
+                  <td className={`py-2.5 pr-3 ${left < 0 ? "border-l-[3px] border-l-danger pl-2" : ""}`}>
                     <span className="inline-flex items-center gap-2">
                       <SchoolChip s={school(p.school)} className="h-3 w-3" />
                       <span className="font-bold">{p.name}</span>
@@ -854,12 +868,12 @@ function AddParticipant({ teams }: { teams: Team[] }) {
               setName(e.target.value);
               setError("");
             }}
-            className={`${fieldCls} py-2`}
+            className={fieldCls}
           />
         </label>
         <SchoolSelect label="학교" value={sch} onChange={setSch} />
         <TeamSelect label="팀" teams={teams} value={teamId} onChange={setTeamId} />
-        <button type="submit" disabled={busy} className={`${primaryBtn} h-[2.4rem]`}>
+        <button type="submit" disabled={busy} className={primaryBtn}>
           {busy ? "추가 중…" : "추가"}
         </button>
       </div>
@@ -884,11 +898,11 @@ function TeamsPanel({ state }: { state: FestivalState }) {
   const unassigned = state.participants.filter((p) => !p.teamId);
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-1 gap-8">
       <AddTeam />
 
       {unassigned.length > 0 && (
-        <section aria-labelledby="unassigned" className="border border-fg/15 bg-warn/[0.14] p-5">
+        <section aria-labelledby="unassigned" className="border border-fg/15 border-l-[3px] border-l-warn bg-surface p-5">
           <Label id="unassigned">미배정 참가자 {unassigned.length}명</Label>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {unassigned.map((p) => (
@@ -897,7 +911,7 @@ function TeamsPanel({ state }: { state: FestivalState }) {
                   <SchoolChip s={school(p.school)} className="h-3 w-3" />
                   <span className="font-bold">{p.name}</span>
                 </span>
-                <TeamSelect label={`${p.name} 팀 배정`} teams={state.teams} value={null} onChange={(v) => assignTeam(p.id, v)} />
+                <TeamSelect label={`${p.name} 팀 배정`} teams={state.teams} value={null} onChange={(v) => assignTeam(p.id, v)} size="sm" />
               </li>
             ))}
           </ul>
@@ -931,14 +945,14 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
     if (saved) setEditing(false);
   }
 
-  const field = (key: keyof Omit<Team, "id">, label: string) => (
+  const input = (key: keyof Omit<Team, "id">, label: string) => (
     <label htmlFor={`${id}-${key}`} className="text-xs text-subtle">
       {label}
       <input
         id={`${id}-${key}`}
         value={form[key]}
         onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-        className={`${fieldCls} py-2`}
+        className={fieldCls}
       />
     </label>
   );
@@ -950,11 +964,11 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
         {editing ? (
           <form onSubmit={save} noValidate className="grid gap-3">
             <div className="grid grid-cols-[1fr_6rem] gap-3">
-              {field("name", "팀명")}
-              {field("table", "테이블")}
+              {input("name", "팀명")}
+              {input("table", "테이블")}
             </div>
-            {field("project", "프로젝트명")}
-            {field("desc", "한 줄 소개")}
+            {input("project", "프로젝트명")}
+            {input("desc", "한 줄 소개")}
             <div className="flex gap-2">
               <button type="submit" className={primaryBtn}>
                 저장
@@ -965,7 +979,7 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
                   setForm(team);
                   setEditing(false);
                 }}
-                className={smallBtn}
+                className={secondaryBtn}
               >
                 취소
               </button>
@@ -989,7 +1003,7 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
                     setForm(team);
                     setEditing(true);
                   }}
-                  className={smallBtn}
+                  className={btn("secondary", "sm")}
                 >
                   수정
                 </button>
@@ -1055,7 +1069,7 @@ function AddTeam() {
               setName(e.target.value);
               setError("");
             }}
-            className={`${fieldCls} py-2`}
+            className={fieldCls}
           />
         </label>
         <label htmlFor={`${id}-table`} className="w-24 text-xs text-subtle">
@@ -1065,14 +1079,14 @@ function AddTeam() {
             value={table}
             onChange={(e) => setTable(e.target.value)}
             placeholder="D-01"
-            className={`${fieldCls} py-2`}
+            className={fieldCls}
           />
         </label>
         <label htmlFor={`${id}-project`} className="min-w-[10rem] flex-1 text-xs text-subtle">
           프로젝트명
-          <input id={`${id}-project`} value={project} onChange={(e) => setProject(e.target.value)} className={`${fieldCls} py-2`} />
+          <input id={`${id}-project`} value={project} onChange={(e) => setProject(e.target.value)} className={fieldCls} />
         </label>
-        <button type="submit" className={`${primaryBtn} h-[2.4rem]`}>
+        <button type="submit" className={primaryBtn}>
           추가
         </button>
       </div>
@@ -1101,7 +1115,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
   const show = (p: Participant) => filter === "all" || (filter === "present" ? p.checkedIn : !p.checkedIn);
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-1 gap-8">
       <div className="grid gap-4 md:grid-cols-2">
         <CodeCard />
         <section aria-labelledby="att-rate" className="border border-fg/15 p-5">
@@ -1132,7 +1146,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
                 type="button"
                 aria-pressed={filter === k}
                 onClick={() => setFilter(k)}
-                className={`border px-3 py-1.5 text-sm transition ${filter === k ? "border-fg bg-fg text-page" : "border-fg/20 text-muted hover:border-fg/50"}`}
+                className={btn(filter === k ? "primary" : "secondary", "sm")}
               >
                 {l}
               </button>
@@ -1147,7 +1161,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
             if (shown.length === 0) return null;
             return (
               <div key={g.key} className="border border-fg/15">
-                <div className="flex items-center justify-between gap-3 border-b border-fg/10 px-4 py-3">
+                <div className="flex h-14 items-center justify-between gap-3 border-b border-fg/10 px-4">
                   <p className="min-w-0 truncate font-bold">{g.title}</p>
                   <span className="flex shrink-0 items-center gap-2">
                     <span className="tabular-nums text-xs text-subtle">
@@ -1160,7 +1174,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
                           const ids = g.people.filter((p) => !p.checkedIn).map((p) => p.id);
                           void run(() => setAttendance(ids, true), optimisticPatch.attendance(ids, true));
                         }}
-                        className={`${smallBtn} px-2 py-1 text-xs`}
+                        className={btn("secondary", "sm")}
                       >
                         전원 출석
                       </button>
@@ -1181,7 +1195,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
                           onClick={() =>
                             void run(() => setAttendance([p.id], !p.checkedIn), optimisticPatch.attendance([p.id], !p.checkedIn))
                           }
-                          className={`${smallBtn} w-20 px-2 py-1 text-xs`}
+                          className={`${btn("secondary", "sm")} w-24`}
                         >
                           {p.checkedIn ? "출석 취소" : "출석 처리"}
                         </button>
@@ -1209,7 +1223,7 @@ function CodeCard() {
   }
 
   return (
-    <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
+    <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-surface p-5">
       <Label id={`${id}-title`}>출석 코드</Label>
       <p className="mt-2 tabular-nums text-5xl font-bold tracking-[0.3em]">{code}</p>
       <p className="mt-1 text-xs text-subtle">현장 화면에 띄워 주세요. 바꾸면 바로 적용됩니다.</p>
@@ -1231,16 +1245,16 @@ function CodeCard() {
           maxLength={4}
           placeholder="새 코드"
           autoComplete="off"
-          className="w-28 border border-fg/50 bg-fg/[0.04] px-3 py-2 text-center tabular-nums tracking-[0.3em] text-fg outline-none placeholder:tracking-normal placeholder:text-subtle focus:border-fg"
+          className={`${field()} w-28 text-center tabular-nums tracking-[0.3em] placeholder:tracking-normal`}
         />
         <button type="submit" disabled={value.length < 4} className={primaryBtn}>
           변경
         </button>
-        <button type="button" onClick={() => apply(String(Math.floor(Math.random() * 10000)).padStart(4, "0"))} className={smallBtn}>
+        <button type="button" onClick={() => apply(String(Math.floor(Math.random() * 10000)).padStart(4, "0"))} className={secondaryBtn}>
           랜덤 생성
         </button>
         {venue.data && (
-          <button type="button" onClick={() => apply(null)} className={smallBtn} title="코드를 지우면 참가자가 출석할 수 없습니다">
+          <button type="button" onClick={() => apply(null)} className={secondaryBtn} title="코드를 지우면 참가자가 출석할 수 없습니다">
             출석 닫기
           </button>
         )}
@@ -1290,7 +1304,7 @@ function InvestOpen({ open }: { open: boolean }) {
   return (
     <section
       aria-labelledby="invest-open"
-      className={`flex flex-wrap items-center justify-between gap-3 border p-4 ${open ? "border-fg/15" : "border-danger/60 bg-danger/[0.06]"}`}
+      className={`flex flex-wrap items-center justify-between gap-3 border p-4 border-fg/15 ${open ? "" : "border-l-[3px] border-l-danger bg-surface"}`}
     >
       <div>
         <Label id="invest-open">투자 접수</Label>
@@ -1305,7 +1319,7 @@ function InvestOpen({ open }: { open: boolean }) {
       <button
         type="button"
         onClick={() => void run(() => setInvestSettings({ open: next }), optimisticPatch.investSettings({ open: next }))}
-        className={open ? smallBtn : primaryBtn}
+        className={open ? secondaryBtn : primaryBtn}
       >
         {open ? "투자 마감하기" : "투자 다시 열기"}
       </button>
@@ -1327,7 +1341,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
   const nameOf = (pid: string) => state.participants.find((p) => p.id === pid)?.name;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-1 gap-8">
       <InvestOpen open={state.investOpen} />
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -1342,7 +1356,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
           </div>
         </section>
 
-        <section aria-labelledby="publish" className="border border-fg/15 bg-fg/[0.04] p-5">
+        <section aria-labelledby="publish" className="border border-fg/15 bg-surface p-5">
           <div className="flex items-center justify-between gap-3">
             <Label id="publish">참가자 화면 발행</Label>
             <span className="tabular-nums text-xs text-subtle">틱 {state.ticks.length}개</span>
@@ -1361,12 +1375,13 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
               type="button"
               onClick={() => void publishOnce()}
               disabled={!changed || publishing}
-              className={`${primaryBtn} px-5 py-2.5 text-base`}
+              className={btn("primary", "lg")}
             >
               {publishing ? "발행 중…" : "새 틱 발행하기"}
             </button>
             {snap?.id !== undefined && (
               <DeleteButton
+                size="lg"
                 label="최근 틱 삭제"
                 onConfirm={() => void run(() => deleteTick(snap.id!), optimisticPatch.removeTick(snap.id!))}
               />
@@ -1453,7 +1468,7 @@ function StaffPanel({ me }: { me: string }) {
   const mine = normalizeEmail(me);
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-1 gap-8">
       <AddStaff />
 
       <section aria-labelledby={`${id}-title`}>
@@ -1470,7 +1485,7 @@ function StaffPanel({ me }: { me: string }) {
             목록을 불러오지 못했습니다. {staff.error.message}
           </p>
         ) : (
-          <div className="mt-3 overflow-x-auto">
+          <div className="relative mt-3 overflow-x-auto">
             <table className="w-full min-w-[40rem] border-t border-fg/15 text-left text-sm">
               <thead className="text-xs text-subtle">
                 <tr className="border-b border-fg/15">
@@ -1566,7 +1581,7 @@ function StaffNote({ email, note }: { email: string; note: string }) {
         }
       }}
       placeholder="메모"
-      className={`${fieldCls} mt-0 py-1.5`}
+      className={`${field("sm")} w-full`}
     />
   );
 }
@@ -1607,7 +1622,7 @@ function AddStaff() {
               setError("");
             }}
             placeholder="name@gmail.com"
-            className={`${fieldCls} py-2`}
+            className={fieldCls}
           />
         </label>
         <label htmlFor={`${id}-note`} className="min-w-[10rem] flex-1 text-xs text-subtle">
@@ -1617,10 +1632,10 @@ function AddStaff() {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="이름, 학교 등"
-            className={`${fieldCls} py-2`}
+            className={fieldCls}
           />
         </label>
-        <button type="submit" disabled={busy} className={`${primaryBtn} h-[2.4rem]`}>
+        <button type="submit" disabled={busy} className={primaryBtn}>
           {busy ? "추가 중…" : "추가"}
         </button>
       </div>

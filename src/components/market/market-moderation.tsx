@@ -6,7 +6,7 @@ import { useId, useState } from "react";
 import { patch, run } from "@/lib/db/hooks";
 import { deleteDemo, setDemoHidden, type DemoEntry } from "@/lib/db/queries";
 import { membersOf, timeLabel, type FestivalState } from "@/lib/festival-store";
-import { Label, fieldCls, primaryBtn, smallBtn } from "../festival-ui";
+import { Label, btn, field, primaryBtn, secondaryBtn } from "../festival-ui";
 import { MarketCard, MarketDetail, StatusChip, entryTitle } from "./market-view";
 
 export function MarketModeration({ state, entries }: { state: FestivalState; entries: DemoEntry[] }) {
@@ -35,7 +35,7 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
   }
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-1 gap-8">
       <dl className="grid grid-cols-3 gap-px border border-fg/10 bg-fg/10">
         {[
           ["공개", `${published}팀`],
@@ -43,7 +43,7 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
           ["미등록", `${without.length}팀`],
         ].map(([k, v]) => (
           <div key={k} className="bg-page px-4 py-3">
-            <dt className="text-[11px] uppercase tracking-[0.15em] text-subtle">{k}</dt>
+            <dt className="text-xs text-subtle">{k}</dt>
             <dd className="mt-1 text-lg font-bold tabular-nums">{v}</dd>
           </div>
         ))}
@@ -51,7 +51,7 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
 
       <section aria-labelledby={`${id}-list`}>
         <Label id={`${id}-list`}>등록된 데모</Label>
-        <div className="mt-3 overflow-x-auto">
+        <div className="relative mt-3 overflow-x-auto">
           <table className="w-full min-w-[44rem] border-t border-fg/15 text-left text-sm">
             <thead className="text-xs text-subtle">
               <tr className="border-b border-fg/15">
@@ -68,7 +68,7 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
               {entries.map((e) => {
                 const t = teamOf(e.teamId);
                 return (
-                  <tr key={e.id} className={`border-b border-fg/10 align-middle ${e.hidden ? "bg-danger/[0.06]" : ""}`}>
+                  <tr key={e.id} className={`border-b border-fg/10 align-middle ${e.hidden ? "bg-surface" : ""}`}>
                     <td className="py-2.5 pr-3 text-muted">
                       <span className="tabular-nums">{t?.table}</span> · {t?.name}
                     </td>
@@ -78,7 +78,7 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
                     </td>
                     <td className="py-2.5 pr-3 tabular-nums text-xs text-subtle">{timeLabel(e.updatedAt)}</td>
                     <td className="py-2.5 text-right">
-                      <button type="button" onClick={() => setOpen(e.id)} className={smallBtn}>
+                      <button type="button" onClick={() => setOpen(e.id)} className={btn("secondary", "sm")}>
                         보기 · 관리
                       </button>
                     </td>
@@ -149,13 +149,13 @@ function Moderate({ entry, onDeleted }: { entry: DemoEntry; onDeleted: () => voi
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="숨김 사유 (팀에게 표시)"
-            className={`${fieldCls} mt-0 w-56 py-1.5`}
+            className={`${field()} w-56`}
           />
           <button
             type="button"
             disabled={busy}
             onClick={() => void act(() => setDemoHidden(entry.id, true, reason), patch.demoHidden(entry.id, true, reason.trim() || null))}
-            className={smallBtn}
+            className={secondaryBtn}
           >
             숨기기
           </button>
@@ -167,16 +167,16 @@ function Moderate({ entry, onDeleted }: { entry: DemoEntry; onDeleted: () => voi
             type="button"
             disabled={busy}
             onClick={() => void act(() => deleteDemo(entry), patch.removeDemo(entry.id), onDeleted)}
-            className="border border-danger px-2.5 py-1.5 text-sm font-bold text-danger"
+            className={btn("danger")}
           >
             삭제 확인
           </button>
-          <button type="button" onClick={() => setArm(false)} className={smallBtn}>
+          <button type="button" onClick={() => setArm(false)} className={secondaryBtn}>
             취소
           </button>
         </span>
       ) : (
-        <button type="button" onClick={() => setArm(true)} className={`${smallBtn} text-subtle`}>
+        <button type="button" onClick={() => setArm(true)} className={`${secondaryBtn} text-subtle`}>
           삭제
         </button>
       )}

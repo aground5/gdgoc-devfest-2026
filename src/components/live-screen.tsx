@@ -18,10 +18,12 @@ import {
   ScreenFrame,
   Status,
   fieldCls,
+  btn,
+  field,
   primaryBtn,
   school,
   schoolsOf,
-  smallBtn,
+  secondaryBtn,
   useHashTab,
 } from "./festival-ui";
 import { PublishedStatus } from "./investment-status";
@@ -99,7 +101,7 @@ function LoginCard() {
           </label>
           <input
             id={codeId}
-            className={`${fieldCls} tabular-nums text-lg uppercase tracking-[0.3em]`}
+            className={`mt-1.5 w-full ${field("lg")} tabular-nums uppercase tracking-[0.3em]`}
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, ""))}
             maxLength={6}
@@ -115,7 +117,7 @@ function LoginCard() {
             {error}
           </p>
         )}
-        <button type="submit" className={`${primaryBtn} py-3 text-base`} disabled={busy || !name.trim() || code.length < 6}>
+        <button type="submit" className={btn("primary", "lg")} disabled={busy || !name.trim() || code.length < 6}>
           {busy ? "확인 중…" : "입장하기"}
         </button>
       </form>
@@ -136,7 +138,7 @@ function StaffEntry() {
       <button
         type="button"
         disabled={busy}
-        className={`${smallBtn} mt-4 w-full py-3 text-base`}
+        className={`${btn("secondary", "lg")} mt-4 w-full`}
         onClick={() => {
           setBusy(true);
           void signInWithGoogle();
@@ -180,7 +182,7 @@ function Festival({ who }: { who: SessionParticipant }) {
             await logout();
           }}
           disabled={leaving}
-          className="inline-flex h-10 items-center border border-fg/25 px-3 text-sm font-bold transition hover:bg-fg/10 disabled:opacity-40"
+          className={secondaryBtn}
           title={`${who.name}님으로 로그인됨`}
         >
           <span className="hidden sm:inline">{who.name} ·&nbsp;</span>로그아웃
@@ -216,7 +218,7 @@ function Festival({ who }: { who: SessionParticipant }) {
           <TeamList state={state} myTeamId={myTeam?.id} />
         </div>
       ) : view === "invest" ? (
-        <div className="grid gap-10">
+        <div className="grid grid-cols-1 gap-10">
           <InvestPanel state={state} me={me} />
           <PublishedStatus state={state} myTeamId={myTeam?.id} />
         </div>
@@ -255,7 +257,7 @@ function MyTeamCard({ state, team }: { state: FestivalState; team: Team }) {
   const mix = schoolsOf(members);
 
   return (
-    <section aria-labelledby="my-team" className="border border-fg/15 bg-fg/[0.04]">
+    <section aria-labelledby="my-team" className="border border-fg/15 bg-surface">
       <MemberStripe people={members} />
       <div className="p-5 sm:p-7">
         <div className="flex items-start justify-between gap-4">
@@ -269,7 +271,7 @@ function MyTeamCard({ state, team }: { state: FestivalState; team: Team }) {
             </p>
           </div>
           {!editing && (
-            <button type="button" onClick={() => setEditing(true)} className={`shrink-0 ${smallBtn}`}>
+            <button type="button" onClick={() => setEditing(true)} className={`shrink-0 ${secondaryBtn}`}>
               정보 수정
             </button>
           )}
@@ -363,7 +365,7 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
         <button type="submit" disabled={busy} className={primaryBtn}>
           {busy ? "저장 중…" : "저장"}
         </button>
-        <button type="button" onClick={onDone} className={smallBtn}>
+        <button type="button" onClick={onDone} className={secondaryBtn}>
           취소
         </button>
       </div>
@@ -422,9 +424,9 @@ function AttendanceCard({ me }: { me: Participant }) {
               placeholder="0000"
               aria-invalid={!!error}
               aria-describedby={error ? `${id}-err` : undefined}
-              className="w-36 border border-fg/50 bg-fg/[0.04] px-3 py-2.5 text-center tabular-nums text-2xl tracking-[0.4em] text-fg outline-none transition placeholder:text-subtle focus:border-fg"
+              className={`${field("lg")} w-36 text-center tabular-nums tracking-[0.4em]`}
             />
-            <button type="submit" disabled={code.length < 4 || busy} className={`${primaryBtn} px-5 text-base`}>
+            <button type="submit" disabled={code.length < 4 || busy} className={btn("primary", "lg")}>
               {busy ? "확인 중…" : "출석하기"}
             </button>
           </div>
@@ -467,7 +469,7 @@ function TeamList({ state, myTeamId }: { state: FestivalState; myTeamId?: string
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="팀명, 프로젝트, 팀원, 테이블 검색"
-        className={`${fieldCls} mt-3`}
+        className={`${field()} mt-3 w-full`}
       />
       <ul className="mt-3 border-t border-fg/10">
         {rows.map(({ team: t, members }) => {
@@ -561,7 +563,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
 
   return (
     <div className="grid gap-8 pb-24 sm:pb-0">
-      <section aria-labelledby="invest-summary" className="border border-fg/15 bg-fg/[0.04] p-5 sm:p-7">
+      <section aria-labelledby="invest-summary" className="border border-fg/15 bg-surface p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <Label id="invest-summary">내 투자금</Label>
@@ -584,7 +586,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               type="button"
               onClick={confirm}
               disabled={!canConfirm}
-              className={`${primaryBtn} px-5 py-2.5 text-base`}
+              className={btn("primary", "lg")}
             >
               {confirmLabel}
             </button>
@@ -679,7 +681,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
               확정됨
             </span>
           ) : (
-            <button type="button" onClick={confirm} disabled={!canConfirm} className={`${primaryBtn} shrink-0 px-5 py-3 text-base`}>
+            <button type="button" onClick={confirm} disabled={!canConfirm} className={btn("primary", "lg")}>
               {confirmLabel}
             </button>
           )}
@@ -714,7 +716,7 @@ function InvestCard({
   const set = (v: number) => onChange(Math.max(0, Math.min(max, v)));
   const changed = savedAmount !== undefined && savedAmount !== amount;
   const stepBtn =
-    "grid h-11 w-11 shrink-0 place-items-center border border-fg/20 text-lg transition hover:bg-fg/10 disabled:opacity-25 disabled:hover:bg-transparent";
+    "grid h-12 w-12 shrink-0 place-items-center border border-fg/50 text-lg transition hover:bg-fg/10 disabled:opacity-25 disabled:hover:bg-transparent";
 
   return (
     <li className={`flex flex-col border ${amount > 0 ? "border-fg/50 bg-fg/[0.06]" : "border-fg/15"}`}>
@@ -749,7 +751,7 @@ function InvestCard({
               disabled={disabled}
               onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")) || 0)}
               onBlur={() => set(Math.round(amount / step) * step)}
-              className="h-11 min-w-0 flex-1 border border-fg/50 bg-fg/[0.04] px-3 text-right text-lg tabular-nums text-fg outline-none transition placeholder:text-subtle focus:border-fg"
+              className={`${field("lg")} -mx-px min-w-0 flex-1 text-right tabular-nums focus:relative`}
             />
             <button
               type="button"
