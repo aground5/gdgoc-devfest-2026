@@ -8,7 +8,7 @@ import { useId, useMemo, useState, type FormEvent } from "react";
 import { type Participant, type Team } from "@/data/guide";
 import { budgetOf, buildState, membersOf, won, type FestivalState } from "@/lib/festival-store";
 import { login, logout, useParticipantSession, type SessionParticipant } from "@/lib/participant-session";
-import { patch, run, useInvestSettings, useInvestments, useMyBudget, usePeople, useTeams, useTicks } from "@/lib/db/hooks";
+import { patch, run, useDemos, useInvestSettings, useInvestments, useMyBudget, usePeople, useTeams, useTicks } from "@/lib/db/hooks";
 import { checkIn, confirmInvestments, updateMyTeam } from "@/lib/db/queries";
 import {
   Label,
@@ -24,10 +24,12 @@ import {
   useHashTab,
 } from "./festival-ui";
 import { PublishedStatus } from "./investment-status";
+import { MarketPanel } from "./market/market-panel";
 
 const VIEWS = [
   { id: "team", label: "내 팀" },
   { id: "invest", label: "투자" },
+  { id: "market", label: "데모 마켓" },
 ] as const;
 
 // Entry gate: log in with name + personal access code (Supabase), then show the
@@ -189,14 +191,36 @@ function Festival({ who }: { who: SessionParticipant }) {
           </div>
           <TeamList state={state} myTeamId={myTeam?.id} />
         </div>
-      ) : (
+      ) : view === "invest" ? (
         <div className="grid gap-10">
           <InvestPanel state={state} me={me} />
           <PublishedStatus state={state} myTeamId={myTeam?.id} />
         </div>
+      ) : (
+        <Market state={state} myTeamId={myTeam?.id} />
       )}
     </ScreenFrame>
   );
+}
+
+/* ---------- Demo Market ---------- */
+
+// Loaded only when the tab is open (signed URLs for uploads are fetched with it)
+function Market({ state, myTeamId }: { state: FestivalState; myTeamId?: string }) {
+  const demos = useDemos("participant");
+  if (demos.error)
+    return (
+      <p role="alert" className="py-10 text-[var(--g-red)]">
+        데모 마켓을 불러오지 못했습니다. {demos.error.message}
+      </p>
+    );
+  if (!demos.data)
+    return (
+      <p className="py-10 text-fg/50" role="status">
+        불러오는 중…
+      </p>
+    );
+  return <MarketPanel state={state} entries={demos.data} myTeamId={myTeamId} />;
 }
 
 /* ---------- My team ---------- */
