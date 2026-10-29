@@ -12,10 +12,10 @@ export const entryTitle = (e: DemoEntry, team?: Team) => e.title || team?.projec
 
 export function StatusChip({ entry }: { entry: DemoEntry }) {
   if (entry.hidden)
-    return <span className="shrink-0 bg-[var(--g-red)] px-1.5 py-0.5 text-[10px] font-bold text-paper">운영진 숨김</span>;
+    return <span className="shrink-0 bg-ku px-1.5 py-0.5 text-[10px] font-bold text-paper">운영진 숨김</span>;
   if (entry.status === "draft")
     return <span className="shrink-0 border border-fg/30 px-1.5 py-0.5 text-[10px] font-bold text-fg/70">초안</span>;
-  return <span className="shrink-0 bg-[var(--g-green)] px-1.5 py-0.5 text-[10px] font-bold text-paper">공개</span>;
+  return <span className="shrink-0 bg-skku px-1.5 py-0.5 text-[10px] font-bold text-ink">공개</span>;
 }
 
 export function ExternalLink({ href, children, strong = false }: { href: string; children: ReactNode; strong?: boolean }) {
@@ -118,7 +118,7 @@ export function MarketDetail({
             {entryTitle(entry, team)}
           </h2>
           {entry.hidden && entry.hiddenReason && (
-            <p className="mt-2 text-sm text-[var(--g-red)]">숨김 사유: {entry.hiddenReason}</p>
+            <p className="mt-2 text-sm text-danger">숨김 사유: {entry.hiddenReason}</p>
           )}
           <div className="mt-5 flex flex-wrap gap-2">
             {entry.liveUrl && (

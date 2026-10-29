@@ -3,23 +3,17 @@ export type School = {
   name: string;
   word: string;
   main: string;
-  tint: string;
-  // Left and right bar of the pair in the color bar
-  dark: string;
-  light: string;
-  // Thin strip under the pair in the color bar
-  strip: string;
+  // Text color that reads on `main`
+  on: string;
 };
 
-// Bar order follows the design guide's color bar: the darker tone sits on the left of each pair.
+// The four schools in the event's order. Only each school's main color is used.
 export const schools: School[] = [
-  { key: "ku", name: "Korea University", word: "KOREA", main: "var(--ku-main)", tint: "var(--ku-tint)", dark: "var(--ku-main)", light: "var(--ku-tint)", strip: "var(--ku-deep)" },
-  { key: "yu", name: "Yonsei University", word: "YONSEI", main: "var(--yu-main)", tint: "var(--yu-tint)", dark: "var(--yu-main)", light: "var(--yu-tint)", strip: "var(--yu-main)" },
-  { key: "skku", name: "Sungkyunkwan University", word: "SKKU", main: "var(--skku-main)", tint: "var(--skku-tint)", dark: "var(--skku-tint)", light: "var(--skku-main)", strip: "var(--skku-main)" },
-  { key: "kaist", name: "KAIST", word: "KAIST", main: "var(--kaist-main)", tint: "var(--kaist-tint)", dark: "var(--kaist-tint)", light: "var(--kaist-main)", strip: "var(--kaist-main)" },
+  { key: "ku", name: "Korea University", word: "KOREA", main: "var(--ku-main)", on: "var(--white)" },
+  { key: "yu", name: "Yonsei University", word: "YONSEI", main: "var(--yu-main)", on: "var(--white)" },
+  { key: "skku", name: "Sungkyunkwan University", word: "SKKU", main: "var(--skku-main)", on: "var(--black)" },
+  { key: "kaist", name: "KAIST", word: "KAIST", main: "var(--kaist-main)", on: "var(--black)" },
 ];
-
-const googleColors = ["var(--g-red)", "var(--g-yellow)", "var(--g-blue)", "var(--g-green)"];
 
 // GDG logo (from gdg.svg). Uses currentColor so it follows the theme.
 export function GdgLogo({ className = "", title }: { className?: string; title?: string }) {
@@ -42,76 +36,73 @@ export function GdgLogo({ className = "", title }: { className?: string; title?:
   );
 }
 
-export function GoogleBar({ className = "", horizontal = false }: { className?: string; horizontal?: boolean }) {
+// A thin strip of the four school colors, e.g. along the bottom of a screen.
+export function SchoolBar({ className = "", vertical = false }: { className?: string; vertical?: boolean }) {
   return (
-    <div className={`flex ${horizontal ? "flex-row" : "flex-col"} ${className}`} aria-hidden="true">
-      {googleColors.map((c) => (
-        <span key={c} className="flex-1" style={{ background: c }} />
+    <div className={`flex ${vertical ? "flex-col" : "flex-row"} ${className}`} aria-hidden="true">
+      {schools.map((s) => (
+        <span key={s.key} className="flex-1" style={{ background: s.main }} />
       ))}
     </div>
   );
 }
 
-// One school's pair of bars with the strip underneath (proportions from gdg-devfest-2026-color-bar.svg).
-function SchoolPair({ s }: { s: School }) {
-  return (
-    <div className="flex min-h-0 flex-col">
-      <div className="grid min-h-0 flex-[19] grid-cols-2">
-        <div style={{ background: s.dark }} />
-        <div style={{ background: s.light }} />
-      </div>
-      <div className="flex-1" style={{ background: s.strip }} />
-    </div>
-  );
-}
-
-function SchoolBars({ className = "" }: { className?: string }) {
+// Four school bars, each labeled with its school at the bottom.
+function SchoolBars({ className = "", labels = true }: { className?: string; labels?: boolean }) {
   return (
     <div className={`grid grid-cols-4 ${className}`}>
       {schools.map((s) => (
-        <SchoolPair key={s.key} s={s} />
+        <div key={s.key} className="relative" style={{ background: s.main }}>
+          {labels && (
+            <span
+              className="absolute bottom-[0.6em] left-[0.7em] text-[clamp(0.55rem,1.1vw,0.8rem)] font-bold leading-none tracking-[0.08em]"
+              style={{ color: s.on }}
+            >
+              {s.word}
+            </span>
+          )}
+        </div>
       ))}
     </div>
   );
 }
 
-// The design guide's TV color bar. Size it from outside (e.g. `aspect-square w-96`).
-// "square": school bars over black / white / Google 4 colors (guide: Basic Concepts).
-// "wide": school bars, black over white, then a thin Google strip, for short spaces (guide: Color Bar Variations).
-// The school colors always take the largest share.
+// The event's color bar: the design guide's TV color bar, drawn only with the
+// four schools' main colors plus the guide's black and white. Size it from
+// outside (e.g. `aspect-square w-96`). The school colors always take the
+// largest share.
+//   "square": four school bars over a black / white row
+//   "wide":   four school bars beside a black-over-white column, for short spaces
 export function ColorBar({ variant = "square", className = "" }: { variant?: "square" | "wide"; className?: string }) {
   if (variant === "wide") {
     return (
       <div className={`flex ${className}`} aria-hidden="true">
-        <SchoolBars className="flex-[308]" />
-        <div className="flex flex-[205] flex-col">
-          <div className="ink-edge flex-[251] bg-ink" />
-          <div className="flex-[57] bg-paper" />
+        <SchoolBars className="flex-[4]" />
+        <div className="flex flex-1 flex-col">
+          <div className="ink-edge flex-[3] bg-ink" />
+          <div className="ink-edge flex-1 bg-paper" />
         </div>
-        <GoogleBar className="flex-[12]" />
       </div>
     );
   }
   return (
     <div className={`flex flex-col ${className}`} aria-hidden="true">
-      <SchoolBars className="min-h-0 flex-[555]" />
-      <div className="flex min-h-0 flex-[269]">
-        <div className="ink-edge flex-[464] bg-ink" />
-        <div className="flex-[206] bg-paper" />
-        <GoogleBar className="flex-[154]" />
+      <SchoolBars className="min-h-0 flex-[5]" />
+      <div className="grid min-h-0 flex-[2] grid-cols-4">
+        <div className="ink-edge col-span-3 bg-ink" />
+        <div className="ink-edge bg-paper" />
       </div>
     </div>
   );
 }
 
-// Small 2×4 grid of school main/tint colors, used in the guide's content-wise header bar.
+// 2×2 mark of the four school colors, used in the content-wise header bar.
 export function SchoolMark({ className = "" }: { className?: string }) {
   return (
-    <div className={`grid grid-cols-2 grid-rows-4 ${className}`} aria-hidden="true">
-      {schools.flatMap((s) => [
-        <span key={s.key + "-m"} style={{ background: s.main }} />,
-        <span key={s.key + "-t"} style={{ background: s.tint }} />,
-      ])}
+    <div className={`grid grid-cols-2 grid-rows-2 ${className}`} aria-hidden="true">
+      {schools.map((s) => (
+        <span key={s.key} style={{ background: s.main }} />
+      ))}
     </div>
   );
 }

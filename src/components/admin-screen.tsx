@@ -161,7 +161,7 @@ function StaffLogin({ denied }: { denied: string | null }) {
           <p className="mt-3 text-2xl font-bold tracking-tight">Google 계정으로 로그인</p>
           <p className="mt-1 text-sm text-fg/60">운영진으로 등록된 Google 계정만 들어올 수 있습니다.</p>
           {failed && (
-            <p role="alert" className="mt-4 text-sm font-bold text-[var(--g-red)]">
+            <p role="alert" className="mt-4 text-sm font-bold text-danger">
               로그인에 실패했습니다. 다시 시도해 주세요.
             </p>
           )}
@@ -219,7 +219,7 @@ function AdminPanels({ email }: { email: string }) {
       {state ? (
         <Panels state={state} view={view} email={email} />
       ) : failed ? (
-        <p role="alert" className="py-10 text-[var(--g-red)]">
+        <p role="alert" className="py-10 text-danger">
           데이터를 불러오지 못했습니다. {failed.message}
         </p>
       ) : (
@@ -268,7 +268,7 @@ function MarketTab({ state }: { state: FestivalState }) {
   const demos = useDemos("staff");
   if (demos.error)
     return (
-      <p role="alert" className="py-10 text-[var(--g-red)]">
+      <p role="alert" className="py-10 text-danger">
         데모 마켓을 불러오지 못했습니다. {demos.error.message}
       </p>
     );
@@ -288,7 +288,7 @@ function DeleteButton({ label, onConfirm }: { label: string; onConfirm: () => vo
       <button
         type="button"
         onClick={onConfirm}
-        className="border border-[var(--g-red)] px-2.5 py-1.5 text-sm font-bold text-[var(--g-red)]"
+        className="border border-danger px-2.5 py-1.5 text-sm font-bold text-danger"
       >
         삭제 확인
       </button>
@@ -431,7 +431,7 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
   }
 
   return (
-    <tr className={`border-b border-fg/10 align-middle ${!p.teamId ? "bg-[var(--g-yellow)]/[0.08]" : ""}`}>
+    <tr className={`border-b border-fg/10 align-middle ${!p.teamId ? "bg-warn/[0.14]" : ""}`}>
       <td className="py-2.5 pr-3">
         {editing ? (
           <input
@@ -672,7 +672,7 @@ function StepSetting({ state }: { state: FestivalState }) {
       </form>
       {(badInvest > 0 || badBudgets > 0 || badDefault) && (
         <p role="status" className="mt-3 flex items-start gap-2 text-xs font-bold text-fg">
-          <span className="mt-1 h-2 w-2 shrink-0 bg-[var(--g-yellow)]" aria-hidden="true" />
+          <span className="mt-1 h-2 w-2 shrink-0 bg-warn" aria-hidden="true" />
           <span>
             {won(step)} 단위에 맞지 않는 금액: {badDefault && "기본 투자금 · "}
             {badBudgets > 0 && `개인 투자금 ${badBudgets}명 · `}
@@ -725,7 +725,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
         ].map(([k, v]) => (
           <div key={k} className="bg-page px-4 py-3">
             <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-fg/50">{k}</dt>
-            <dd className={`mt-1 font-bold tabular-nums ${k === "투자금 초과" && overCount > 0 ? "text-[var(--g-red)]" : ""}`}>{v}</dd>
+            <dd className={`mt-1 font-bold tabular-nums ${k === "투자금 초과" && overCount > 0 ? "text-danger" : ""}`}>{v}</dd>
           </div>
         ))}
       </dl>
@@ -783,7 +783,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
             </thead>
             <tbody>
               {rows.map(({ p, budget, used, left }) => (
-                <tr key={p.id} className={`border-b border-fg/10 align-middle ${left < 0 ? "bg-[var(--g-red)]/[0.06]" : ""}`}>
+                <tr key={p.id} className={`border-b border-fg/10 align-middle ${left < 0 ? "bg-danger/[0.06]" : ""}`}>
                   <td className="py-2.5 pr-3">
                     <span className="inline-flex items-center gap-2">
                       <SchoolChip s={school(p.school)} className="h-3 w-3" />
@@ -797,7 +797,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
                   <td className="py-2.5 pr-3 text-right text-xs tabular-nums text-fg/70">{won(used)}</td>
                   <td className="py-2.5 text-right text-xs tabular-nums">
                     {left < 0 ? (
-                      <span className="inline-flex items-center gap-1.5 font-bold text-[var(--g-red)]">
+                      <span className="inline-flex items-center gap-1.5 font-bold text-danger">
                         <span aria-hidden="true">▲</span>
                         {won(-left)} 초과
                       </span>
@@ -864,7 +864,7 @@ function AddParticipant({ teams }: { teams: Team[] }) {
         </button>
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-sm text-[var(--g-red)]">
+        <p role="alert" className="mt-2 text-sm text-danger">
           {error}
         </p>
       )}
@@ -888,7 +888,7 @@ function TeamsPanel({ state }: { state: FestivalState }) {
       <AddTeam />
 
       {unassigned.length > 0 && (
-        <section aria-labelledby="unassigned" className="border border-fg/15 bg-[var(--g-yellow)]/[0.08] p-5">
+        <section aria-labelledby="unassigned" className="border border-fg/15 bg-warn/[0.14] p-5">
           <Label id="unassigned">미배정 참가자 {unassigned.length}명</Label>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {unassigned.map((p) => (
@@ -1077,7 +1077,7 @@ function AddTeam() {
         </button>
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-sm text-[var(--g-red)]">
+        <p role="alert" className="mt-2 text-sm text-danger">
           {error}
         </p>
       )}
@@ -1290,13 +1290,13 @@ function InvestOpen({ open }: { open: boolean }) {
   return (
     <section
       aria-labelledby="invest-open"
-      className={`flex flex-wrap items-center justify-between gap-3 border p-4 ${open ? "border-fg/15" : "border-[var(--g-red)]/60 bg-[var(--g-red)]/[0.06]"}`}
+      className={`flex flex-wrap items-center justify-between gap-3 border p-4 ${open ? "border-fg/15" : "border-danger/60 bg-danger/[0.06]"}`}
     >
       <div>
         <Label id="invest-open">투자 접수</Label>
         <p className="mt-1 text-lg font-bold">
           <span
-            className={`mr-2 inline-block h-2.5 w-2.5 align-middle ${open ? "bg-[var(--g-green)]" : "bg-[var(--g-red)]"}`}
+            className={`mr-2 inline-block h-2.5 w-2.5 align-middle ${open ? "bg-ok" : "bg-danger"}`}
             aria-hidden="true"
           />
           {open ? "열림 · 참가자가 투자를 확정할 수 있습니다" : "닫힘 · 참가자는 투자를 바꿀 수 없습니다"}
@@ -1349,7 +1349,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
           </div>
           <p className="mt-2 text-lg font-bold">{snap ? `최근 발행 ${timeLabel(snap.at)}` : "아직 발행하지 않았습니다"}</p>
           <p role="status" className="mt-1 flex items-center gap-2 text-sm text-fg/60">
-            {snap && changed && <span className="h-2 w-2 shrink-0 bg-[var(--g-yellow)]" aria-hidden="true" />}
+            {snap && changed && <span className="h-2 w-2 shrink-0 bg-warn" aria-hidden="true" />}
             {!snap
               ? "발행해야 참가자들이 투자 현황을 볼 수 있습니다."
               : changed
@@ -1466,7 +1466,7 @@ function StaffPanel({ me }: { me: string }) {
             불러오는 중…
           </p>
         ) : staff.error ? (
-          <p role="alert" className="py-6 text-sm text-[var(--g-red)]">
+          <p role="alert" className="py-6 text-sm text-danger">
             목록을 불러오지 못했습니다. {staff.error.message}
           </p>
         ) : (
@@ -1625,7 +1625,7 @@ function AddStaff() {
         </button>
       </div>
       {error && (
-        <p role="alert" className="mt-2 text-sm text-[var(--g-red)]">
+        <p role="alert" className="mt-2 text-sm text-danger">
           {error}
         </p>
       )}

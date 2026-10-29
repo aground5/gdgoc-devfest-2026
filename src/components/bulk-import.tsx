@@ -103,12 +103,12 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
           }}
         />
         {readError && (
-          <p role="alert" className="mt-3 text-sm text-[var(--g-red)]">
+          <p role="alert" className="mt-3 text-sm text-danger">
             {readError}
           </p>
         )}
         {result && (
-          <p role="status" className="mt-3 text-sm font-bold text-[var(--g-green)]">
+          <p role="status" className="mt-3 text-sm font-bold text-fg">
             적용했습니다. 팀 추가 {result.teams.added} · 수정 {result.teams.updated} · 삭제 {result.teams.deleted} / 참가자 추가{" "}
             {result.people.added} · 수정 {result.people.updated} · 삭제 {result.people.deleted}
           </p>
@@ -147,8 +147,8 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
           </dl>
 
           {p.errors.length > 0 && (
-            <div role="alert" className="mt-4 border border-[var(--g-red)]/50 bg-[var(--g-red)]/[0.06] p-4 text-sm">
-              <p className="font-bold text-[var(--g-red)]">고쳐야 적용할 수 있습니다 ({p.errors.length})</p>
+            <div role="alert" className="mt-4 border border-danger/50 bg-danger/[0.06] p-4 text-sm">
+              <p className="font-bold text-danger">고쳐야 적용할 수 있습니다 ({p.errors.length})</p>
               <ul className="mt-2 grid gap-1 text-fg/80">
                 {p.errors.slice(0, 30).map((e, i) => (
                   <li key={i}>· {e}</li>
@@ -179,7 +179,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
                 type="button"
                 disabled={p.errors.length > 0}
                 onClick={() => setConfirmDelete(true)}
-                className="border border-[var(--g-red)] px-4 py-2 text-sm font-bold text-[var(--g-red)] disabled:opacity-30"
+                className="border border-danger px-4 py-2 text-sm font-bold text-danger disabled:opacity-30"
               >
                 {deletes}건 삭제 포함하여 적용…
               </button>
@@ -189,7 +189,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
                 onClick={() => void apply()}
                 disabled={busy || p.errors.length > 0 || changes === 0}
                 className={
-                  deletes > 0 ? "bg-[var(--g-red)] px-4 py-2 text-sm font-bold text-[var(--white)] disabled:opacity-30" : primaryBtn
+                  deletes > 0 ? "bg-ku px-4 py-2 text-sm font-bold text-paper disabled:opacity-30" : primaryBtn
                 }
               >
                 {busy
@@ -224,7 +224,7 @@ function ChangeList({ title, items, danger }: { title: string; items: string[]; 
   if (items.length === 0) return null;
   return (
     <details className="mt-3 border-t border-fg/10 pt-3" open={danger}>
-      <summary className={`cursor-pointer text-sm font-bold ${danger ? "text-[var(--g-red)]" : ""}`}>
+      <summary className={`cursor-pointer text-sm font-bold ${danger ? "text-danger" : ""}`}>
         {title} {items.length}
       </summary>
       <ul className="mt-2 grid gap-1 text-sm text-fg/70 sm:grid-cols-2">

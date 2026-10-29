@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useRef, useSyncExternalStore, type ReactNode } from "react";
-import { GdgLogo, GoogleBar, SchoolMark, schools, type School } from "./brand";
+import { GdgLogo, SchoolBar, SchoolMark, schools, type School } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
 import { event, type Participant, type SchoolKey } from "@/data/guide";
 
@@ -34,10 +34,7 @@ export function Label({ id, children }: { id?: string; children: ReactNode }) {
 
 export function SchoolChip({ s, className = "h-4 w-4" }: { s: School; className?: string }) {
   return (
-    <span className={`flex shrink-0 ${className}`} title={s.name}>
-      <span className="flex-1" style={{ background: s.dark }} />
-      <span className="flex-1" style={{ background: s.light }} />
-    </span>
+    <span className={`block shrink-0 ${className}`} title={s.name} style={{ background: s.main }} />
   );
 }
 
@@ -54,8 +51,8 @@ export function MemberStripe({ people, className = "h-2" }: { people: Participan
 
 export function Status({ on }: { on: boolean }) {
   return on ? (
-    <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-[var(--g-green)]">
-      <span className="h-1.5 w-1.5 bg-[var(--g-green)]" />
+    <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-fg">
+      <span className="h-1.5 w-1.5 bg-ok" />
       출석
     </span>
   ) : (
@@ -179,7 +176,7 @@ export function ScreenFrame<T extends string>({
         {children}
       </div>
 
-      <GoogleBar horizontal className="h-1.5 shrink-0" />
+      <SchoolBar className="h-1.5 shrink-0" />
     </div>
   );
 }

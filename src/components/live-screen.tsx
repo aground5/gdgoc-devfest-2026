@@ -111,7 +111,7 @@ function LoginCard() {
           />
         </div>
         {error && (
-          <p role="alert" className="text-sm font-bold text-[var(--g-red)]">
+          <p role="alert" className="text-sm font-bold text-danger">
             {error}
           </p>
         )}
@@ -165,7 +165,7 @@ function Festival({ who }: { who: SessionParticipant }) {
     >
       {!state ? (
         failed ? (
-          <p role="alert" className="py-10 text-[var(--g-red)]">
+          <p role="alert" className="py-10 text-danger">
             데이터를 불러오지 못했습니다. {failed.message}
           </p>
         ) : (
@@ -210,7 +210,7 @@ function Market({ state, myTeamId }: { state: FestivalState; myTeamId?: string }
   const demos = useDemos("participant");
   if (demos.error)
     return (
-      <p role="alert" className="py-10 text-[var(--g-red)]">
+      <p role="alert" className="py-10 text-danger">
         데모 마켓을 불러오지 못했습니다. {demos.error.message}
       </p>
     );
@@ -331,7 +331,7 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-[var(--g-red)]">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}
@@ -405,7 +405,7 @@ function AttendanceCard({ me }: { me: Participant }) {
             </button>
           </div>
           {error && (
-            <p id={`${id}-err`} role="alert" className="mt-2 text-sm text-[var(--g-red)]">
+            <p id={`${id}-err`} role="alert" className="mt-2 text-sm text-danger">
               {error}
             </p>
           )}
@@ -542,7 +542,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           <div>
             <Label id="invest-summary">내 투자금</Label>
             <p
-              className={`mt-2 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl ${over ? "text-[var(--g-red)]" : ""}`}
+              className={`mt-2 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl ${over ? "text-danger" : ""}`}
             >
               {over ? `−${won(-left)}` : won(left)}
             </p>
@@ -551,8 +551,8 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
             </p>
           </div>
           {upToDate ? (
-            <span className="inline-flex items-center gap-2 border border-[var(--g-green)] px-4 py-2 text-sm font-bold text-[var(--g-green)]">
-              <span className="h-1.5 w-1.5 bg-[var(--g-green)]" />
+            <span className="inline-flex items-center gap-2 border border-ok px-4 py-2 text-sm font-bold text-fg">
+              <span className="h-1.5 w-1.5 bg-ok" />
               확정됨
             </span>
           ) : (
@@ -586,19 +586,19 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
         </div>
         {closed ? (
           <p role="status" className="mt-3 flex items-center gap-2 text-xs font-bold text-fg">
-            <span className="h-2 w-2 shrink-0 bg-[var(--g-red)]" aria-hidden="true" />
+            <span className="h-2 w-2 shrink-0 bg-danger" aria-hidden="true" />
             {discarded
               ? "투자가 마감되어 확정하지 않은 변경사항은 취소되었습니다. 마지막으로 확정한 투자가 반영됩니다."
               : "투자가 마감되었습니다. 확정된 투자는 그대로 유지됩니다."}
           </p>
         ) : over ? (
           <p role="alert" className="mt-3 flex items-center gap-2 text-xs font-bold text-fg">
-            <span className="h-2 w-2 shrink-0 bg-[var(--g-red)]" aria-hidden="true" />
+            <span className="h-2 w-2 shrink-0 bg-danger" aria-hidden="true" />
             운영진이 전체 투자금을 {won(budget)}으로 조정했습니다. {won(-left)}을 줄여야 확정할 수 있습니다.
           </p>
         ) : saved !== null && dirty ? (
           <p role="status" className="mt-3 flex items-center gap-2 text-xs font-bold text-fg">
-            <span className="h-2 w-2 shrink-0 bg-[var(--g-yellow)]" aria-hidden="true" />
+            <span className="h-2 w-2 shrink-0 bg-warn" aria-hidden="true" />
             확정 후 바뀐 내용이 있습니다. 다시 확정해야 반영됩니다.
           </p>
         ) : (
@@ -643,15 +643,15 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs text-fg/50">남은 금액</p>
-            <p className={`truncate text-lg font-bold tabular-nums ${over ? "text-[var(--g-red)]" : ""}`}>
+            <p className={`truncate text-lg font-bold tabular-nums ${over ? "text-danger" : ""}`}>
               {over ? `−${won(-left)}` : won(left)}
             </p>
           </div>
           {closed ? (
             <span className="shrink-0 border border-fg/25 px-3 py-2 text-sm font-bold text-fg/60">투자 마감</span>
           ) : upToDate ? (
-            <span className="inline-flex shrink-0 items-center gap-2 border border-[var(--g-green)] px-3 py-2 text-sm font-bold text-[var(--g-green)]">
-              <span className="h-1.5 w-1.5 bg-[var(--g-green)]" />
+            <span className="inline-flex shrink-0 items-center gap-2 border border-ok px-3 py-2 text-sm font-bold text-fg">
+              <span className="h-1.5 w-1.5 bg-ok" />
               확정됨
             </span>
           ) : (
@@ -741,7 +741,7 @@ function InvestCard({
             <span className={`flex items-center gap-1.5 ${changed ? "text-fg/70" : ""}`}>
               {changed ? (
                 <>
-                  <span className="h-1.5 w-1.5 bg-[var(--g-yellow)]" aria-hidden="true" />
+                  <span className="h-1.5 w-1.5 bg-warn" aria-hidden="true" />
                   확정 {won(savedAmount)}
                 </>
               ) : (

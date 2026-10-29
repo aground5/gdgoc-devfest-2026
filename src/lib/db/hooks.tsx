@@ -173,7 +173,7 @@ function Toast() {
   return (
     <div
       role="alert"
-      className="fixed inset-x-4 bottom-6 z-50 mx-auto max-w-md border border-[var(--g-red)] bg-page px-4 py-3 text-sm font-bold text-[var(--g-red)]"
+      className="fixed inset-x-4 bottom-6 z-50 mx-auto max-w-md border border-danger bg-page px-4 py-3 text-sm font-bold text-danger"
     >
       {t.text}
     </div>

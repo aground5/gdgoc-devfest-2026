@@ -72,7 +72,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
   const field = (key: keyof DemoInput, label: string, hint?: string, required = false) => (
     <label htmlFor={`${id}-${key}`} className="text-xs text-fg/60">
       {label}
-      {required && <span className="text-[var(--g-red)]"> *</span>}
+      {required && <span className="text-danger"> *</span>}
       <input id={`${id}-${key}`} value={form[key]} onChange={set(key)} className={`${fieldCls} text-base`} placeholder={hint} />
     </label>
   );
@@ -80,7 +80,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
   const area = (key: keyof DemoInput, label: string, hint: string, required = false, rows = 4) => (
     <label htmlFor={`${id}-${key}`} className="text-xs text-fg/60">
       {label}
-      {required && <span className="text-[var(--g-red)]"> *</span>}
+      {required && <span className="text-danger"> *</span>}
       <textarea id={`${id}-${key}`} value={form[key]} onChange={set(key)} rows={rows} placeholder={hint} className={`${fieldCls} text-base`} />
     </label>
   );
@@ -96,7 +96,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
       </div>
 
       {entry?.hidden && (
-        <p role="alert" className="mx-5 mt-5 border border-[var(--g-red)] px-4 py-3 text-sm sm:mx-7">
+        <p role="alert" className="mx-5 mt-5 border border-danger px-4 py-3 text-sm sm:mx-7">
           운영진이 이 데모를 숨겼습니다{entry.hiddenReason ? `: ${entry.hiddenReason}` : "."} 수정한 뒤 운영진에게 알려 주세요.
         </p>
       )}
@@ -113,7 +113,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
         {area("credentials", "테스트 계정 (선택)", "로그인이 필요하면 다른 참가자가 쓸 계정을 적어 주세요. 실제 개인 계정은 쓰지 마세요.", false, 2)}
 
         {notice && (
-          <p role="status" className="text-sm font-bold text-[var(--g-green)]">
+          <p role="status" className="text-sm font-bold text-fg">
             {notice}
           </p>
         )}
@@ -153,7 +153,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
                     if (await act(() => deleteDemo(entry), "삭제했습니다.", patch.removeDemo(entry.id))) setForm(toInput());
                     setArmDelete(false);
                   }}
-                  className="border border-[var(--g-red)] px-2.5 py-1.5 text-sm font-bold text-[var(--g-red)]"
+                  className="border border-danger px-2.5 py-1.5 text-sm font-bold text-danger"
                 >
                   삭제 확인
                 </button>
@@ -245,7 +245,7 @@ function Uploads({ kind, title, entry }: { kind: AssetKind; title: string; entry
         {busy ? "올리는 중…" : kind === "image" ? "사진 올리기" : "파일 올리기"}
       </label>
       {error && (
-        <p role="alert" className="mt-1 text-xs text-[var(--g-red)]">
+        <p role="alert" className="mt-1 text-xs text-danger">
           {error}
         </p>
       )}

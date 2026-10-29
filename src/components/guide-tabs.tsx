@@ -176,10 +176,7 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
           <ul className="mt-6 flex flex-wrap gap-2">
             {schools.map((s) => (
               <li key={s.key} className="inline-flex items-center gap-2 border border-fg/15 py-1.5 pl-1.5 pr-3 text-sm text-fg">
-                <span className="flex h-5 w-5">
-                  <span className="flex-1" style={{ background: s.dark }} />
-                  <span className="flex-1" style={{ background: s.light }} />
-                </span>
+                <span className="block h-5 w-5" style={{ background: s.main }} />
                 GDG on Campus {s.word}
               </li>
             ))}
@@ -194,7 +191,7 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
             <li key={n.title} className="flex items-baseline gap-4 border-b border-fg/15 py-4">
               <span className="w-12 shrink-0 tabular-nums text-xs text-fg/50">{n.date}</span>
               <span className="text-fg">{n.title}</span>
-              {n.tag && <span className="ml-auto bg-[var(--g-red)] px-1.5 py-0.5 text-[10px] font-bold text-paper">{n.tag}</span>}
+              {n.tag && <span className="ml-auto bg-ku px-1.5 py-0.5 text-[10px] font-bold text-paper">{n.tag}</span>}
             </li>
           ))}
         </ul>
@@ -367,7 +364,7 @@ function Venue() {
         />
         <div className="absolute inset-0 grid place-items-center text-center">
           <div>
-            <span className="mx-auto block h-4 w-4 rotate-45" style={{ background: "var(--g-red)" }} />
+            <span className="mx-auto block h-4 w-4 rotate-45" style={{ background: "var(--fg)" }} />
             <p className="mt-3 font-bold text-fg">{event.venue}</p>
             <p className="text-sm text-fg/50">지도는 추후 공개됩니다</p>
           </div>

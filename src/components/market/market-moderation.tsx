@@ -68,7 +68,7 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
               {entries.map((e) => {
                 const t = teamOf(e.teamId);
                 return (
-                  <tr key={e.id} className={`border-b border-fg/10 align-middle ${e.hidden ? "bg-[var(--g-red)]/[0.06]" : ""}`}>
+                  <tr key={e.id} className={`border-b border-fg/10 align-middle ${e.hidden ? "bg-danger/[0.06]" : ""}`}>
                     <td className="py-2.5 pr-3 text-fg/70">
                       <span className="tabular-nums">{t?.table}</span> · {t?.name}
                     </td>
@@ -167,7 +167,7 @@ function Moderate({ entry, onDeleted }: { entry: DemoEntry; onDeleted: () => voi
             type="button"
             disabled={busy}
             onClick={() => void act(() => deleteDemo(entry), patch.removeDemo(entry.id), onDeleted)}
-            className="border border-[var(--g-red)] px-2.5 py-1.5 text-sm font-bold text-[var(--g-red)]"
+            className="border border-danger px-2.5 py-1.5 text-sm font-bold text-danger"
           >
             삭제 확인
           </button>
