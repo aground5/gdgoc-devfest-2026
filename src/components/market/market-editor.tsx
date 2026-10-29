@@ -70,7 +70,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
   }
 
   const field = (key: keyof DemoInput, label: string, hint?: string, required = false) => (
-    <label htmlFor={`${id}-${key}`} className="text-xs text-fg/60">
+    <label htmlFor={`${id}-${key}`} className="text-xs text-subtle">
       {label}
       {required && <span className="text-danger"> *</span>}
       <input id={`${id}-${key}`} value={form[key]} onChange={set(key)} className={`${fieldCls} text-base`} placeholder={hint} />
@@ -78,7 +78,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
   );
 
   const area = (key: keyof DemoInput, label: string, hint: string, required = false, rows = 4) => (
-    <label htmlFor={`${id}-${key}`} className="text-xs text-fg/60">
+    <label htmlFor={`${id}-${key}`} className="text-xs text-subtle">
       {label}
       {required && <span className="text-danger"> *</span>}
       <textarea id={`${id}-${key}`} value={form[key]} onChange={set(key)} rows={rows} placeholder={hint} className={`${fieldCls} text-base`} />
@@ -92,7 +92,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
           <Label id={`${id}-title`}>우리 팀 데모</Label>
           {entry && <StatusChip entry={entry} />}
         </div>
-        <span className="text-xs text-fg/50">{team.name} 팀원만 수정할 수 있습니다</span>
+        <span className="text-xs text-subtle">{team.name} 팀원만 수정할 수 있습니다</span>
       </div>
 
       {entry?.hidden && (
@@ -162,12 +162,12 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
                 </button>
               </span>
             ) : (
-              <button type="button" onClick={() => setArmDelete(true)} className={`${smallBtn} ml-auto text-fg/60`}>
+              <button type="button" onClick={() => setArmDelete(true)} className={`${smallBtn} ml-auto text-subtle`}>
                 데모 삭제
               </button>
             ))}
         </div>
-        {missing.length > 0 && <p className="text-xs text-fg/50">공개하려면 {missing.join(", ")}을(를) 입력해 주세요.</p>}
+        {missing.length > 0 && <p className="text-xs text-subtle">공개하려면 {missing.join(", ")}을(를) 입력해 주세요.</p>}
       </form>
 
       <div className="grid gap-6 border-t border-fg/10 p-5 sm:grid-cols-2 sm:p-7">
@@ -177,7 +177,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
             <Uploads kind="file" title="파일 (APK, PDF 등)" entry={entry} />
           </>
         ) : (
-          <p className="text-sm text-fg/50 sm:col-span-2">먼저 임시 저장하면 스크린샷과 파일을 올릴 수 있습니다.</p>
+          <p className="text-sm text-subtle sm:col-span-2">먼저 임시 저장하면 스크린샷과 파일을 올릴 수 있습니다.</p>
         )}
       </div>
     </section>
@@ -217,7 +217,7 @@ function Uploads({ kind, title, entry }: { kind: AssetKind; title: string; entry
     <div>
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-bold">{title}</p>
-        <span className="tabular-nums text-xs text-fg/50">
+        <span className="tabular-nums text-xs text-subtle">
           {list.length}/{rule.max} · 개당 {formatBytes(rule.bytes)}
         </span>
       </div>
@@ -264,12 +264,12 @@ function AssetRow({ asset }: { asset: DemoAsset }) {
         <span className="truncate">{asset.fileName}</span>
       </span>
       <span className="flex shrink-0 items-center gap-2">
-        <span className="tabular-nums text-xs text-fg/50">{formatBytes(asset.size)}</span>
+        <span className="tabular-nums text-xs text-subtle">{formatBytes(asset.size)}</span>
         <button
           type="button"
           aria-label={`${asset.fileName} 삭제`}
           onClick={() => void run(() => deleteDemoAsset(asset), patch.removeDemoAsset(asset.id))}
-          className="grid h-8 w-8 place-items-center text-xs text-fg/50 transition hover:bg-fg/10 hover:text-fg"
+          className="grid h-8 w-8 place-items-center text-xs text-subtle transition hover:bg-fg/10 hover:text-fg"
         >
           ✕
         </button>

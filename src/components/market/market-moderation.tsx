@@ -43,7 +43,7 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
           ["미등록", `${without.length}팀`],
         ].map(([k, v]) => (
           <div key={k} className="bg-page px-4 py-3">
-            <dt className="text-[11px] uppercase tracking-[0.15em] text-fg/50">{k}</dt>
+            <dt className="text-[11px] uppercase tracking-[0.15em] text-subtle">{k}</dt>
             <dd className="mt-1 text-lg font-bold tabular-nums">{v}</dd>
           </div>
         ))}
@@ -53,7 +53,7 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
         <Label id={`${id}-list`}>등록된 데모</Label>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[44rem] border-t border-fg/15 text-left text-sm">
-            <thead className="text-xs text-fg/50">
+            <thead className="text-xs text-subtle">
               <tr className="border-b border-fg/15">
                 <th className="py-2 pr-3 font-normal">팀</th>
                 <th className="py-2 pr-3 font-normal">데모</th>
@@ -69,14 +69,14 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
                 const t = teamOf(e.teamId);
                 return (
                   <tr key={e.id} className={`border-b border-fg/10 align-middle ${e.hidden ? "bg-danger/[0.06]" : ""}`}>
-                    <td className="py-2.5 pr-3 text-fg/70">
+                    <td className="py-2.5 pr-3 text-muted">
                       <span className="tabular-nums">{t?.table}</span> · {t?.name}
                     </td>
                     <td className="py-2.5 pr-3 font-bold">{entryTitle(e, t)}</td>
                     <td className="py-2.5 pr-3">
                       <StatusChip entry={e} />
                     </td>
-                    <td className="py-2.5 pr-3 tabular-nums text-xs text-fg/50">{timeLabel(e.updatedAt)}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-xs text-subtle">{timeLabel(e.updatedAt)}</td>
                     <td className="py-2.5 text-right">
                       <button type="button" onClick={() => setOpen(e.id)} className={smallBtn}>
                         보기 · 관리
@@ -88,9 +88,9 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
             </tbody>
           </table>
         </div>
-        {entries.length === 0 && <p className="py-6 text-sm text-fg/50">아직 등록된 데모가 없습니다.</p>}
+        {entries.length === 0 && <p className="py-6 text-sm text-subtle">아직 등록된 데모가 없습니다.</p>}
         {without.length > 0 && (
-          <p className="mt-3 text-xs text-fg/50">미등록: {without.map((t) => t.name).join(", ")}</p>
+          <p className="mt-3 text-xs text-subtle">미등록: {without.map((t) => t.name).join(", ")}</p>
         )}
       </section>
 
@@ -176,7 +176,7 @@ function Moderate({ entry, onDeleted }: { entry: DemoEntry; onDeleted: () => voi
           </button>
         </span>
       ) : (
-        <button type="button" onClick={() => setArm(true)} className={`${smallBtn} text-fg/60`}>
+        <button type="button" onClick={() => setArm(true)} className={`${smallBtn} text-subtle`}>
           삭제
         </button>
       )}

@@ -92,7 +92,7 @@ export function GuideTabs() {
                 tabIndex={selected ? 0 : -1}
                 onClick={() => goTo(t.id)}
                 className={`relative shrink-0 px-3 py-4 text-sm font-bold transition sm:px-4 sm:text-base ${
-                  selected ? "text-fg" : "text-fg/50 hover:text-fg/80"
+                  selected ? "text-fg" : "text-subtle hover:text-fg"
                 }`}
               >
                 {t.label}
@@ -155,10 +155,10 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
                   <span className="mt-1 h-4 w-1" style={{ background: schools[i].main }} />
                   <span>
                     <span className="block text-lg font-bold text-fg">{s.title}</span>
-                    <span className="block text-sm text-fg/60">{s.desc}</span>
+                    <span className="block text-sm text-subtle">{s.desc}</span>
                   </span>
                 </span>
-                <span className="text-fg/40 transition group-hover:translate-x-1 group-hover:text-fg" aria-hidden="true">
+                <span className="text-subtle transition group-hover:translate-x-1 group-hover:text-fg" aria-hidden="true">
                   →
                 </span>
               </button>
@@ -168,8 +168,8 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
 
         <div className="mt-12">
           <SectionTitle title={event.title} />
-          <p className="max-w-2xl leading-relaxed text-fg/70">{event.concept}</p>
-          <p className="mt-3 max-w-2xl leading-relaxed text-fg/70">
+          <p className="max-w-2xl leading-relaxed text-muted">{event.concept}</p>
+          <p className="mt-3 max-w-2xl leading-relaxed text-muted">
             고려대 · 연세대 · 성균관대 · KAIST의 GDG on Campus가 함께 준비했고, {event.venue}에서 열립니다. 올해의 주제{" "}
             <strong className="font-bold text-fg">{event.theme}</strong>
           </p>
@@ -189,7 +189,7 @@ function Overview({ onOpen }: { onOpen: (t: TabId) => void }) {
         <ul className="border-t border-fg/15">
           {notices.map((n) => (
             <li key={n.title} className="flex items-baseline gap-4 border-b border-fg/15 py-4">
-              <span className="w-12 shrink-0 tabular-nums text-xs text-fg/50">{n.date}</span>
+              <span className="w-12 shrink-0 tabular-nums text-xs text-subtle">{n.date}</span>
               <span className="text-fg">{n.title}</span>
               {n.tag && <span className="ml-auto bg-ku px-1.5 py-0.5 text-[10px] font-bold text-paper">{n.tag}</span>}
             </li>
@@ -218,7 +218,7 @@ function Timetable() {
               aria-pressed={on}
               onClick={() => setDay(d.id)}
               className={`border px-3 py-1.5 text-sm transition ${
-                on ? "border-fg bg-fg text-page" : "border-fg/20 text-fg/70 hover:border-fg/50"
+                on ? "border-fg bg-fg text-page" : "border-fg/20 text-muted hover:border-fg/50"
               }`}
             >
               <span className="tabular-nums">{d.date}</span> · {d.label}
@@ -226,7 +226,7 @@ function Timetable() {
           );
         })}
       </div>
-      <p className="mb-3 text-sm text-fg/60">
+      <p className="mb-3 text-sm text-subtle">
         {current.date} · {current.where}
       </p>
       <div className="overflow-x-auto">
@@ -242,18 +242,18 @@ function Timetable() {
               <tr key={r.time + r.title} className="border-b border-fg/15 align-top">
                 <td className="w-32 py-4 pr-4 tabular-nums text-sm text-fg">
                   {r.time}
-                  <span className="text-fg/40"> – {r.end}</span>
+                  <span className="text-subtle"> – {r.end}</span>
                 </td>
                 <td className="py-4">
                   <p className="font-bold text-fg">{r.title}</p>
-                  {r.desc && <p className="mt-0.5 text-sm text-fg/60">{r.desc}</p>}
+                  {r.desc && <p className="mt-0.5 text-sm text-subtle">{r.desc}</p>}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p className="mt-4 text-xs text-fg/50">* 세부 일정은 변경될 수 있습니다.</p>
+      <p className="mt-4 text-xs text-subtle">* 세부 일정은 변경될 수 있습니다.</p>
     </div>
   );
 }
@@ -267,9 +267,9 @@ function Program() {
           {steps.map((st, i) => (
             <li key={st.title} className="flex flex-col bg-page p-5">
               <span className="h-1 w-8" style={{ background: schools[i % schools.length].main }} aria-hidden="true" />
-              <p className="mt-4 tabular-nums text-xs text-fg/50">{st.date}</p>
+              <p className="mt-4 tabular-nums text-xs text-subtle">{st.date}</p>
               <h3 className="mt-1 text-lg font-bold text-fg">{st.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-fg/60">{st.desc}</p>
+              <p className="mt-2 text-sm leading-relaxed text-subtle">{st.desc}</p>
             </li>
           ))}
         </ol>
@@ -277,7 +277,7 @@ function Program() {
 
       <section>
         <SectionTitle title="키워드 기반 팀빌딩" />
-        <p className="max-w-2xl leading-relaxed text-fg/70">
+        <p className="max-w-2xl leading-relaxed text-muted">
           정해진 트랙 대신 넓은 키워드로 팀을 꾸립니다. 신청할 때 1~3지망을 고르면, 수요에 맞춰 키워드를 합치거나 조정해 팀당 5~6명으로 구성합니다.
         </p>
         <ul className="mt-6 flex flex-wrap gap-2">
@@ -294,7 +294,7 @@ function Program() {
           <SectionTitle title="모의 투자" />
           <ul className="border-t border-fg/15">
             {investRules.map((r) => (
-              <li key={r} className="flex gap-3 border-b border-fg/15 py-4 text-fg/80">
+              <li key={r} className="flex gap-3 border-b border-fg/15 py-4 text-muted">
                 <span className="mt-2 h-1.5 w-1.5 shrink-0 bg-fg" aria-hidden="true" />
                 {r}
               </li>
@@ -308,11 +308,11 @@ function Program() {
             {criteria.map((c) => (
               <div key={c.name} className="grid grid-cols-[6.5rem_1fr] gap-4 border-b border-fg/15 py-4">
                 <dt className="font-bold text-fg">{c.name}</dt>
-                <dd className="text-fg/70">{c.desc}</dd>
+                <dd className="text-muted">{c.desc}</dd>
               </div>
             ))}
           </dl>
-          <p className="mt-3 text-sm text-fg/60">기술 스택 제한은 없으며, Google 기술을 활용하면 가산점이 있습니다.</p>
+          <p className="mt-3 text-sm text-subtle">기술 스택 제한은 없으며, Google 기술을 활용하면 가산점이 있습니다.</p>
         </section>
       </div>
 
@@ -325,7 +325,7 @@ function Program() {
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-sm text-fg/60">인기상은 개미 투자를 가장 많이 받은 팀에게 돌아갑니다. 상세 시상 내역은 추후 공지됩니다.</p>
+        <p className="mt-3 text-sm text-subtle">인기상은 개미 투자를 가장 많이 받은 팀에게 돌아갑니다. 상세 시상 내역은 추후 공지됩니다.</p>
       </section>
     </div>
   );
@@ -339,14 +339,14 @@ function Venue() {
         <dl className="border-t border-fg/15">
           {venueInfo.map((v) => (
             <div key={v.label} className="grid grid-cols-[5rem_1fr] gap-4 border-b border-fg/15 py-4">
-              <dt className="text-sm text-fg/50">{v.label}</dt>
+              <dt className="text-sm text-subtle">{v.label}</dt>
               <dd className="text-fg">{v.value}</dd>
             </div>
           ))}
         </dl>
         <div className="mt-6 border border-fg/15 bg-surface p-5">
           <p className="font-bold text-fg">체크인 안내</p>
-          <p className="mt-1 text-sm leading-relaxed text-fg/70">
+          <p className="mt-1 text-sm leading-relaxed text-muted">
             {event.checkIn} 체크인할 수 있고, 체크인 후 Demo Market이 시작됩니다. 체크인 방법은 추후 안내됩니다.
           </p>
         </div>
@@ -366,7 +366,7 @@ function Venue() {
           <div>
             <span className="mx-auto block h-4 w-4 rotate-45" style={{ background: "var(--fg)" }} />
             <p className="mt-3 font-bold text-fg">{event.venue}</p>
-            <p className="text-sm text-fg/50">지도는 추후 공개됩니다</p>
+            <p className="text-sm text-subtle">지도는 추후 공개됩니다</p>
           </div>
         </div>
       </div>
@@ -383,11 +383,11 @@ function FaqList() {
           <details key={f.q} className="group border-b border-fg/15">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-bold text-fg [&::-webkit-details-marker]:hidden">
               {f.q}
-              <span className="text-xl leading-none text-fg/50 transition group-open:rotate-45" aria-hidden="true">
+              <span className="text-xl leading-none text-subtle transition group-open:rotate-45" aria-hidden="true">
                 +
               </span>
             </summary>
-            <p className="pb-5 leading-relaxed text-fg/70">{f.a}</p>
+            <p className="pb-5 leading-relaxed text-muted">{f.a}</p>
           </details>
         ))}
       </div>

@@ -14,7 +14,7 @@ export function StatusChip({ entry }: { entry: DemoEntry }) {
   if (entry.hidden)
     return <span className="shrink-0 bg-ku px-1.5 py-0.5 text-[10px] font-bold text-paper">운영진 숨김</span>;
   if (entry.status === "draft")
-    return <span className="shrink-0 border border-fg/30 px-1.5 py-0.5 text-[10px] font-bold text-fg/70">초안</span>;
+    return <span className="shrink-0 border border-fg/30 px-1.5 py-0.5 text-[10px] font-bold text-muted">초안</span>;
   return <span className="shrink-0 bg-skku px-1.5 py-0.5 text-[10px] font-bold text-ink">공개</span>;
 }
 
@@ -59,7 +59,7 @@ export function MarketCard({
         <MemberStripe people={members} className="h-2 w-full" />
       )}
       <div className="flex flex-1 flex-col p-5">
-        <p className="flex items-center gap-2 text-xs text-fg/50">
+        <p className="flex items-center gap-2 text-xs text-subtle">
           <span className="truncate tabular-nums">
             {team?.table} · {team?.name}
           </span>
@@ -67,7 +67,7 @@ export function MarketCard({
           {(entry.status === "draft" || entry.hidden) && <StatusChip entry={entry} />}
         </p>
         <h3 className="mt-2 text-xl font-bold leading-snug">{entryTitle(entry, team)}</h3>
-        <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-fg/60">{entry.description}</p>
+        <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-subtle">{entry.description}</p>
         <div className="mt-auto flex flex-wrap gap-2 pt-5">
           {entry.liveUrl && (
             <ExternalLink href={entry.liveUrl} strong>
@@ -108,7 +108,7 @@ export function MarketDetail({
       <header className="border border-fg/15">
         <MemberStripe people={members} className="h-2" />
         <div className="p-5 sm:p-7">
-          <p className="flex flex-wrap items-center gap-2 text-sm text-fg/60">
+          <p className="flex flex-wrap items-center gap-2 text-sm text-subtle">
             <span className="tabular-nums">
               {team?.table} · {team?.name}
             </span>
@@ -136,7 +136,7 @@ export function MarketDetail({
         <div className="grid content-start gap-8">
           <section aria-labelledby="md-desc">
             <Label id="md-desc">소개</Label>
-            <p className="mt-3 whitespace-pre-line leading-relaxed text-fg/80">{entry.description || "—"}</p>
+            <p className="mt-3 whitespace-pre-line leading-relaxed text-muted">{entry.description || "—"}</p>
           </section>
           {entry.images.length > 0 && (
             <section aria-labelledby="md-shots">
@@ -163,7 +163,7 @@ export function MarketDetail({
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed">{entry.testInstructions || "—"}</p>
             {entry.credentials && (
               <div className="mt-4 border-t border-fg/10 pt-4">
-                <p className="text-xs text-fg/50">테스트 계정</p>
+                <p className="text-xs text-subtle">테스트 계정</p>
                 <p className="mt-1 whitespace-pre-line break-all text-sm tabular-nums">{entry.credentials}</p>
               </div>
             )}
@@ -176,7 +176,7 @@ export function MarketDetail({
                   <li key={f.id} className="flex items-center justify-between gap-3 border border-fg/15 px-3 py-2 text-sm">
                     <span className="min-w-0 truncate">{f.fileName}</span>
                     <span className="flex shrink-0 items-center gap-3">
-                      <span className="tabular-nums text-xs text-fg/50">{formatBytes(f.size)}</span>
+                      <span className="tabular-nums text-xs text-subtle">{formatBytes(f.size)}</span>
                       {f.url && (
                         <a href={f.url} className="font-bold underline underline-offset-4">
                           받기

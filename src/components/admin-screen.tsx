@@ -118,7 +118,7 @@ export function AdminScreen() {
   return (
     <ScreenFrame badge="운영진" tabs={NO_TABS} active="" onTab={() => {}}>
       {session.status === "loading" ? (
-        <p className="py-10 text-fg/50" role="status">
+        <p className="py-10 text-subtle" role="status">
           불러오는 중…
         </p>
       ) : (
@@ -148,7 +148,7 @@ function StaffLogin({ denied }: { denied: string | null }) {
       {denied ? (
         <>
           <p className="mt-3 text-2xl font-bold tracking-tight">접근 권한이 없습니다</p>
-          <p className="mt-2 text-sm text-fg/60">
+          <p className="mt-2 text-sm text-subtle">
             <span className="font-bold text-fg">{denied}</span> 계정은 운영진 목록에 없습니다. 다른 계정으로 로그인하거나 운영진 관리자에게
             추가를 요청해 주세요.
           </p>
@@ -159,7 +159,7 @@ function StaffLogin({ denied }: { denied: string | null }) {
       ) : (
         <>
           <p className="mt-3 text-2xl font-bold tracking-tight">Google 계정으로 로그인</p>
-          <p className="mt-1 text-sm text-fg/60">운영진으로 등록된 Google 계정만 들어올 수 있습니다.</p>
+          <p className="mt-1 text-sm text-subtle">운영진으로 등록된 Google 계정만 들어올 수 있습니다.</p>
           {failed && (
             <p role="alert" className="mt-4 text-sm font-bold text-danger">
               로그인에 실패했습니다. 다시 시도해 주세요.
@@ -176,7 +176,7 @@ function StaffLogin({ denied }: { denied: string | null }) {
           >
             {busy ? "Google로 이동 중…" : "Google로 로그인"}
           </button>
-          <p className="mt-4 text-xs text-fg/50">참가자 입장 중인 브라우저라면 참가자 로그인은 로그아웃됩니다.</p>
+          <p className="mt-4 text-xs text-subtle">참가자 입장 중인 브라우저라면 참가자 로그인은 로그아웃됩니다.</p>
         </>
       )}
     </section>
@@ -223,7 +223,7 @@ function AdminPanels({ email }: { email: string }) {
           데이터를 불러오지 못했습니다. {failed.message}
         </p>
       ) : (
-        <p className="py-10 text-fg/50" role="status">
+        <p className="py-10 text-subtle" role="status">
           불러오는 중…
         </p>
       )}
@@ -245,7 +245,7 @@ function Panels({ state, view, email }: { state: FestivalState; view: (typeof VI
           ["투자 확정", `${investors}명`],
         ].map(([k, v]) => (
           <div key={k} className="bg-page px-4 py-3">
-            <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-fg/50">{k}</dt>
+            <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-subtle">{k}</dt>
             <dd className="mt-1 text-lg font-bold tabular-nums">{v}</dd>
           </div>
         ))}
@@ -274,7 +274,7 @@ function MarketTab({ state }: { state: FestivalState }) {
     );
   if (!demos.data)
     return (
-      <p className="py-10 text-fg/50" role="status">
+      <p className="py-10 text-subtle" role="status">
         불러오는 중…
       </p>
     );
@@ -297,7 +297,7 @@ function DeleteButton({ label, onConfirm }: { label: string; onConfirm: () => vo
       </button>
     </span>
   ) : (
-    <button type="button" onClick={() => setArm(true)} aria-label={label} className={`${smallBtn} text-fg/60`}>
+    <button type="button" onClick={() => setArm(true)} aria-label={label} className={`${smallBtn} text-subtle`}>
       삭제
     </button>
   );
@@ -366,7 +366,7 @@ function PeoplePanel({ state }: { state: FestivalState }) {
       <section aria-labelledby={`${id}-title`}>
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <Label id={`${id}-title`}>참가자 목록</Label>
-          <span className="tabular-nums text-xs text-fg/50">
+          <span className="tabular-nums text-xs text-subtle">
             {rows.length}명 표시{unassigned > 0 && ` · 미배정 ${unassigned}명`}
           </span>
         </div>
@@ -395,7 +395,7 @@ function PeoplePanel({ state }: { state: FestivalState }) {
 
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[46rem] border-t border-fg/15 text-left text-sm">
-            <thead className="text-xs text-fg/50">
+            <thead className="text-xs text-subtle">
               <tr className="border-b border-fg/15">
                 <th className="py-2 pr-3 font-normal">이름</th>
                 <th className="py-2 pr-3 font-normal">학교</th>
@@ -414,7 +414,7 @@ function PeoplePanel({ state }: { state: FestivalState }) {
             </tbody>
           </table>
         </div>
-        {rows.length === 0 && <p className="py-6 text-sm text-fg/50">조건에 맞는 참가자가 없습니다.</p>}
+        {rows.length === 0 && <p className="py-6 text-sm text-subtle">조건에 맞는 참가자가 없습니다.</p>}
       </section>
     </div>
   );
@@ -528,7 +528,7 @@ function BudgetCell({ cfg, id, name, budget }: { cfg: BudgetCfg; id: string; nam
             if (e.key === "Enter") commit();
             if (e.key === "Escape") setDraft(null);
           }}
-          className={`h-8 w-24 border-y border-fg/20 bg-fg/[0.04] px-2 text-right text-xs tabular-nums text-fg outline-none focus:border-fg/60 ${budget !== cfg.defaultBudget ? "font-bold" : ""}`}
+          className={`h-8 w-24 border-y border-fg/50 bg-fg/[0.04] px-2 text-right text-xs tabular-nums text-fg outline-none focus:border-fg ${budget !== cfg.defaultBudget ? "font-bold" : ""}`}
         />
         <button
           type="button"
@@ -569,16 +569,16 @@ function BulkBudget({ cfg, ids, filtered }: { cfg: BudgetCfg; ids: string[]; fil
         value={value ? Number(value).toLocaleString("ko-KR") : ""}
         onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
         placeholder={cfg.defaultBudget.toLocaleString("ko-KR")}
-        className="h-9 w-32 border border-fg/20 bg-fg/[0.04] px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-fg/30 focus:border-fg/60"
+        className="h-9 w-32 border border-fg/50 bg-fg/[0.04] px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-subtle focus:border-fg"
       />
-      <span className="text-sm text-fg/50">원</span>
+      <span className="text-sm text-subtle">원</span>
       <button type="submit" disabled={!value || ids.length === 0} className={primaryBtn}>
         {filtered ? `표시된 ${ids.length}명에게 적용` : `전체 ${ids.length}명에게 적용`}
       </button>
       <button type="button" onClick={() => void setBudgets(cfg, ids, cfg.defaultBudget)} disabled={ids.length === 0} className={smallBtn}>
         기본값({short(cfg.defaultBudget)}원)으로
       </button>
-      <span className="text-xs text-fg/40">{won(cfg.step)} 단위로 맞춰집니다.</span>
+      <span className="text-xs text-subtle">{won(cfg.step)} 단위로 맞춰집니다.</span>
     </form>
   );
 }
@@ -595,7 +595,7 @@ function DefaultBudget({ cfg }: { cfg: BudgetCfg }) {
     <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
       <Label id={`${id}-title`}>기본 투자금</Label>
       <p className="mt-2 text-3xl font-bold tabular-nums">{won(cfg.defaultBudget)}</p>
-      <p className="mt-1 text-xs text-fg/50">
+      <p className="mt-1 text-xs text-subtle">
         개인 투자금을 따로 정하지 않은 모든 참가자에게 적용됩니다. {won(cfg.step)} 단위로 맞춰집니다.
       </p>
       <form
@@ -617,9 +617,9 @@ function DefaultBudget({ cfg }: { cfg: BudgetCfg }) {
           value={value ? Number(value).toLocaleString("ko-KR") : ""}
           onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
           placeholder={cfg.defaultBudget.toLocaleString("ko-KR")}
-          className="h-9 w-36 border border-fg/20 bg-page px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-fg/30 focus:border-fg/60"
+          className="h-9 w-36 border border-fg/20 bg-page px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-subtle focus:border-fg"
         />
-        <span className="text-sm text-fg/50">원</span>
+        <span className="text-sm text-subtle">원</span>
         <button type="submit" disabled={!value || amount === cfg.defaultBudget} className={primaryBtn}>
           기본값 변경
         </button>
@@ -644,7 +644,7 @@ function StepSetting({ state }: { state: FestivalState }) {
     <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
       <Label id={`${id}-title`}>투자 단위</Label>
       <p className="mt-2 text-3xl font-bold tabular-nums">{won(state.step)}</p>
-      <p className="mt-1 text-xs text-fg/50">참가자가 이 금액 단위로만 투자할 수 있습니다. 투자금도 이 단위로 맞춰집니다.</p>
+      <p className="mt-1 text-xs text-subtle">참가자가 이 금액 단위로만 투자할 수 있습니다. 투자금도 이 단위로 맞춰집니다.</p>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -663,9 +663,9 @@ function StepSetting({ state }: { state: FestivalState }) {
           value={value ? Number(value).toLocaleString("ko-KR") : ""}
           onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
           placeholder={state.step.toLocaleString("ko-KR")}
-          className="h-9 w-36 border border-fg/20 bg-page px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-fg/30 focus:border-fg/60"
+          className="h-9 w-36 border border-fg/20 bg-page px-2 text-right text-sm tabular-nums text-fg outline-none placeholder:text-subtle focus:border-fg"
         />
-        <span className="text-sm text-fg/50">원</span>
+        <span className="text-sm text-subtle">원</span>
         <button type="submit" disabled={step <= 0 || step === state.step} className={primaryBtn}>
           단위 변경
         </button>
@@ -724,7 +724,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
           ["투자금 초과", `${overCount}명`],
         ].map(([k, v]) => (
           <div key={k} className="bg-page px-4 py-3">
-            <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-fg/50">{k}</dt>
+            <dt className="tabular-nums text-[11px] uppercase tracking-[0.15em] text-subtle">{k}</dt>
             <dd className={`mt-1 font-bold tabular-nums ${k === "투자금 초과" && overCount > 0 ? "text-danger" : ""}`}>{v}</dd>
           </div>
         ))}
@@ -733,7 +733,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
       <section aria-labelledby={`${id}-title`}>
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <Label id={`${id}-title`}>개인별 투자금</Label>
-          <span className="tabular-nums text-xs text-fg/50">
+          <span className="tabular-nums text-xs text-subtle">
             {rows.length}명 표시 · 기본 {won(state.defaultBudget)}
           </span>
         </div>
@@ -762,7 +762,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
             type="button"
             aria-pressed={onlyOver}
             onClick={() => setOnlyOver((v) => !v)}
-            className={`border px-3 text-sm transition ${onlyOver ? "border-fg bg-fg text-page" : "border-fg/20 text-fg/70 hover:border-fg/50"}`}
+            className={`border px-3 text-sm transition ${onlyOver ? "border-fg bg-fg text-page" : "border-fg/20 text-muted hover:border-fg/50"}`}
           >
             초과만
           </button>
@@ -772,7 +772,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
 
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[44rem] border-t border-fg/15 text-left text-sm">
-            <thead className="text-xs text-fg/50">
+            <thead className="text-xs text-subtle">
               <tr className="border-b border-fg/15">
                 <th className="py-2 pr-3 font-normal">이름</th>
                 <th className="py-2 pr-3 font-normal">팀</th>
@@ -790,11 +790,11 @@ function BudgetPanel({ state }: { state: FestivalState }) {
                       <span className="font-bold">{p.name}</span>
                     </span>
                   </td>
-                  <td className="py-2.5 pr-3 text-fg/60">{teamOf(p.teamId)?.name ?? "미배정"}</td>
+                  <td className="py-2.5 pr-3 text-subtle">{teamOf(p.teamId)?.name ?? "미배정"}</td>
                   <td className="py-2.5 pr-3">
                     <BudgetCell cfg={state} id={p.id} name={p.name} budget={budget} />
                   </td>
-                  <td className="py-2.5 pr-3 text-right text-xs tabular-nums text-fg/70">{won(used)}</td>
+                  <td className="py-2.5 pr-3 text-right text-xs tabular-nums text-muted">{won(used)}</td>
                   <td className="py-2.5 text-right text-xs tabular-nums">
                     {left < 0 ? (
                       <span className="inline-flex items-center gap-1.5 font-bold text-danger">
@@ -802,7 +802,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
                         {won(-left)} 초과
                       </span>
                     ) : (
-                      <span className="text-fg/70">{won(left)}</span>
+                      <span className="text-muted">{won(left)}</span>
                     )}
                   </td>
                 </tr>
@@ -810,8 +810,8 @@ function BudgetPanel({ state }: { state: FestivalState }) {
             </tbody>
           </table>
         </div>
-        {rows.length === 0 && <p className="py-6 text-sm text-fg/50">조건에 맞는 참가자가 없습니다.</p>}
-        <p className="mt-3 text-xs text-fg/40">이미 확정한 금액보다 낮추면 해당 참가자는 금액을 줄이기 전까지 다시 확정할 수 없습니다.</p>
+        {rows.length === 0 && <p className="py-6 text-sm text-subtle">조건에 맞는 참가자가 없습니다.</p>}
+        <p className="mt-3 text-xs text-subtle">이미 확정한 금액보다 낮추면 해당 참가자는 금액을 줄이기 전까지 다시 확정할 수 없습니다.</p>
       </section>
     </div>
   );
@@ -845,7 +845,7 @@ function AddParticipant({ teams }: { teams: Team[] }) {
     <form onSubmit={submit} noValidate className="border border-fg/15 p-5">
       <Label>참가자 추가</Label>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label htmlFor={`${id}-name`} className="min-w-[10rem] flex-1 text-xs text-fg/60">
+        <label htmlFor={`${id}-name`} className="min-w-[10rem] flex-1 text-xs text-subtle">
           이름
           <input
             id={`${id}-name`}
@@ -909,7 +909,7 @@ function TeamsPanel({ state }: { state: FestivalState }) {
           <TeamCard key={t.id} team={t} members={membersOf(state, t.id)} />
         ))}
       </ul>
-      {state.teams.length === 0 && <p className="text-fg/60">등록된 팀이 없습니다.</p>}
+      {state.teams.length === 0 && <p className="text-subtle">등록된 팀이 없습니다.</p>}
     </div>
   );
 }
@@ -932,7 +932,7 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
   }
 
   const field = (key: keyof Omit<Team, "id">, label: string) => (
-    <label htmlFor={`${id}-${key}`} className="text-xs text-fg/60">
+    <label htmlFor={`${id}-${key}`} className="text-xs text-subtle">
       {label}
       <input
         id={`${id}-${key}`}
@@ -975,9 +975,9 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
           <>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="tabular-nums text-xs text-fg/50">{team.table || "테이블 미정"}</p>
+                <p className="tabular-nums text-xs text-subtle">{team.table || "테이블 미정"}</p>
                 <h3 className="mt-1 truncate text-xl font-bold">{team.name}</h3>
-                <p className="mt-0.5 text-sm text-fg/60">
+                <p className="mt-0.5 text-sm text-subtle">
                   {team.project || "프로젝트 미정"}
                   {team.desc && ` · ${team.desc}`}
                 </p>
@@ -997,7 +997,7 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
               </span>
             </div>
             <div className="mt-4">
-              <p className="text-xs text-fg/50">팀원 {members.length}명</p>
+              <p className="text-xs text-subtle">팀원 {members.length}명</p>
               <ul className="mt-2 flex flex-wrap gap-1.5">
                 {members.map((m) => (
                   <li key={m.id} className="inline-flex items-center gap-1.5 border border-fg/15 py-1 pl-2 pr-1 text-sm">
@@ -1008,13 +1008,13 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
                       onClick={() => assignTeam(m.id, null)}
                       aria-label={`${m.name} 팀에서 빼기`}
                       title="팀에서 빼기"
-                      className="grid h-5 w-5 place-items-center text-xs text-fg/40 transition hover:bg-fg/10 hover:text-fg"
+                      className="grid h-5 w-5 place-items-center text-xs text-subtle transition hover:bg-fg/10 hover:text-fg"
                     >
                       ✕
                     </button>
                   </li>
                 ))}
-                {members.length === 0 && <li className="text-sm text-fg/40">배정된 팀원이 없습니다.</li>}
+                {members.length === 0 && <li className="text-sm text-subtle">배정된 팀원이 없습니다.</li>}
               </ul>
             </div>
           </>
@@ -1046,7 +1046,7 @@ function AddTeam() {
     <form onSubmit={submit} noValidate className="border border-fg/15 p-5">
       <Label>팀 추가</Label>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label htmlFor={`${id}-name`} className="min-w-[10rem] flex-1 text-xs text-fg/60">
+        <label htmlFor={`${id}-name`} className="min-w-[10rem] flex-1 text-xs text-subtle">
           팀명
           <input
             id={`${id}-name`}
@@ -1058,7 +1058,7 @@ function AddTeam() {
             className={`${fieldCls} py-2`}
           />
         </label>
-        <label htmlFor={`${id}-table`} className="w-24 text-xs text-fg/60">
+        <label htmlFor={`${id}-table`} className="w-24 text-xs text-subtle">
           테이블
           <input
             id={`${id}-table`}
@@ -1068,7 +1068,7 @@ function AddTeam() {
             className={`${fieldCls} py-2`}
           />
         </label>
-        <label htmlFor={`${id}-project`} className="min-w-[10rem] flex-1 text-xs text-fg/60">
+        <label htmlFor={`${id}-project`} className="min-w-[10rem] flex-1 text-xs text-subtle">
           프로젝트명
           <input id={`${id}-project`} value={project} onChange={(e) => setProject(e.target.value)} className={`${fieldCls} py-2`} />
         </label>
@@ -1081,7 +1081,7 @@ function AddTeam() {
           {error}
         </p>
       )}
-      <p className="mt-2 text-xs text-fg/40">팀원 배정은 참가자 탭이나 아래 미배정 목록에서 할 수 있습니다.</p>
+      <p className="mt-2 text-xs text-subtle">팀원 배정은 참가자 탭이나 아래 미배정 목록에서 할 수 있습니다.</p>
     </form>
   );
 }
@@ -1107,7 +1107,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
         <section aria-labelledby="att-rate" className="border border-fg/15 p-5">
           <Label id="att-rate">출석률</Label>
           <p className="mt-2 text-4xl font-bold tabular-nums">{total ? Math.round((present / total) * 100) : 0}%</p>
-          <p className="mt-1 text-sm text-fg/60">
+          <p className="mt-1 text-sm text-subtle">
             {total}명 중 {present}명 출석 · 미출석 {total - present}명
           </p>
           <div className="mt-4">
@@ -1132,7 +1132,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
                 type="button"
                 aria-pressed={filter === k}
                 onClick={() => setFilter(k)}
-                className={`border px-3 py-1.5 text-sm transition ${filter === k ? "border-fg bg-fg text-page" : "border-fg/20 text-fg/70 hover:border-fg/50"}`}
+                className={`border px-3 py-1.5 text-sm transition ${filter === k ? "border-fg bg-fg text-page" : "border-fg/20 text-muted hover:border-fg/50"}`}
               >
                 {l}
               </button>
@@ -1150,7 +1150,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
                 <div className="flex items-center justify-between gap-3 border-b border-fg/10 px-4 py-3">
                   <p className="min-w-0 truncate font-bold">{g.title}</p>
                   <span className="flex shrink-0 items-center gap-2">
-                    <span className="tabular-nums text-xs text-fg/50">
+                    <span className="tabular-nums text-xs text-subtle">
                       {here}/{g.people.length}
                     </span>
                     {here < g.people.length && (
@@ -1212,7 +1212,7 @@ function CodeCard() {
     <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
       <Label id={`${id}-title`}>출석 코드</Label>
       <p className="mt-2 tabular-nums text-5xl font-bold tracking-[0.3em]">{code}</p>
-      <p className="mt-1 text-xs text-fg/50">현장 화면에 띄워 주세요. 바꾸면 바로 적용됩니다.</p>
+      <p className="mt-1 text-xs text-subtle">현장 화면에 띄워 주세요. 바꾸면 바로 적용됩니다.</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -1231,7 +1231,7 @@ function CodeCard() {
           maxLength={4}
           placeholder="새 코드"
           autoComplete="off"
-          className="w-28 border border-fg/20 bg-fg/[0.04] px-3 py-2 text-center tabular-nums tracking-[0.3em] text-fg outline-none placeholder:tracking-normal placeholder:text-fg/30 focus:border-fg/60"
+          className="w-28 border border-fg/50 bg-fg/[0.04] px-3 py-2 text-center tabular-nums tracking-[0.3em] text-fg outline-none placeholder:tracking-normal placeholder:text-subtle focus:border-fg"
         />
         <button type="submit" disabled={value.length < 4} className={primaryBtn}>
           변경
@@ -1334,7 +1334,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
         <section aria-labelledby="pool" className="border border-fg/15 p-5">
           <Label id="pool">전체 투자금</Label>
           <p className="mt-2 text-3xl font-bold tabular-nums">{won(grand)}</p>
-          <p className="mt-1 text-sm text-fg/60">
+          <p className="mt-1 text-sm text-subtle">
             발행 가능 총액 {won(pool)} 중 {pool ? Math.round((grand / pool) * 100) : 0}% 투자됨
           </p>
           <div className="mt-4">
@@ -1345,10 +1345,10 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
         <section aria-labelledby="publish" className="border border-fg/15 bg-fg/[0.04] p-5">
           <div className="flex items-center justify-between gap-3">
             <Label id="publish">참가자 화면 발행</Label>
-            <span className="tabular-nums text-xs text-fg/50">틱 {state.ticks.length}개</span>
+            <span className="tabular-nums text-xs text-subtle">틱 {state.ticks.length}개</span>
           </div>
           <p className="mt-2 text-lg font-bold">{snap ? `최근 발행 ${timeLabel(snap.at)}` : "아직 발행하지 않았습니다"}</p>
-          <p role="status" className="mt-1 flex items-center gap-2 text-sm text-fg/60">
+          <p role="status" className="mt-1 flex items-center gap-2 text-sm text-subtle">
             {snap && changed && <span className="h-2 w-2 shrink-0 bg-warn" aria-hidden="true" />}
             {!snap
               ? "발행해야 참가자들이 투자 현황을 볼 수 있습니다."
@@ -1372,7 +1372,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
               />
             )}
           </div>
-          <p className="mt-2 text-xs text-fg/40">
+          <p className="mt-2 text-xs text-subtle">
             발행할 때마다 틱이 하나씩 쌓이고, 참가자는 발행된 틱들만 그래프로 볼 수 있습니다. 삭제는 가장 최근 틱만 지웁니다.
           </p>
         </section>
@@ -1384,7 +1384,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
       <section aria-labelledby="live-rank">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-4">
           <Label id="live-rank">실시간 투자 현황</Label>
-          <span className="tabular-nums text-xs text-fg/50">운영진 전용 · 확정된 투자만 집계</span>
+          <span className="tabular-nums text-xs text-subtle">운영진 전용 · 확정된 투자만 집계</span>
         </div>
         <ol className="grid gap-px border border-fg/10 bg-fg/10">
           {rows.map(({ team: t, total, investors }, i) => {
@@ -1398,17 +1398,17 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
               <li key={t.id} className="bg-page">
                 <details className="group">
                   <summary className="grid cursor-pointer list-none grid-cols-[2rem_1fr_auto] items-center gap-x-4 gap-y-2 p-4 [&::-webkit-details-marker]:hidden">
-                    <span className="tabular-nums text-lg font-bold text-fg/60">{i + 1}</span>
+                    <span className="tabular-nums text-lg font-bold text-subtle">{i + 1}</span>
                     <span className="min-w-0">
                       <span className="block truncate font-bold">{t.project || "프로젝트 미정"}</span>
-                      <span className="block truncate text-xs text-fg/50">
+                      <span className="block truncate text-xs text-subtle">
                         {t.name} · 투자자 {investors}명
                       </span>
                     </span>
                     <span className="text-right">
                       <span className="block text-sm font-bold tabular-nums">{won(total)}</span>
                       {snap && diff !== 0 && (
-                        <span className="block tabular-nums text-xs text-fg/50">
+                        <span className="block tabular-nums text-xs text-subtle">
                           발행 대비 {diff > 0 ? "+" : "−"}
                           {won(Math.abs(diff))}
                         </span>
@@ -1420,13 +1420,13 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
                   </summary>
                   <div className="border-t border-fg/10 px-4 py-3 pl-16">
                     {backers.length === 0 ? (
-                      <p className="text-sm text-fg/50">아직 투자한 참가자가 없습니다.</p>
+                      <p className="text-sm text-subtle">아직 투자한 참가자가 없습니다.</p>
                     ) : (
                       <ul className="grid gap-1 text-sm sm:grid-cols-2">
                         {backers.map((b) => (
                           <li key={b.pid} className="flex justify-between gap-3">
                             <span>{nameOf(b.pid)}</span>
-                            <span className="tabular-nums text-fg/70">{won(b.amt)}</span>
+                            <span className="tabular-nums text-muted">{won(b.amt)}</span>
                           </li>
                         ))}
                       </ul>
@@ -1437,7 +1437,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
             );
           })}
         </ol>
-        <p className="mt-2 text-xs text-fg/40">항목을 누르면 투자한 참가자를 볼 수 있습니다.</p>
+        <p className="mt-2 text-xs text-subtle">항목을 누르면 투자한 참가자를 볼 수 있습니다.</p>
       </section>
     </div>
   );
@@ -1459,10 +1459,10 @@ function StaffPanel({ me }: { me: string }) {
       <section aria-labelledby={`${id}-title`}>
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <Label id={`${id}-title`}>운영진 목록</Label>
-          <span className="text-xs tabular-nums text-fg/50">{staff.data ? `${staff.data.length}명` : ""}</span>
+          <span className="text-xs tabular-nums text-subtle">{staff.data ? `${staff.data.length}명` : ""}</span>
         </div>
         {staff.isPending ? (
-          <p className="py-6 text-sm text-fg/50" role="status">
+          <p className="py-6 text-sm text-subtle" role="status">
             불러오는 중…
           </p>
         ) : staff.error ? (
@@ -1472,7 +1472,7 @@ function StaffPanel({ me }: { me: string }) {
         ) : (
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[40rem] border-t border-fg/15 text-left text-sm">
-              <thead className="text-xs text-fg/50">
+              <thead className="text-xs text-subtle">
                 <tr className="border-b border-fg/15">
                   <th className="py-2 pr-3 font-normal">이메일</th>
                   <th className="py-2 pr-3 font-normal">메모</th>
@@ -1494,13 +1494,13 @@ function StaffPanel({ me }: { me: string }) {
                       <td className="py-2.5 pr-3">
                         <StaffNote email={s.email} note={s.note} />
                       </td>
-                      <td className="py-2.5 pr-3 text-fg/60">
+                      <td className="py-2.5 pr-3 text-subtle">
                         {s.addedBy ?? "—"}
-                        <span className="block text-xs tabular-nums text-fg/40">{timeLabel(s.createdAt)}</span>
+                        <span className="block text-xs tabular-nums text-subtle">{timeLabel(s.createdAt)}</span>
                       </td>
                       <td className="py-2.5 text-right">
                         {self ? (
-                          <span className="text-xs text-fg/40" title="본인 이메일은 삭제할 수 없습니다">
+                          <span className="text-xs text-subtle" title="본인 이메일은 삭제할 수 없습니다">
                             본인
                           </span>
                         ) : (
@@ -1517,7 +1517,7 @@ function StaffPanel({ me }: { me: string }) {
             </table>
           </div>
         )}
-        <p className="mt-3 text-xs text-fg/40">
+        <p className="mt-3 text-xs text-subtle">
           삭제된 사람은 다음 요청부터 운영진 화면을 쓸 수 없습니다. 본인 이메일은 다른 운영진만 삭제할 수 있습니다.
         </p>
       </section>
@@ -1595,7 +1595,7 @@ function AddStaff() {
     <form onSubmit={submit} noValidate className="border border-fg/15 p-5">
       <Label>운영진 추가</Label>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label htmlFor={`${id}-email`} className="min-w-[14rem] flex-1 text-xs text-fg/60">
+        <label htmlFor={`${id}-email`} className="min-w-[14rem] flex-1 text-xs text-subtle">
           Google 계정 이메일
           <input
             id={`${id}-email`}
@@ -1610,7 +1610,7 @@ function AddStaff() {
             className={`${fieldCls} py-2`}
           />
         </label>
-        <label htmlFor={`${id}-note`} className="min-w-[10rem] flex-1 text-xs text-fg/60">
+        <label htmlFor={`${id}-note`} className="min-w-[10rem] flex-1 text-xs text-subtle">
           메모
           <input
             id={`${id}-note`}
@@ -1629,7 +1629,7 @@ function AddStaff() {
           {error}
         </p>
       )}
-      <p className="mt-2 text-xs text-fg/40">추가된 사람은 이 이메일의 Google 계정으로 /organize에 로그인할 수 있습니다.</p>
+      <p className="mt-2 text-xs text-subtle">추가된 사람은 이 이메일의 Google 계정으로 /organize에 로그인할 수 있습니다.</p>
     </form>
   );
 }
