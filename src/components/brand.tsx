@@ -16,11 +16,12 @@ export const schools: School[] = [
 ];
 
 // GDG logo (from gdg.svg). Uses currentColor so it follows the theme.
-export function GdgLogo({ className = "", title }: { className?: string; title?: string }) {
+export function GdgLogo({ className = "", title, style }: { className?: string; title?: string; style?: React.CSSProperties }) {
   return (
     <svg
       viewBox="0 0 60 29"
       className={className}
+      style={style}
       fill="currentColor"
       role={title ? "img" : undefined}
       aria-hidden={title ? undefined : true}
@@ -48,31 +49,16 @@ export function SchoolBar({ className = "", vertical = false }: { className?: st
 }
 
 // Bottom-aligned steps of the four school colors (rising left to right), used as the
-// base of the home hero rather than a block of its own. No text sits on the colors.
-// `logos`: schools whose logo file exists in /public/logos/{key}.svg; each is shown as a
-// faint watermark in its column (drawn in the column's `on` color through a CSS mask).
-export function SchoolSteps({ logos = [], className = "" }: { logos?: string[]; className?: string }) {
+// base of the home hero rather than a block of its own. No text sits on the colors;
+// each step carries a faint, oversized GDG <> mark in the step's `on` color.
+// (University logos aren't used: each school restricts and approves their use.)
+export function SchoolSteps({ className = "" }: { className?: string }) {
   const heights = ["58%", "72%", "86%", "100%"];
   return (
     <div className={`grid grid-cols-4 items-end ${className}`} aria-hidden="true">
       {schools.map((s, i) => (
         <div key={s.key} className="relative h-full overflow-hidden" style={{ height: heights[i], background: s.main }}>
-          {logos.includes(s.key) && (
-            <span
-              className="absolute -bottom-[12%] -right-[10%] aspect-square w-[78%] opacity-[0.1]"
-              style={{
-                background: s.on,
-                maskImage: `url(/logos/${s.key}.svg)`,
-                WebkitMaskImage: `url(/logos/${s.key}.svg)`,
-                maskSize: "contain",
-                WebkitMaskSize: "contain",
-                maskRepeat: "no-repeat",
-                WebkitMaskRepeat: "no-repeat",
-                maskPosition: "center",
-                WebkitMaskPosition: "center",
-              }}
-            />
-          )}
+          <GdgLogo className="absolute bottom-[12%] right-[6%] w-[46%] opacity-[0.12]" style={{ color: s.on }} />
         </div>
       ))}
     </div>

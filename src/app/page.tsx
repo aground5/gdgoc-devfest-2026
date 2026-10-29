@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { GdgLogo, SchoolSteps, schools } from "@/components/brand";
 import { GuideTabs } from "@/components/guide-tabs";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -12,10 +10,6 @@ const summary = [
   { label: "체크인", value: event.checkIn },
   { label: "장소", value: event.venue },
 ];
-
-// School logos are optional: drop official SVGs in public/logos/{ku,yu,skku,kaist}.svg
-// (with each school's permission) and they appear faintly in the hero's school steps.
-const logos = schools.map((s) => s.key).filter((k) => existsSync(join(process.cwd(), "public", "logos", `${k}.svg`)));
 
 export default function Home() {
   return (
@@ -66,7 +60,7 @@ export default function Home() {
           ))}
         </dl>
 
-        <SchoolSteps logos={logos} className="mt-10 h-24 sm:mt-14 sm:h-36 lg:h-48" />
+        <SchoolSteps className="mt-10 h-24 sm:mt-14 sm:h-36 lg:h-48" />
       </section>
 
       {/* Guide tabs */}
