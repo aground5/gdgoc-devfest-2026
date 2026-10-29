@@ -53,6 +53,7 @@ There are no JS tests. Database access rules are tested with pgTAP: `supabase st
 
 - Import alias `@/*` → `src/*`.
 - Participants mostly use phones; check pages at 390px wide. Form fields keep 16px text (`fieldCls`; iOS zooms into smaller fields). Body text uses `word-break: keep-all` so Korean wraps between words, with `overflow-wrap: break-word` (not `anywhere`, which squeezes short labels). Fixed bottom bars pad with `env(safe-area-inset-bottom)` (`viewport-fit=cover` in `layout.tsx`), like the invest tab's confirm bar.
+- Page transitions (`src/components/page-transition.tsx`, mounted once in `layout.tsx`): a plain click on a link to another page of the site (different pathname; not `#hash` tab changes) drops four school-color columns down to cover the screen, navigates, then raises them in the same order. Skipped with `prefers-reduced-motion`; add `data-no-transition` to a link to opt out. Don't add it to other actions.
 - `.env*` files are gitignored; `.env.local` holds a Vercel CLI token plus `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 
 ## Supabase
