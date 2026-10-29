@@ -49,6 +49,7 @@ There are no JS tests. Database access rules are tested with pgTAP: `supabase st
 ## Conventions
 
 - Import alias `@/*` → `src/*`.
+- Participants mostly use phones; check pages at 390px wide. Form fields keep 16px text (`fieldCls`; iOS zooms into smaller fields). Body text uses `word-break: keep-all` so Korean wraps between words. Fixed bottom bars pad with `env(safe-area-inset-bottom)` (`viewport-fit=cover` in `layout.tsx`), like the invest tab's confirm bar.
 - `.env*` files are gitignored; `.env.local` holds a Vercel CLI token plus `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 
 ## Supabase

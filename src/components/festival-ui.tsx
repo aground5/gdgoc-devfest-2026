@@ -13,10 +13,12 @@ export const school = (key: SchoolKey) => schools.find((s) => s.key === key) as 
 // Schools represented in a group of people, in the standard school order
 export const schoolsOf = (people: Participant[]) => schools.filter((s) => people.some((p) => p.school === s.key));
 
+// Form fields stay at 16px text: iOS Safari zooms the page into any smaller field on focus.
 export const fieldCls =
-  "mt-1.5 w-full border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-fg placeholder:text-fg/30 outline-none transition focus:border-fg/60";
+  "mt-1.5 w-full border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-base text-fg placeholder:text-fg/30 outline-none transition focus:border-fg/60";
 
-export const selectCls = "border border-fg/20 bg-page px-2 py-2 text-sm text-fg outline-none transition focus:border-fg/60";
+export const selectCls =
+  "border border-fg/20 bg-page px-2 py-2 text-base sm:text-sm text-fg outline-none transition focus:border-fg/60";
 
 export const smallBtn = "border border-fg/25 px-3 py-1.5 text-sm font-bold transition hover:bg-fg/10 disabled:opacity-30";
 
@@ -122,19 +124,21 @@ export function ScreenFrame<T extends string>({
         {/* Header bar from the design guide's content-wise designs: school-color mark, wordmark, GDG brackets */}
         <div className="ink-bar flex items-stretch">
           <SchoolMark className="w-12 shrink-0 sm:w-16" />
-          <div className="mx-auto flex min-w-0 max-w-6xl flex-1 items-center justify-between gap-4 px-4 py-3 sm:px-8">
-            <p className="flex min-w-0 items-center gap-2 text-lg font-bold tracking-tight sm:text-2xl">
+          <div className="mx-auto flex min-w-0 max-w-6xl flex-1 items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-8">
+            <p className="flex min-w-0 items-center gap-2 text-base font-bold tracking-tight min-[400px]:text-lg sm:text-2xl">
               <span className="truncate">GDG DevFest.</span>
               {badge && <span className="shrink-0 bg-fg px-1.5 py-0.5 text-[11px] font-bold tracking-normal text-page">{badge}</span>}
             </p>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               {actions}
               <ThemeToggle className="h-10 w-10" />
+              {/* Phones: icon only, so the wordmark isn't cut off */}
               <Link
                 href="/"
-                className="inline-flex h-10 items-center gap-2 border border-fg/25 px-4 text-sm font-bold transition hover:bg-fg/10"
+                aria-label="나가기"
+                className="inline-flex h-10 min-w-10 items-center justify-center gap-2 border border-fg/25 px-2.5 text-sm font-bold transition hover:bg-fg/10 sm:px-4"
               >
-                나가기 <span aria-hidden="true">✕</span>
+                <span className="hidden sm:inline">나가기</span> <span aria-hidden="true">✕</span>
               </Link>
               <GdgLogo className="ml-2 hidden h-4 w-8 sm:block" title={event.series} />
             </div>

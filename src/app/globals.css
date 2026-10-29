@@ -91,6 +91,9 @@ body {
   background: var(--page);
   color: var(--fg);
   transition: background-color 0.2s ease;
+  /* Korean: wrap between words, not syllables; still break long URLs instead of overflowing */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 /* Scrollbars: thin, theme-colored thumb on a page-colored track, so the
