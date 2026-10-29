@@ -8,6 +8,8 @@ import { useId, useState, type FormEvent } from "react";
 import { INVEST_STEP, type Participant, type Team } from "@/data/guide";
 import { budgetOf, membersOf, updateFestival, useFestival, won, type FestivalState } from "@/lib/festival-store";
 import { login, logout, useParticipantSession, type SessionParticipant } from "@/lib/participant-session";
+import { patch, run, usePeople, useTeams } from "@/lib/db/hooks";
+import { checkIn, updateMyTeam } from "@/lib/db/queries";
 import {
   Label,
   MemberStripe,
@@ -121,10 +123,13 @@ function LoginCard() {
 }
 
 function Festival({ who }: { who: SessionParticipant }) {
-  const state = useFestival();
+  const people = usePeople("participant");
+  const teams = useTeams("participant");
+  const state = useFestival(people.data, teams.data);
   const [view, setView] = useHashTab(VIEWS, "team");
-  const me = state.participants.find((p) => p.name === who.name);
-  const myTeam = me?.teamId ? state.teams.find((t) => t.id === me.teamId) : undefined;
+  const me = state?.participants.find((p) => p.id === who.id);
+  const myTeam = me?.teamId ? state?.teams.find((t) => t.id === me.teamId) : undefined;
+  const failed = people.error ?? teams.error;
   const [leaving, setLeaving] = useState(false);
 
   return (
@@ -147,7 +152,17 @@ function Festival({ who }: { who: SessionParticipant }) {
         </button>
       }
     >
-      {!me ? (
+      {!state ? (
+        failed ? (
+          <p role="alert" className="py-10 text-[var(--g-red)]">
+            데이터를 불러오지 못했습니다. {failed.message}
+          </p>
+        ) : (
+          <p className="py-10 text-fg/50" role="status">
+            불러오는 중…
+          </p>
+        )
+      ) : !me ? (
         <p className="py-10 text-lg text-fg/60">참가자 정보를 찾을 수 없습니다. 운영진에게 문의해 주세요.</p>
       ) : view === "team" ? (
         <div className="grid gap-10 lg:grid-cols-[1fr_26rem]">
@@ -161,7 +176,7 @@ function Festival({ who }: { who: SessionParticipant }) {
                 <p className="mt-1 text-sm text-fg/60">운영진이 팀을 배정하면 여기에 표시됩니다.</p>
               </section>
             )}
-            <AttendanceCard me={me} code={state.attendanceCode} />
+            <AttendanceCard me={me} />
           </div>
           <TeamList state={state} myTeamId={myTeam?.id} />
         </div>
@@ -240,13 +255,16 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
   const [project, setProject] = useState(team.project);
   const [desc, setDesc] = useState(team.desc);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) return setError("팀명을 입력해 주세요.");
-    const patch = { name: name.trim(), project: project.trim(), desc: desc.trim() };
-    updateFestival((s) => ({ ...s, teams: s.teams.map((t) => (t.id === team.id ? { ...t, ...patch } : t)) }));
-    onDone();
+    setBusy(true);
+    const t = { name: name.trim(), project: project.trim(), desc: desc.trim() };
+    const saved = await run(() => updateMyTeam(t), patch.team(team.id, t));
+    setBusy(false);
+    if (saved) onDone();
   }
 
   return (
@@ -285,8 +303,8 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
         </p>
       )}
       <div className="flex gap-2">
-        <button type="submit" className={primaryBtn}>
-          저장
+        <button type="submit" disabled={busy} className={primaryBtn}>
+          {busy ? "저장 중…" : "저장"}
         </button>
         <button type="button" onClick={onDone} className={smallBtn}>
           취소
@@ -298,23 +316,25 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
 
 /* ---------- Attendance ---------- */
 
-function AttendanceCard({ me, code: expected }: { me: Participant; code: string }) {
+function AttendanceCard({ me }: { me: Participant }) {
   const id = useId();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
-    if (code !== expected) {
-      setError("출석 코드가 올바르지 않습니다. 운영진에게 다시 확인해 주세요.");
-      return;
-    }
+    setBusy(true);
+    let accepted = false;
+    const sent = await run(async () => {
+      accepted = await checkIn(code);
+    });
+    setBusy(false);
+    if (!sent) return;
+    if (!accepted) return setError("출석 코드가 올바르지 않거나 출석이 마감되었습니다. 운영진에게 확인해 주세요.");
+    patch.attendance([me.id], true)(); // show it now; the refetch confirms
     setError("");
     setCode("");
-    updateFestival((s) => ({
-      ...s,
-      participants: s.participants.map((p) => (p.id === me.id ? { ...p, checkedIn: true } : p)),
-    }));
   }
 
   return (
@@ -347,8 +367,8 @@ function AttendanceCard({ me, code: expected }: { me: Participant; code: string 
               aria-describedby={error ? `${id}-err` : undefined}
               className="w-36 border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-center font-mono text-2xl tracking-[0.4em] text-fg outline-none transition placeholder:text-fg/20 focus:border-fg/60"
             />
-            <button type="submit" disabled={code.length < 4} className={`${primaryBtn} px-5 text-base`}>
-              출석하기
+            <button type="submit" disabled={code.length < 4 || busy} className={`${primaryBtn} px-5 text-base`}>
+              {busy ? "확인 중…" : "출석하기"}
             </button>
           </div>
           {error && (
@@ -356,7 +376,6 @@ function AttendanceCard({ me, code: expected }: { me: Participant; code: string 
               {error}
             </p>
           )}
-          <p className="mt-3 text-xs text-fg/40">목업용 코드: {expected} (운영진 화면에서 변경 가능)</p>
         </form>
       )}
     </section>

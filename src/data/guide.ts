@@ -121,7 +121,8 @@ export type Participant = {
   name: string;
   school: SchoolKey;
   teamId: string | null; // assigned by staff
-  checkedIn: boolean;
+  checkedIn: boolean; // checked in today (staff see everyone's, a participant only their own)
+  accessCode?: string; // personal login code; only loaded for staff
 };
 
 export type Team = {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DbProvider } from "@/lib/db/hooks";
 import { LiveScreen } from "@/components/live-screen";
 
 export const metadata: Metadata = {
@@ -6,5 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function OnFestivalPage() {
-  return <LiveScreen />;
+  return (
+    <DbProvider>
+      <LiveScreen />
+    </DbProvider>
+  );
 }

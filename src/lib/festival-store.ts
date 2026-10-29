@@ -1,18 +1,11 @@
-// Mock backend shared by /onfestival (participant) and /organize (admin).
-// State lives in localStorage so both pages — and other tabs — see the same data.
-// Replace with a real API when one exists.
+// Mock backend for the investment features shared by /onfestival (participant)
+// and /organize (admin): confirmed investments, budgets and published ticks.
+// Participants, teams and attendance live in Supabase (src/lib/db); this store
+// keys its data by their Supabase ids. State lives in localStorage so both
+// pages, and other tabs, see the same data.
 
-import { useSyncExternalStore } from "react";
-import {
-  INVEST_BUDGET,
-  INVEST_STEP,
-  myParticipantId,
-  seedAttendanceCode,
-  seedParticipants,
-  seedTeams,
-  type Participant,
-  type Team,
-} from "@/data/guide";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { INVEST_BUDGET, INVEST_STEP, myParticipantId, seedParticipants, seedTeams, type Participant, type Team } from "@/data/guide";
 
 // Confirmed investments: participantId -> teamId -> amount
 export type Investments = Record<string, Record<string, number>>;
@@ -25,16 +18,19 @@ export type Snapshot = {
   investors: Record<string, number>; // teamId -> number of investors
 };
 
-export type FestivalState = {
-  participants: Participant[];
-  teams: Team[];
+// What this store persists
+export type MockState = {
   investments: Investments;
   budgets: Record<string, number>; // participantId -> budget set by staff; missing = INVEST_BUDGET
   ticks: Snapshot[]; // every publish, oldest first
-  attendanceCode: string;
+  // The seed below uses guide.ts ids (p01, t01); they are mapped to Supabase ids once loaded
+  idsFrom: "mock" | "supabase";
 };
 
-const KEY = "devfest-festival-mock-v2";
+// What screens read: the mock data plus participants and teams from Supabase
+export type FestivalState = MockState & { participants: Participant[]; teams: Team[] };
+
+const KEY = "devfest-festival-mock-v3";
 const EVENT = "festivalchange";
 
 // Deterministic sample investments so the admin view isn't empty.
@@ -77,20 +73,43 @@ function seedTicks(investments: Investments): Snapshot[] {
 
 const seedInv = seedInvestments();
 
-export const seedState: FestivalState = {
-  participants: seedParticipants,
-  teams: seedTeams,
+export const seedState: MockState = {
   investments: seedInv,
   budgets: {},
   ticks: seedTicks(seedInv),
-  attendanceCode: seedAttendanceCode,
+  idsFrom: "mock",
 };
+
+// Map the seed's guide.ts ids to Supabase ids: people by name, teams by table.
+// Anything without a match is dropped.
+function rekey(s: MockState, people: Participant[], teams: Team[]): MockState {
+  const pid = new Map<string, string>();
+  for (const p of seedParticipants) {
+    const real = people.find((x) => x.name === p.name);
+    if (real) pid.set(p.id, real.id);
+  }
+  const tid = new Map<string, string>();
+  for (const t of seedTeams) {
+    const real = teams.find((x) => x.table === t.table);
+    if (real) tid.set(t.id, real.id);
+  }
+  const mapKeys = <V>(o: Record<string, V>, m: Map<string, string>) =>
+    Object.fromEntries(Object.entries(o).flatMap(([k, v]) => (m.has(k) ? [[m.get(k)!, v]] : [])));
+  return {
+    investments: Object.fromEntries(
+      Object.entries(s.investments).flatMap(([p, byTeam]) => (pid.has(p) ? [[pid.get(p)!, mapKeys(byTeam, tid)]] : [])),
+    ),
+    budgets: mapKeys(s.budgets, pid),
+    ticks: s.ticks.map((t) => ({ ...t, totals: mapKeys(t.totals, tid), investors: mapKeys(t.investors, tid) })),
+    idsFrom: "supabase",
+  };
+}
 
 // useSyncExternalStore needs a stable reference until the data changes.
 let cacheRaw: string | null | undefined;
-let cache: FestivalState = seedState;
+let cache: MockState = seedState;
 
-function read(): FestivalState {
+function read(): MockState {
   let raw: string | null = null;
   try {
     raw = localStorage.getItem(KEY);
@@ -101,14 +120,14 @@ function read(): FestivalState {
   if (raw === cacheRaw) return cache;
   cacheRaw = raw;
   try {
-    cache = raw ? { ...seedState, ...(JSON.parse(raw) as Partial<FestivalState>) } : seedState;
+    cache = raw ? { ...seedState, ...(JSON.parse(raw) as Partial<MockState>) } : seedState;
   } catch {
     cache = seedState;
   }
   return cache;
 }
 
-function write(next: FestivalState) {
+function write(next: MockState) {
   cache = next;
   cacheRaw = JSON.stringify(next);
   try {
@@ -129,11 +148,25 @@ function subscribe(cb: () => void) {
   };
 }
 
-export function useFestival(): FestivalState {
+export function useMock(): MockState {
   return useSyncExternalStore(subscribe, read, () => seedState);
 }
 
-export function updateFestival(fn: (s: FestivalState) => FestivalState) {
+// Mock data joined with Supabase participants and teams; null while either is
+// still loading (or while the seed is being mapped to Supabase ids).
+export function useFestival(people: Participant[] | undefined, teams: Team[] | undefined): FestivalState | null {
+  const mock = useMock();
+  const ready = !!people && !!teams;
+  useEffect(() => {
+    if (ready && mock.idsFrom !== "supabase") updateFestival((s) => (s.idsFrom === "supabase" ? s : rekey(s, people, teams)));
+  }, [ready, mock.idsFrom, people, teams]);
+  return useMemo(
+    () => (people && teams && mock.idsFrom === "supabase" ? { ...mock, participants: people, teams } : null),
+    [mock, people, teams],
+  );
+}
+
+export function updateFestival(fn: (s: MockState) => MockState) {
   write(fn(read()));
 }
 
@@ -154,8 +187,7 @@ export const membersOf = (s: FestivalState, teamId: string) => s.participants.fi
 export const budgetOf = (s: FestivalState, pid: string) => s.budgets[pid] ?? INVEST_BUDGET;
 
 // How much a participant has confirmed so far
-export const investedBy = (s: FestivalState, pid: string) =>
-  Object.values(s.investments[pid] ?? {}).reduce((sum, v) => sum + v, 0);
+export const investedBy = (s: FestivalState, pid: string) => Object.values(s.investments[pid] ?? {}).reduce((sum, v) => sum + v, 0);
 
 // Live totals from confirmed investments. Admin only.
 export function liveTotals(s: Pick<FestivalState, "participants" | "investments">): Snapshot {
@@ -180,5 +212,4 @@ export const timeLabel = (at: number) =>
 
 export const latestTick = (s: FestivalState): Snapshot | null => s.ticks[s.ticks.length - 1] ?? null;
 
-export const clockLabel = (at: number) =>
-  new Date(at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+export const clockLabel = (at: number) => new Date(at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });

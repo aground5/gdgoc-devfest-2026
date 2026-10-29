@@ -19,6 +19,19 @@ import {
   won,
   type FestivalState,
 } from "@/lib/festival-store";
+import { patch as optimisticPatch, run, usePeople, useTeams, useVenueCode } from "@/lib/db/hooks";
+import {
+  addParticipant,
+  addTeam,
+  deleteParticipant,
+  deleteTeam,
+  setAttendance,
+  setVenueCode,
+  updateParticipant,
+  updateTeam,
+  type PersonPatch,
+  type TeamPatch,
+} from "@/lib/db/queries";
 import { signInWithGoogle, staffSignOut, useStaffSession } from "@/lib/staff-session";
 import {
   Label,
@@ -44,35 +57,40 @@ const VIEWS = [
   { id: "invest", label: "투자 현황" },
 ] as const;
 
-const newId = (prefix: string) => `${prefix}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+/* ---------- Writes ---------- */
+// Participants and teams go to Supabase; investment data in the mock store is
+// cleaned up alongside so it never points at a removed person or team.
 
-/* ---------- Store actions ---------- */
-
-const setParticipant = (id: string, patch: Partial<Participant>) =>
-  updateFestival((s) => ({ ...s, participants: s.participants.map((p) => (p.id === id ? { ...p, ...patch } : p)) }));
+const setParticipant = (id: string, patch: PersonPatch) => run(() => updateParticipant(id, patch), optimisticPatch.person(id, patch));
 
 function removeParticipant(id: string) {
-  updateFestival((s) => {
-    const investments = { ...s.investments };
-    delete investments[id];
-    const budgets = { ...s.budgets };
-    delete budgets[id];
-    return { ...s, participants: s.participants.filter((p) => p.id !== id), investments, budgets };
-  });
+  return run(async () => {
+    await deleteParticipant(id);
+    updateFestival((s) => {
+      const investments = { ...s.investments };
+      delete investments[id];
+      const budgets = { ...s.budgets };
+      delete budgets[id];
+      return { ...s, investments, budgets };
+    });
+  }, optimisticPatch.removePerson(id));
 }
 
 // Moving someone to a team drops any investment they made in that team.
 function assignTeam(id: string, teamId: string | null) {
-  updateFestival((s) => {
-    const mine = s.investments[id];
-    const investments = { ...s.investments };
-    if (mine && teamId && mine[teamId]) {
-      const rest = { ...mine };
-      delete rest[teamId];
-      investments[id] = rest;
-    }
-    return { ...s, investments, participants: s.participants.map((p) => (p.id === id ? { ...p, teamId } : p)) };
-  });
+  return run(
+    async () => {
+      await updateParticipant(id, { teamId });
+      updateFestival((s) => {
+        const mine = s.investments[id];
+        if (!mine || !teamId || !mine[teamId]) return s;
+        const rest = { ...mine };
+        delete rest[teamId];
+        return { ...s, investments: { ...s.investments, [id]: rest } };
+      });
+    },
+    optimisticPatch.person(id, { teamId }),
+  );
 }
 
 // Budgets equal to the default are stored as "no override"
@@ -88,22 +106,22 @@ function setBudgets(ids: string[], amount: number) {
   });
 }
 
-const setTeam = (id: string, patch: Partial<Team>) =>
-  updateFestival((s) => ({ ...s, teams: s.teams.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
+const setTeam = (id: string, patch: TeamPatch) => run(() => updateTeam(id, patch), optimisticPatch.team(id, patch));
 
 function removeTeam(id: string) {
-  updateFestival((s) => ({
-    ...s,
-    teams: s.teams.filter((t) => t.id !== id),
-    participants: s.participants.map((p) => (p.teamId === id ? { ...p, teamId: null } : p)),
-    investments: Object.fromEntries(
-      Object.entries(s.investments).map(([pid, byTeam]) => {
-        const rest = { ...byTeam };
-        delete rest[id];
-        return [pid, rest];
-      }),
-    ),
-  }));
+  return run(async () => {
+    await deleteTeam(id);
+    updateFestival((s) => ({
+      ...s,
+      investments: Object.fromEntries(
+        Object.entries(s.investments).map(([pid, byTeam]) => {
+          const rest = { ...byTeam };
+          delete rest[id];
+          return [pid, rest];
+        }),
+      ),
+    }));
+  }, optimisticPatch.removeTeam(id));
 }
 
 /* ---------- Screen ---------- */
@@ -183,11 +201,11 @@ function StaffLogin({ denied }: { denied: string | null }) {
 }
 
 function AdminPanels({ email }: { email: string }) {
-  const state = useFestival();
+  const people = usePeople("staff");
+  const teams = useTeams("staff");
+  const state = useFestival(people.data, teams.data);
   const [view, setView] = useHashTab(VIEWS, "people");
-
-  const present = state.participants.filter((p) => p.checkedIn).length;
-  const investors = state.participants.filter((p) => Object.values(state.investments[p.id] ?? {}).some((v) => v > 0)).length;
+  const failed = people.error ?? teams.error;
 
   return (
     <ScreenFrame
@@ -209,6 +227,27 @@ function AdminPanels({ email }: { email: string }) {
         </>
       }
     >
+      {state ? (
+        <Panels state={state} view={view} />
+      ) : failed ? (
+        <p role="alert" className="py-10 text-[var(--g-red)]">
+          데이터를 불러오지 못했습니다. {failed.message}
+        </p>
+      ) : (
+        <p className="py-10 text-fg/50" role="status">
+          불러오는 중…
+        </p>
+      )}
+    </ScreenFrame>
+  );
+}
+
+function Panels({ state, view }: { state: FestivalState; view: (typeof VIEWS)[number]["id"] }) {
+  const present = state.participants.filter((p) => p.checkedIn).length;
+  const investors = state.participants.filter((p) => Object.values(state.investments[p.id] ?? {}).some((v) => v > 0)).length;
+
+  return (
+    <>
       <dl className="mb-8 grid grid-cols-2 gap-px border border-fg/10 bg-fg/10 sm:grid-cols-4">
         {[
           ["참가자", `${state.participants.length}명`],
@@ -228,7 +267,7 @@ function AdminPanels({ email }: { email: string }) {
       {view === "attendance" && <AttendancePanel state={state} />}
       {view === "budget" && <BudgetPanel state={state} />}
       {view === "invest" && <InvestStatusPanel state={state} />}
-    </ScreenFrame>
+    </>
   );
 }
 
@@ -255,9 +294,9 @@ function ResetButton() {
       type="button"
       onClick={() => setArm(true)}
       className={`hidden h-10 sm:block ${smallBtn}`}
-      title="목업 데이터를 처음 상태로 되돌립니다"
+      title="투자 목업 데이터(투자, 투자금, 틱)를 처음 상태로 되돌립니다. 참가자와 팀은 그대로입니다."
     >
-      목업 초기화
+      투자 목업 초기화
     </button>
   );
 }
@@ -376,13 +415,14 @@ function PeoplePanel({ state }: { state: FestivalState }) {
         </div>
 
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[40rem] border-t border-fg/15 text-left text-sm">
+          <table className="w-full min-w-[46rem] border-t border-fg/15 text-left text-sm">
             <thead className="text-xs text-fg/50">
               <tr className="border-b border-fg/15">
                 <th className="py-2 pr-3 font-medium">이름</th>
                 <th className="py-2 pr-3 font-medium">학교</th>
                 <th className="py-2 pr-3 font-medium">팀</th>
                 <th className="py-2 pr-3 font-medium">출석</th>
+                <th className="py-2 pr-3 font-medium">참가자 코드</th>
                 <th className="py-2 font-medium">
                   <span className="sr-only">관리</span>
                 </th>
@@ -406,10 +446,9 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
   const [name, setName] = useState(p.name);
   const [sch, setSch] = useState(p.school);
 
-  function save() {
+  async function save() {
     if (!name.trim()) return;
-    setParticipant(p.id, { name: name.trim(), school: sch });
-    setEditing(false);
+    if (await setParticipant(p.id, { name: name.trim(), school: sch })) setEditing(false);
   }
 
   return (
@@ -443,6 +482,7 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
       <td className="py-2.5 pr-3">
         <Status on={p.checkedIn} />
       </td>
+      <td className="py-2.5 pr-3 font-mono tracking-wider">{p.accessCode}</td>
       <td className="py-2.5 text-right">
         <span className="inline-flex gap-1">
           {editing ? (
@@ -700,14 +740,20 @@ function AddParticipant({ teams }: { teams: Team[] }) {
   const [sch, setSch] = useState<SchoolKey>("ku");
   const [teamId, setTeamId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [added, setAdded] = useState<{ name: string; code: string } | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) return setError("이름을 입력해 주세요.");
-    updateFestival((s) => ({
-      ...s,
-      participants: [...s.participants, { id: newId("p"), name: name.trim(), school: sch, teamId, checkedIn: false }],
-    }));
+    setBusy(true);
+    let code = "";
+    const done = await run(async () => {
+      code = await addParticipant({ name: name.trim(), school: sch, teamId });
+    });
+    setBusy(false);
+    if (!done) return;
+    setAdded({ name: name.trim(), code });
     setName("");
     setError("");
   }
@@ -730,13 +776,19 @@ function AddParticipant({ teams }: { teams: Team[] }) {
         </label>
         <SchoolSelect label="학교" value={sch} onChange={setSch} />
         <TeamSelect label="팀" teams={teams} value={teamId} onChange={setTeamId} />
-        <button type="submit" className={`${primaryBtn} h-[2.4rem]`}>
-          추가
+        <button type="submit" disabled={busy} className={`${primaryBtn} h-[2.4rem]`}>
+          {busy ? "추가 중…" : "추가"}
         </button>
       </div>
       {error && (
         <p role="alert" className="mt-2 text-sm text-[var(--g-red)]">
           {error}
+        </p>
+      )}
+      {added && (
+        <p role="status" className="mt-3 text-sm">
+          {added.name}님을 추가했습니다. 참가자 코드 <span className="font-mono text-base font-semibold tracking-wider">{added.code}</span>
+          를 전달해 주세요.
         </p>
       )}
     </form>
@@ -784,16 +836,16 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(team);
 
-  function save(e: FormEvent) {
+  async function save(e: FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) return;
-    setTeam(team.id, {
+    const saved = await setTeam(team.id, {
       name: form.name.trim(),
       table: form.table.trim(),
       project: form.project.trim(),
       desc: form.desc.trim(),
     });
-    setEditing(false);
+    if (saved) setEditing(false);
   }
 
   const field = (key: keyof Omit<Team, "id">, label: string) => (
@@ -896,13 +948,11 @@ function AddTeam() {
   const [project, setProject] = useState("");
   const [error, setError] = useState("");
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) return setError("팀명을 입력해 주세요.");
-    updateFestival((s) => ({
-      ...s,
-      teams: [...s.teams, { id: newId("t"), name: name.trim(), table: table.trim(), project: project.trim(), desc: "" }],
-    }));
+    const done = await run(() => addTeam({ name: name.trim(), table: table.trim(), project: project.trim(), desc: "" }));
+    if (!done) return;
     setName("");
     setTable("");
     setProject("");
@@ -970,7 +1020,7 @@ function AttendancePanel({ state }: { state: FestivalState }) {
   return (
     <div className="grid gap-8">
       <div className="grid gap-4 md:grid-cols-2">
-        <CodeCard code={state.attendanceCode} />
+        <CodeCard />
         <section aria-labelledby="att-rate" className="border border-fg/15 p-5">
           <Label id="att-rate">출석률</Label>
           <p className="mt-2 font-mono text-4xl font-semibold tabular-nums">{total ? Math.round((present / total) * 100) : 0}%</p>
@@ -1023,12 +1073,10 @@ function AttendancePanel({ state }: { state: FestivalState }) {
                     {here < g.people.length && (
                       <button
                         type="button"
-                        onClick={() =>
-                          updateFestival((s) => ({
-                            ...s,
-                            participants: s.participants.map((p) => (g.people.some((x) => x.id === p.id) ? { ...p, checkedIn: true } : p)),
-                          }))
-                        }
+                        onClick={() => {
+                          const ids = g.people.filter((p) => !p.checkedIn).map((p) => p.id);
+                          void run(() => setAttendance(ids, true), optimisticPatch.attendance(ids, true));
+                        }}
                         className={`${smallBtn} px-2 py-1 text-xs`}
                       >
                         전원 출석
@@ -1047,7 +1095,9 @@ function AttendancePanel({ state }: { state: FestivalState }) {
                         <Status on={p.checkedIn} />
                         <button
                           type="button"
-                          onClick={() => setParticipant(p.id, { checkedIn: !p.checkedIn })}
+                          onClick={() =>
+                            void run(() => setAttendance([p.id], !p.checkedIn), optimisticPatch.attendance([p.id], !p.checkedIn))
+                          }
                           className={`${smallBtn} w-20 px-2 py-1 text-xs`}
                         >
                           {p.checkedIn ? "출석 취소" : "출석 처리"}
@@ -1065,20 +1115,21 @@ function AttendancePanel({ state }: { state: FestivalState }) {
   );
 }
 
-function CodeCard({ code }: { code: string }) {
+function CodeCard() {
   const id = useId();
   const [value, setValue] = useState("");
+  const venue = useVenueCode();
+  const code = venue.isPending ? "····" : (venue.data ?? "닫힘");
 
-  function apply(next: string) {
-    updateFestival((s) => ({ ...s, attendanceCode: next }));
-    setValue("");
+  async function apply(next: string | null) {
+    if (await run(() => setVenueCode(next), optimisticPatch.venueCode(next))) setValue("");
   }
 
   return (
     <section aria-labelledby={`${id}-title`} className="border border-fg/15 bg-fg/[0.04] p-5">
       <Label id={`${id}-title`}>출석 코드</Label>
       <p className="mt-2 font-mono text-5xl font-semibold tracking-[0.3em]">{code}</p>
-      <p className="mt-1 text-xs text-fg/50">현장 화면에 띄워 주세요. 바꾸면 참가자 화면에 바로 적용됩니다.</p>
+      <p className="mt-1 text-xs text-fg/50">현장 화면에 띄워 주세요. 바꾸면 바로 적용됩니다.</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -1105,6 +1156,11 @@ function CodeCard({ code }: { code: string }) {
         <button type="button" onClick={() => apply(String(Math.floor(Math.random() * 10000)).padStart(4, "0"))} className={smallBtn}>
           랜덤 생성
         </button>
+        {venue.data && (
+          <button type="button" onClick={() => apply(null)} className={smallBtn} title="코드를 지우면 참가자가 출석할 수 없습니다">
+            출석 닫기
+          </button>
+        )}
       </form>
     </section>
   );
@@ -1155,7 +1211,7 @@ function InvestStatusPanel({ state }: { state: FestivalState }) {
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => updateFestival((s) => ({ ...s, ticks: [...s.ticks, liveTotals(s)] }))}
+              onClick={() => updateFestival((s) => ({ ...s, ticks: [...s.ticks, liveTotals(state)] }))}
               disabled={!changed}
               className={`${primaryBtn} px-5 py-2.5 text-base`}
             >
