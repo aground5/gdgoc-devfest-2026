@@ -48,13 +48,13 @@ export default function Home() {
               >
                 {event.theme}
               </h1>
-              <p className="mt-3 text-base font-bold text-fg/70 sm:text-lg">{event.title}</p>
+              <p className="mt-3 text-base font-bold text-muted sm:text-lg">{event.title}</p>
 
               {/* At-a-glance info */}
               <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-fg/15 pt-5 xl:grid-cols-4">
                 {summary.map((s) => (
                   <div key={s.label}>
-                    <dt className="text-xs text-fg/55">{s.label}</dt>
+                    <dt className="text-xs text-subtle">{s.label}</dt>
                     <dd className="mt-1 text-sm font-bold sm:text-base">{s.value}</dd>
                   </div>
                 ))}
@@ -70,9 +70,9 @@ export default function Home() {
       </section>
 
       <footer className="mt-8 border-t border-fg/10 bg-page">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-xs text-fg/50 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-xs text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <span className="flex items-center gap-2">
-            <GdgLogo className="h-3 w-6 text-fg/70" />
+            <GdgLogo className="h-3 w-6 text-muted" />
             {event.series} · {event.theme}
           </span>
           <span className="flex items-center gap-2">

@@ -14,11 +14,12 @@ export const school = (key: SchoolKey) => schools.find((s) => s.key === key) as 
 export const schoolsOf = (people: Participant[]) => schools.filter((s) => people.some((p) => p.school === s.key));
 
 // Form fields stay at 16px text: iOS Safari zooms the page into any smaller field on focus.
+// Field borders are fg/50 (about 3.3:1), enough to see where a field is (WCAG 1.4.11).
 export const fieldCls =
-  "mt-1.5 w-full border border-fg/20 bg-fg/[0.04] px-3 py-2.5 text-base text-fg placeholder:text-fg/30 outline-none transition focus:border-fg/60";
+  "mt-1.5 w-full border border-fg/50 bg-fg/[0.04] px-3 py-2.5 text-base text-fg placeholder:text-subtle outline-none transition focus:border-fg";
 
 export const selectCls =
-  "border border-fg/20 bg-page px-2 py-2 text-base sm:text-sm text-fg outline-none transition focus:border-fg/60";
+  "border border-fg/50 bg-page px-2 py-2 text-base sm:text-sm text-fg outline-none transition focus:border-fg";
 
 export const smallBtn = "border border-fg/25 px-3 py-1.5 text-sm font-bold transition hover:bg-fg/10 disabled:opacity-30";
 
@@ -26,7 +27,7 @@ export const primaryBtn = "bg-fg px-4 py-2 text-sm font-bold text-page transitio
 
 export function Label({ id, children }: { id?: string; children: ReactNode }) {
   return (
-    <h2 id={id} className="tabular-nums text-xs font-bold uppercase tracking-[0.2em] text-fg/60">
+    <h2 id={id} className="tabular-nums text-xs font-bold uppercase tracking-[0.2em] text-subtle">
       {children}
     </h2>
   );
@@ -56,7 +57,7 @@ export function Status({ on }: { on: boolean }) {
       출석
     </span>
   ) : (
-    <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-fg/40">
+    <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-subtle">
       <span className="h-1.5 w-1.5 bg-fg/30" />
       미출석
     </span>
@@ -157,7 +158,7 @@ export function ScreenFrame<T extends string>({
                   aria-controls="screen-panel"
                   tabIndex={on ? 0 : -1}
                   onClick={() => onTab(t.id)}
-                  className={`relative shrink-0 px-3 py-3 text-sm font-bold transition sm:text-base ${on ? "text-fg" : "text-fg/50 hover:text-fg/80"}`}
+                  className={`relative shrink-0 px-3 py-3 text-sm font-bold transition sm:text-base ${on ? "text-fg" : "text-subtle hover:text-fg"}`}
                 >
                   {t.label}
                   {on && <span className="absolute inset-x-3 bottom-0 h-[3px] bg-fg" />}

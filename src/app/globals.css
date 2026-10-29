@@ -19,6 +19,11 @@
   --warn: var(--kaist-main); /* changed since, needs attention */
   --accent: var(--yu-main); /* highlighted series (my team in the chart) */
 
+  /* Secondary text, as black/white mixes with a fixed contrast instead of translucent fg:
+     --muted >= 7:1 (supporting copy), --subtle >= 4.5:1 (labels, meta), also on surfaces. */
+  --muted: color-mix(in srgb, var(--black) 80%, var(--white));
+  --subtle: color-mix(in srgb, var(--black) 68%, var(--white));
+
   /* Light theme (default) */
   --page: var(--white);
   --surface: color-mix(in srgb, var(--black) 6%, var(--white));
@@ -42,6 +47,8 @@
     --on-raised: var(--black);
     --danger: var(--white);
     --accent: var(--kaist-main);
+    --muted: color-mix(in srgb, var(--white) 75%, var(--black));
+    --subtle: color-mix(in srgb, var(--white) 58%, var(--black));
     color-scheme: dark;
   }
 }
@@ -56,6 +63,8 @@
   --on-raised: var(--black);
   --danger: var(--white);
   --accent: var(--kaist-main);
+  --muted: color-mix(in srgb, var(--white) 75%, var(--black));
+  --subtle: color-mix(in srgb, var(--white) 58%, var(--black));
   color-scheme: dark;
 }
 
@@ -75,6 +84,8 @@
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
   /* Fixed (not theme-flipped) guide black and white, e.g. the content-wise header bar */
   --color-ink: var(--black);
   --color-paper: var(--white);
@@ -138,6 +149,8 @@ html {
 .ink-bar {
   --fg: var(--white);
   --page: var(--black);
+  --muted: color-mix(in srgb, var(--white) 75%, var(--black));
+  --subtle: color-mix(in srgb, var(--white) 58%, var(--black));
   background: var(--black);
   color: var(--fg);
   color-scheme: dark;

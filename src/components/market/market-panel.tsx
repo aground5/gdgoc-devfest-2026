@@ -47,15 +47,15 @@ export function MarketPanel({ state, entries, myTeamId }: { state: FestivalState
       {myTeam ? (
         <MarketEditor key={mine?.id ?? "new"} team={myTeam} entry={mine} />
       ) : (
-        <p className="border border-fg/15 p-5 text-sm text-fg/60">팀이 배정되면 우리 팀 데모를 올릴 수 있습니다.</p>
+        <p className="border border-fg/15 p-5 text-sm text-subtle">팀이 배정되면 우리 팀 데모를 올릴 수 있습니다.</p>
       )}
 
       <section aria-labelledby={`${id}-title`}>
         <div className="flex items-baseline justify-between gap-4">
           <Label id={`${id}-title`}>데모 마켓</Label>
-          <span className="tabular-nums text-xs text-fg/50">{shown.length}개 공개</span>
+          <span className="tabular-nums text-xs text-subtle">{shown.length}개 공개</span>
         </div>
-        <p className="mt-2 text-sm text-fg/60">다른 팀의 서비스를 직접 써 보세요. 테스트 방법은 자세히 보기에 있습니다.</p>
+        <p className="mt-2 text-sm text-subtle">다른 팀의 서비스를 직접 써 보세요. 테스트 방법은 자세히 보기에 있습니다.</p>
         <label htmlFor={`${id}-q`} className="sr-only">
           데모 검색
         </label>
@@ -80,7 +80,7 @@ export function MarketPanel({ state, entries, myTeamId }: { state: FestivalState
           ))}
         </ul>
         {shown.length === 0 && (
-          <p className="py-6 text-sm text-fg/50">{query ? "검색 결과가 없습니다." : "아직 공개된 데모가 없습니다."}</p>
+          <p className="py-6 text-sm text-subtle">{query ? "검색 결과가 없습니다." : "아직 공개된 데모가 없습니다."}</p>
         )}
       </section>
     </div>

@@ -59,7 +59,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
     <div className="grid gap-8">
       <section aria-labelledby={`${id}-tpl`} className="border border-fg/15 p-5">
         <Label id={`${id}-tpl`}>1. 양식 내려받기</Label>
-        <p className="mt-2 text-sm text-fg/60">지금 등록된 팀과 참가자가 채워진 양식입니다. 이 파일을 고쳐서 다시 올리면 됩니다.</p>
+        <p className="mt-2 text-sm text-subtle">지금 등록된 팀과 참가자가 채워진 양식입니다. 이 파일을 고쳐서 다시 올리면 됩니다.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="button" onClick={() => void downloadXlsx(people, teams)} className={primaryBtn}>
             엑셀 (.xlsx, 팀·참가자 시트)
@@ -71,7 +71,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
             참가자 CSV
           </button>
         </div>
-        <ul className="mt-4 grid gap-1 text-xs text-fg/50">
+        <ul className="mt-4 grid gap-1 text-xs text-subtle">
           <li>· 팀은 테이블로 구분합니다. 같은 테이블이면 수정, 새 테이블이면 추가됩니다.</li>
           <li>
             · 참가자 코드는 적지 않습니다. 새 참가자는 코드가 자동으로 만들어지고, 이미 있는 참가자(이름 + 학교가 같은 사람)는 기존 코드를
@@ -89,7 +89,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
           className="mt-3 flex cursor-pointer flex-col items-center justify-center gap-1 border border-dashed border-fg/30 px-4 py-8 text-center text-sm transition hover:bg-fg/[0.04]"
         >
           <span className="font-bold">.xlsx 파일 또는 .csv 파일(팀·참가자) 선택</span>
-          <span className="text-xs text-fg/50">{files.length ? files.join(", ") : "여러 개를 함께 고를 수 있습니다"}</span>
+          <span className="text-xs text-subtle">{files.length ? files.join(", ") : "여러 개를 함께 고를 수 있습니다"}</span>
         </label>
         <input
           id={`${id}-file`}
@@ -140,7 +140,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
               ["참가자 수정", p.person.updated.length],
             ].map(([k, v]) => (
               <div key={k} className="bg-page px-4 py-3">
-                <dt className="text-xs text-fg/50">{k}</dt>
+                <dt className="text-xs text-subtle">{k}</dt>
                 <dd className="mt-1 text-lg font-bold tabular-nums">{v}</dd>
               </div>
             ))}
@@ -149,7 +149,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
           {p.errors.length > 0 && (
             <div role="alert" className="mt-4 border border-danger/50 bg-danger/[0.06] p-4 text-sm">
               <p className="font-bold text-danger">고쳐야 적용할 수 있습니다 ({p.errors.length})</p>
-              <ul className="mt-2 grid gap-1 text-fg/80">
+              <ul className="mt-2 grid gap-1 text-muted">
                 {p.errors.slice(0, 30).map((e, i) => (
                   <li key={i}>· {e}</li>
                 ))}
@@ -168,7 +168,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
               <ChangeList danger title="삭제되는 참가자" items={p.person.deleted.map((x) => x.name)} />
             </>
           )}
-          <p className="mt-3 text-xs text-fg/40">
+          <p className="mt-3 text-xs text-subtle">
             변경 없음: 팀 {p.team.same} · 참가자 {p.person.same}
             {deletes > 0 && " · 삭제되는 참가자의 출석과 투자 기록도 함께 지워집니다."}
           </p>
@@ -213,7 +213,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
               취소
             </button>
           </div>
-          <p className="mt-2 text-xs text-fg/40">전체가 한 번에 적용되고, 중간에 문제가 생기면 아무것도 바뀌지 않습니다.</p>
+          <p className="mt-2 text-xs text-subtle">전체가 한 번에 적용되고, 중간에 문제가 생기면 아무것도 바뀌지 않습니다.</p>
         </section>
       )}
     </div>
@@ -227,7 +227,7 @@ function ChangeList({ title, items, danger }: { title: string; items: string[]; 
       <summary className={`cursor-pointer text-sm font-bold ${danger ? "text-danger" : ""}`}>
         {title} {items.length}
       </summary>
-      <ul className="mt-2 grid gap-1 text-sm text-fg/70 sm:grid-cols-2">
+      <ul className="mt-2 grid gap-1 text-sm text-muted sm:grid-cols-2">
         {items.slice(0, 100).map((x, i) => (
           <li key={i}>{x}</li>
         ))}
