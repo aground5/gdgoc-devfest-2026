@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useRef, useSyncExternalStore, type ReactNode } from "react";
 import { GdgLogo, GoogleBar, SchoolMark, schools, type School } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
-import { event, type Participant, type SchoolKey } from "@/data/guide";
+import { event } from "@/data/guide";
+import type { Participant, SchoolKey } from "@/lib/festival/types";
 
 export const school = (key: SchoolKey) => schools.find((s) => s.key === key) as School;
 
@@ -92,6 +93,7 @@ export function useHashTab<T extends string>(tabs: readonly ScreenTab<T>[], fall
 // Page frame: header with brand, theme toggle, exit link, and an ARIA tab bar.
 export function ScreenFrame<T extends string>({
   badge,
+  who,
   tabs,
   active,
   onTab,
@@ -99,6 +101,7 @@ export function ScreenFrame<T extends string>({
   children,
 }: {
   badge?: string;
+  who?: string; // signed-in person's name
   tabs: readonly ScreenTab<T>[];
   active: T;
   onTab: (id: T) => void;
@@ -128,6 +131,7 @@ export function ScreenFrame<T extends string>({
               {badge && <span className="shrink-0 bg-fg px-1.5 py-0.5 text-[11px] font-bold tracking-normal text-page">{badge}</span>}
             </p>
             <div className="flex shrink-0 items-center gap-2">
+              {who && <span className="hidden text-sm text-fg/70 md:inline">{who}님</span>}
               {actions}
               <ThemeToggle className="h-10 w-10" />
               <Link
@@ -136,6 +140,11 @@ export function ScreenFrame<T extends string>({
               >
                 나가기 <span aria-hidden="true">✕</span>
               </Link>
+              <form action="/auth/signout" method="post">
+                <button type="submit" className="hidden h-10 border border-fg/25 px-3 text-sm font-bold transition hover:bg-fg/10 sm:block">
+                  로그아웃
+                </button>
+              </form>
               <GdgLogo className="ml-2 hidden h-4 w-8 sm:block" title={event.series} />
             </div>
           </div>

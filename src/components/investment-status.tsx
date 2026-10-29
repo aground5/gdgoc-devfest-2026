@@ -5,8 +5,8 @@
 // participants never see live totals.
 
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import type { Team } from "@/data/guide";
-import { clockLabel, timeLabel, won, type FestivalState, type Snapshot } from "@/lib/festival-store";
+import { clockLabel, timeLabel, won } from "@/lib/festival/selectors";
+import type { FestivalState, Snapshot, Team } from "@/lib/festival/types";
 import { Label } from "./festival-ui";
 
 // Compact Korean money: 2,150,000 -> 215만원
