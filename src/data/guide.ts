@@ -103,6 +103,27 @@ export const faqs: Faq[] = [
   { q: "시상 내역은요?", a: "대상·최우수상·우수상·장려상·인기상(개미 투자를 가장 많이 받은 팀)을 계획하고 있으며, 상세 내역은 추후 공지됩니다." },
 ];
 
+// Each chapter's Instagram and website. Only Yonsei runs its own site; the others
+// link to their official chapter page on gdg.community.dev.
+export const chapterLinks: Record<SchoolKey, { instagram: string; website: string }> = {
+  ku: {
+    instagram: "https://www.instagram.com/gdg.koreauniv/",
+    website: "https://gdg.community.dev/gdg-on-campus-korea-university-seoul-south-korea/",
+  },
+  yu: {
+    instagram: "https://www.instagram.com/gdg.yonseiuniv/",
+    website: "https://gdgoc.yonsei.ac.kr/",
+  },
+  skku: {
+    instagram: "https://www.instagram.com/gdg.skku/",
+    website: "https://gdg.community.dev/gdg-on-campus-sungkyunkwan-university-seoul-south-korea/",
+  },
+  kaist: {
+    instagram: "https://www.instagram.com/gdg.on.campus_kaist/",
+    website: "https://gdg.community.dev/gdg-on-campus-korea-advanced-institute-of-science-technology-daejeon-south-korea/",
+  },
+};
+
 export const venueInfo = [
   { label: "장소", value: "Google for Startups Campus" },
   { label: "주소", value: "상세 주소는 추후 공지됩니다" },
