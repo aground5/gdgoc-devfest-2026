@@ -4,7 +4,20 @@
 // The order book and the trade tape are public market data; everything else here
 // (cash, holdings, open orders, fills) is only the viewer's own.
 
-import { useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  CandlestickSeries,
+  ColorType,
+  CrosshairMode,
+  HistogramSeries,
+  LineStyle,
+  createChart,
+  type IChartApi,
+  type IPriceLine,
+  type ISeriesApi,
+  type Time,
+  type UTCTimestamp,
+} from "lightweight-charts";
 import type { Participant, Team } from "@/data/guide";
 import { clockLabel, updateFestival, won, type FestivalState } from "@/lib/festival-store";
 import {
@@ -25,6 +38,7 @@ import {
   sharesOf,
   volumeOf,
   withListings,
+  type Candle,
   type Market,
   type Side,
 } from "@/lib/stock-engine";
@@ -38,8 +52,6 @@ const UP = "var(--g-red)";
 const DOWN = "var(--g-blue)";
 const dirColor = (d: number) => (d > 0 ? UP : d < 0 ? DOWN : "var(--fg)");
 const arrow = (d: number) => (d > 0 ? "▲" : d < 0 ? "▼" : "–");
-// Candle color; a flat candle (보합) is neutral
-const candleColor = (o: number, c: number) => (c > o ? UP : c < o ? DOWN : "color-mix(in srgb, var(--fg) 45%, transparent)");
 
 const ids = (teams: Team[]) => teams.map((t) => t.id);
 
@@ -281,7 +293,7 @@ function StockHeader({ market, team }: { market: Market; team: Team }) {
   );
 }
 
-/* ---------- Candle chart ---------- */
+/* ---------- Candle chart (TradingView Lightweight Charts) ---------- */
 
 const BUCKETS = [
   { ms: 5 * 60_000, label: "5분" },
@@ -289,57 +301,184 @@ const BUCKETS = [
   { ms: 30 * 60_000, label: "30분" },
 ];
 const CH = 300;
-const CM = { top: 12, right: 64, bottom: 24, left: 8 };
 
-function useWidth() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [w, setW] = useState(0);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => setW(Math.round(e.contentRect.width)));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  return [ref, w] as const;
+// The chart draws on a canvas, so theme colors are read from the CSS variables
+// as concrete values and re-applied when the theme changes.
+type ChartColors = { up: string; down: string; flat: string; text: string; grid: string; line: string; page: string; font: string };
+
+function alpha(color: string, a: number) {
+  const m = /^#([0-9a-f]{6})$/i.exec(color.trim());
+  if (!m) return color;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 }
+
+function readColors(): ChartColors {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (name: string) => cs.getPropertyValue(name).trim();
+  const fg = v("--fg");
+  return {
+    up: v("--g-red"),
+    down: v("--g-blue"),
+    flat: alpha(fg, 0.45),
+    text: alpha(fg, 0.55),
+    grid: alpha(fg, 0.07),
+    line: alpha(fg, 0.35),
+    page: v("--page"),
+    font: getComputedStyle(document.body).getPropertyValue("--font-geist-mono").trim() || "ui-monospace, monospace",
+  };
+}
+
+function onThemeChange(cb: () => void) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  mq.addEventListener("change", cb);
+  window.addEventListener("themechange", cb);
+  return () => {
+    mq.removeEventListener("change", cb);
+    window.removeEventListener("themechange", cb);
+  };
+}
+
+const toTime = (ms: number) => (ms / 1000) as UTCTimestamp;
+const fromTime = (t: Time) => (t as number) * 1000;
+
+type Hover = { c: Candle; x: number; w: number };
 
 function CandleChart({ market, teamId }: { market: Market; teamId: string }) {
   const [bucket, setBucket] = useState(BUCKETS[1].ms);
-  const [hover, setHover] = useState<number | null>(null);
-  const [ref, width] = useWidth();
+  const [hover, setHover] = useState<Hover | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  const api = useRef<{
+    chart: IChartApi;
+    candle: ISeriesApi<"Candlestick">;
+    volume: ISeriesApi<"Histogram">;
+    ipo: IPriceLine;
+    colors: ChartColors;
+    byTime: Map<number, Candle>;
+  } | null>(null);
 
-  const all = candles(
-    market.trades.filter((t) => t.teamId === teamId),
-    bucket,
+  const data = useMemo(
+    () =>
+      candles(
+        market.trades.filter((t) => t.teamId === teamId),
+        bucket,
+      ),
+    [market.trades, teamId, bucket],
   );
-  const innerW = Math.max(0, width - CM.left - CM.right);
-  const slot = 12; // px per candle
-  const data = all.slice(-Math.max(1, Math.floor(innerW / slot)));
   const last = lastPrice(market, teamId);
+  // Latest rows for the chart callbacks
+  const dataRef = useRef(data);
+  const paintRef = useRef<() => void>(() => {});
 
-  const priceH = (CH - CM.top - CM.bottom) * 0.74;
-  const volTop = CM.top + priceH + 10;
-  const volH = CH - CM.bottom - volTop;
-  const hi = Math.max(IPO_PRICE, last, ...data.map((c) => c.h));
-  const lo = Math.min(IPO_PRICE, last, ...data.map((c) => c.l));
-  const pad = Math.max(TICK * 2, (hi - lo) * 0.08);
-  const yMax = hi + pad;
-  const yMin = Math.max(0, lo - pad);
-  const y = (v: number) => CM.top + ((yMax - v) / (yMax - yMin)) * priceH;
-  const vMax = Math.max(1, ...data.map((c) => c.v));
-  const step = data.length ? innerW / data.length : innerW;
-  const x = (i: number) => CM.left + step * i + step / 2;
-  const bodyW = Math.max(3, Math.min(9, step * 0.6));
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round((yMin + (yMax - yMin) * f) / TICK) * TICK);
+  // Create the chart once
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const colors = readColors();
+    const chart = createChart(el, {
+      autoSize: true,
+      localization: {
+        locale: "ko-KR",
+        timeFormatter: (t: Time) => clockLabel(fromTime(t)),
+        priceFormatter: (p: number) => num(Math.round(p)),
+      },
+      timeScale: {
+        timeVisible: true,
+        barSpacing: 10,
+        rightOffset: 2,
+        tickMarkFormatter: (t: Time) => clockLabel(fromTime(t)),
+      },
+      rightPriceScale: { scaleMargins: { top: 0.08, bottom: 0.28 } },
+      crosshair: { mode: CrosshairMode.Normal },
+      // Let the page scroll vertically on touch screens
+      handleScroll: { vertTouchDrag: false },
+    });
+    const candle = chart.addSeries(CandlestickSeries, {
+      priceFormat: { type: "price", precision: 0, minMove: TICK },
+      borderVisible: false,
+    });
+    const volume = chart.addSeries(HistogramSeries, {
+      priceScaleId: "",
+      priceFormat: { type: "volume" },
+      lastValueVisible: false,
+      priceLineVisible: false,
+    });
+    volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+    const ipo = candle.createPriceLine({
+      price: IPO_PRICE,
+      lineStyle: LineStyle.Dashed,
+      lineWidth: 1,
+      axisLabelVisible: false,
+      title: "공모가",
+    });
+    api.current = { chart, candle, volume, ipo, colors, byTime: new Map() };
 
-  function onMove(e: PointerEvent<SVGRectElement>) {
-    const box = e.currentTarget.getBoundingClientRect();
-    const i = Math.floor(((e.clientX - box.left) / box.width) * data.length);
-    setHover(data.length ? Math.max(0, Math.min(data.length - 1, i)) : null);
-  }
+    function paint() {
+      const a = api.current;
+      if (!a) return;
+      const c = (a.colors = readColors());
+      chart.applyOptions({
+        layout: { background: { type: ColorType.Solid, color: c.page }, textColor: c.text, fontFamily: c.font, fontSize: 10 },
+        grid: { vertLines: { visible: false }, horzLines: { color: c.grid } },
+        rightPriceScale: { borderColor: c.grid },
+        timeScale: { borderColor: c.grid },
+        crosshair: {
+          vertLine: { color: c.line, labelBackgroundColor: c.text },
+          horzLine: { color: c.line, labelBackgroundColor: c.text },
+        },
+      });
+      candle.applyOptions({ upColor: c.up, downColor: c.down, wickUpColor: c.up, wickDownColor: c.down });
+      ipo.applyOptions({ color: c.line, axisLabelColor: c.line });
+      setSeries();
+    }
 
-  const h = hover !== null ? data[hover] : null;
+    function setSeries() {
+      const a = api.current;
+      if (!a) return;
+      const { up, down, flat } = a.colors;
+      const rows = dataRef.current;
+      a.byTime = new Map(rows.map((r) => [r.t, r]));
+      a.candle.setData(
+        rows.map((r) => {
+          // A flat candle (보합) is neutral
+          const color = r.c > r.o ? up : r.c < r.o ? down : flat;
+          return { time: toTime(r.t), open: r.o, high: r.h, low: r.l, close: r.c, color, wickColor: color };
+        }),
+      );
+      a.volume.setData(
+        rows.map((r) => ({
+          time: toTime(r.t),
+          value: r.v,
+          color: alpha(r.c > r.o ? up : r.c < r.o ? down : flat, 0.35),
+        })),
+      );
+    }
+    paintRef.current = setSeries;
+
+    chart.subscribeCrosshairMove((p) => {
+      const a = api.current;
+      const c = p.time !== undefined && p.point ? a?.byTime.get(fromTime(p.time)) : undefined;
+      setHover(c && p.point ? { c, x: p.point.x, w: el.clientWidth } : null);
+    });
+
+    paint();
+    const off = onThemeChange(paint);
+    return () => {
+      off();
+      chart.remove();
+      api.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    dataRef.current = data;
+    paintRef.current();
+  }, [data]);
+
+  // A new stock or interval starts from a full view; live updates keep the user's zoom
+  useEffect(() => {
+    api.current?.chart.timeScale().fitContent();
+  }, [teamId, bucket]);
 
   return (
     <section aria-labelledby="chart-title">
@@ -351,10 +490,7 @@ function CandleChart({ market, teamId }: { market: Market; teamId: string }) {
               key={b.ms}
               type="button"
               aria-pressed={bucket === b.ms}
-              onClick={() => {
-                setBucket(b.ms);
-                setHover(null);
-              }}
+              onClick={() => setBucket(b.ms)}
               className={`border px-2.5 py-1 text-xs font-semibold transition ${bucket === b.ms ? "border-fg bg-fg text-page" : "border-fg/20 text-fg/70 hover:border-fg/50"}`}
             >
               {b.label}
@@ -363,111 +499,34 @@ function CandleChart({ market, teamId }: { market: Market; teamId: string }) {
         </div>
       </div>
 
-      <div ref={ref} className="relative border border-fg/10">
-        {data.length === 0 ? (
-          <div className="grid place-items-center px-4 text-center text-sm text-fg/60" style={{ height: CH }}>
+      <div className="relative border border-fg/10">
+        <div ref={box} style={{ height: CH }} role="img" aria-label={`가격 차트, 현재가 ${num(last)}원`} />
+
+        {data.length === 0 && (
+          <div className="absolute inset-0 grid place-items-center bg-page px-4 text-center text-sm text-fg/60">
             아직 체결이 없습니다. 공모가 {num(IPO_PRICE)}원에 첫 거래를 기다리고 있습니다.
           </div>
-        ) : (
-          width > 0 && (
-            <svg width={width} height={CH} className="block text-fg" role="img" aria-label={`가격 차트, 현재가 ${num(last)}원`}>
-              {ticks.map((v) => (
-                <g key={v}>
-                  <line x1={CM.left} x2={width - CM.right} y1={y(v)} y2={y(v)} stroke="currentColor" strokeOpacity={0.07} />
-                  <text x={width - CM.right + 6} y={y(v)} dy="0.32em" className="fill-current font-mono text-[10px]" fillOpacity={0.5}>
-                    {num(v)}
-                  </text>
-                </g>
-              ))}
-
-              {/* IPO price reference */}
-              <line x1={CM.left} x2={width - CM.right} y1={y(IPO_PRICE)} y2={y(IPO_PRICE)} stroke="currentColor" strokeOpacity={0.35} />
-              <text x={CM.left + 4} y={y(IPO_PRICE) - 4} className="fill-current text-[10px]" fillOpacity={0.55}>
-                공모가
-              </text>
-
-              {/* Volume */}
-              <line x1={CM.left} x2={width - CM.right} y1={volTop + volH} y2={volTop + volH} stroke="currentColor" strokeOpacity={0.2} />
-              {data.map((c, i) => {
-                const vh = (c.v / vMax) * volH;
-                return (
-                  <rect
-                    key={`v${c.t}`}
-                    x={x(i) - bodyW / 2}
-                    y={volTop + volH - vh}
-                    width={bodyW}
-                    height={Math.max(1, vh)}
-                    fill={candleColor(c.o, c.c)}
-                    fillOpacity={hover === i ? 0.6 : 0.3}
-                  />
-                );
-              })}
-
-              {/* Candles */}
-              {data.map((c, i) => {
-                const color = candleColor(c.o, c.c);
-                const top = y(Math.max(c.o, c.c));
-                const bottom = y(Math.min(c.o, c.c));
-                return (
-                  <g key={c.t} opacity={hover === null || hover === i ? 1 : 0.55}>
-                    <line x1={x(i)} x2={x(i)} y1={y(c.h)} y2={y(c.l)} stroke={color} strokeWidth={1} />
-                    <rect x={x(i) - bodyW / 2} y={top} width={bodyW} height={Math.max(1.5, bottom - top)} fill={color} />
-                  </g>
-                );
-              })}
-
-              {/* Current price tag */}
-              <line x1={CM.left} x2={width - CM.right} y1={y(last)} y2={y(last)} stroke="currentColor" strokeOpacity={0.6} strokeWidth={1} />
-              <rect x={width - CM.right + 2} y={y(last) - 9} width={CM.right - 4} height={18} className="fill-current" />
-              <text x={width - CM.right + 6} y={y(last)} dy="0.32em" className="fill-[var(--page)] font-mono text-[10px] font-semibold">
-                {num(last)}
-              </text>
-
-              {/* Time axis */}
-              {data.map((c, i) =>
-                i % Math.max(1, Math.ceil(data.length / 6)) === 0 ? (
-                  <text key={`x${c.t}`} x={x(i)} y={CH - 6} textAnchor="middle" className="fill-current font-mono text-[10px]" fillOpacity={0.5}>
-                    {clockLabel(c.t)}
-                  </text>
-                ) : null,
-              )}
-
-              {hover !== null && (
-                <line x1={x(hover)} x2={x(hover)} y1={CM.top} y2={volTop + volH} stroke="currentColor" strokeOpacity={0.3} />
-              )}
-              <rect
-                x={CM.left}
-                y={CM.top}
-                width={innerW}
-                height={volTop + volH - CM.top}
-                fill="transparent"
-                onPointerMove={onMove}
-                onPointerDown={onMove}
-                onPointerLeave={() => setHover(null)}
-              />
-            </svg>
-          )
         )}
 
-        {h && (
+        {hover && (
           <div
             role="status"
             className="pointer-events-none absolute top-2 z-10 w-44 border border-fg/15 bg-page px-3 py-2 font-mono text-xs shadow-lg"
-            style={x(hover!) > width / 2 ? { left: Math.max(4, x(hover!) - 188) } : { left: Math.min(width - 180, x(hover!) + 12) }}
+            style={hover.x > hover.w / 2 ? { left: Math.max(4, hover.x - 188) } : { left: Math.min(hover.w - 180, hover.x + 12) }}
           >
-            <p className="mb-1 text-[11px] text-fg/50">{clockLabel(h.t)}</p>
-            <p className="text-sm font-semibold tabular-nums" style={{ color: dirColor(h.c - h.o) }}>
-              {num(h.c)}원
+            <p className="mb-1 text-[11px] text-fg/50">{clockLabel(hover.c.t)}</p>
+            <p className="text-sm font-semibold tabular-nums" style={{ color: dirColor(hover.c.c - hover.c.o) }}>
+              {num(hover.c.c)}원
             </p>
             <dl className="mt-1 grid grid-cols-2 gap-x-3 tabular-nums text-fg/70">
               <dt>시가</dt>
-              <dd className="text-right">{num(h.o)}</dd>
+              <dd className="text-right">{num(hover.c.o)}</dd>
               <dt>고가</dt>
-              <dd className="text-right">{num(h.h)}</dd>
+              <dd className="text-right">{num(hover.c.h)}</dd>
               <dt>저가</dt>
-              <dd className="text-right">{num(h.l)}</dd>
+              <dd className="text-right">{num(hover.c.l)}</dd>
               <dt>거래량</dt>
-              <dd className="text-right">{num(h.v)}주</dd>
+              <dd className="text-right">{num(hover.c.v)}주</dd>
             </dl>
           </div>
         )}
