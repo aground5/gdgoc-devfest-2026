@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Google_Sans, Noto_Sans_KR } from "next/font/google";
+import { PageTransition } from "@/components/page-transition";
 import "./globals.css";
 
 // The design guide sets everything in Google Sans (Latin) + a Korean companion, Regular and Bold only.
@@ -39,6 +40,7 @@ export default function RootLayout({
       </head>
       <body className={`${googleSans.variable} ${notoSansKr.variable} font-sans antialiased`}>
         {children}
+        <PageTransition />
       </body>
     </html>
   );
