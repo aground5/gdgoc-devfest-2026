@@ -27,7 +27,8 @@ const HINTS: Record<string, string> = {
   unchanged: "마지막 발행 이후 바뀐 투자가 없습니다.",
   dup_table: "파일에 같은 팀 테이블이 두 번 이상 있습니다.",
   dup_person: "파일에 이름과 학교가 같은 참가자가 두 번 이상 있습니다.",
-  ambiguous_person: "이름과 학교가 같은 참가자가 이미 여러 명 있어 누구인지 알 수 없습니다.",
+  ambiguous_person:
+    "이름과 학교가 같은 참가자가 이미 여러 명 있어 누구인지 알 수 없습니다. 그 사람은 파일에서 빼고 참가자 탭에서 수정해 주세요.",
   team_required: "팀의 테이블과 팀명은 비워 둘 수 없습니다.",
   person_required: "참가자 이름은 비워 둘 수 없습니다.",
   bad_school: "알 수 없는 학교가 있습니다.",

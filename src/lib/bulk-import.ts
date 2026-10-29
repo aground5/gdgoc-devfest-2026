@@ -161,7 +161,7 @@ export async function parseFiles(files: File[]): Promise<Parsed> {
   if (people)
     for (const k of dup(people, personKey))
       errors.push(
-        `참가자 "${k.split("|")[0]}"(${SCHOOL_LABEL[k.split("|")[1] as SchoolKey]})이(가) 두 번 이상 나옵니다. 동명이인은 이름을 구분해 적어 주세요.`,
+        `참가자 "${k.split("|")[0]}"(${SCHOOL_LABEL[k.split("|")[1] as SchoolKey]})이(가) 두 번 이상 나옵니다. 같은 학교의 동명이인은 파일로 올릴 수 없으니, 한 명만 남기고 나머지는 참가자 탭에서 추가해 주세요. (이름을 바꾸면 그 이름으로 로그인해야 합니다.)`,
       );
 
   return { teams, people, errors };
@@ -200,7 +200,7 @@ export function plan(parsed: Parsed, people: Participant[], teams: Team[], delet
     const same = people.filter((p) => personKey(p) === personKey(r));
     if (same.length > 1)
       errors.push(
-        `"${r.name}"(${SCHOOL_LABEL[r.school]}) 이름의 참가자가 이미 ${same.length}명 있어 누구인지 알 수 없습니다. 참가자 탭에서 이름을 구분해 주세요.`,
+        `"${r.name}"(${SCHOOL_LABEL[r.school]}) 이름의 참가자가 이미 ${same.length}명 있어 누구인지 알 수 없습니다. 이 사람은 파일에서 빼고 참가자 탭에서 직접 수정해 주세요.`,
       );
     const cur = same.length === 1 ? same[0] : undefined;
     if (!cur) person.added.push(r);
