@@ -517,7 +517,7 @@ function BudgetCell({ cfg, id, name, budget }: { cfg: BudgetCfg; id: string; nam
     if (draft !== null) void setBudgets(cfg, [id], Number(draft.replace(/\D/g, "")) || 0);
     setDraft(null);
   };
-  const stepBtn = "grid h-9 w-8 shrink-0 place-items-center border border-fg/50 text-sm transition hover:bg-fg/10 disabled:opacity-25";
+  const stepBtn = "grid h-9 w-8 shrink-0 place-items-center border border-fg/50 text-sm transition hover:bg-fg/10 disabled:opacity-50";
 
   return (
     <div className="flex items-center gap-2">
@@ -859,7 +859,7 @@ function AddParticipant({ teams }: { teams: Team[] }) {
     <form onSubmit={submit} noValidate className="border border-fg/15 p-5">
       <Label>참가자 추가</Label>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label htmlFor={`${id}-name`} className="min-w-[10rem] flex-1 text-xs text-subtle">
+        <label htmlFor={`${id}-name`} className="min-w-[10rem] flex-1 text-sm text-muted">
           이름
           <input
             id={`${id}-name`}
@@ -946,7 +946,7 @@ function TeamCard({ team, members }: { team: Team; members: Participant[] }) {
   }
 
   const input = (key: keyof Omit<Team, "id">, label: string) => (
-    <label htmlFor={`${id}-${key}`} className="text-xs text-subtle">
+    <label htmlFor={`${id}-${key}`} className="text-sm text-muted">
       {label}
       <input
         id={`${id}-${key}`}
@@ -1060,7 +1060,7 @@ function AddTeam() {
     <form onSubmit={submit} noValidate className="border border-fg/15 p-5">
       <Label>팀 추가</Label>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label htmlFor={`${id}-name`} className="min-w-[10rem] flex-1 text-xs text-subtle">
+        <label htmlFor={`${id}-name`} className="min-w-[10rem] flex-1 text-sm text-muted">
           팀명
           <input
             id={`${id}-name`}
@@ -1072,7 +1072,7 @@ function AddTeam() {
             className={fieldCls}
           />
         </label>
-        <label htmlFor={`${id}-table`} className="w-24 text-xs text-subtle">
+        <label htmlFor={`${id}-table`} className="w-24 text-sm text-muted">
           테이블
           <input
             id={`${id}-table`}
@@ -1082,7 +1082,7 @@ function AddTeam() {
             className={fieldCls}
           />
         </label>
-        <label htmlFor={`${id}-project`} className="min-w-[10rem] flex-1 text-xs text-subtle">
+        <label htmlFor={`${id}-project`} className="min-w-[10rem] flex-1 text-sm text-muted">
           프로젝트명
           <input id={`${id}-project`} value={project} onChange={(e) => setProject(e.target.value)} className={fieldCls} />
         </label>
@@ -1610,7 +1610,7 @@ function AddStaff() {
     <form onSubmit={submit} noValidate className="border border-fg/15 p-5">
       <Label>운영진 추가</Label>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label htmlFor={`${id}-email`} className="min-w-[14rem] flex-1 text-xs text-subtle">
+        <label htmlFor={`${id}-email`} className="min-w-[14rem] flex-1 text-sm text-muted">
           Google 계정 이메일
           <input
             id={`${id}-email`}
@@ -1625,7 +1625,7 @@ function AddStaff() {
             className={fieldCls}
           />
         </label>
-        <label htmlFor={`${id}-note`} className="min-w-[10rem] flex-1 text-xs text-subtle">
+        <label htmlFor={`${id}-note`} className="min-w-[10rem] flex-1 text-sm text-muted">
           메모
           <input
             id={`${id}-note`}

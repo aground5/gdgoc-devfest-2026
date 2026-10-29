@@ -70,7 +70,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
   }
 
   const field = (key: keyof DemoInput, label: string, hint?: string, required = false) => (
-    <label htmlFor={`${id}-${key}`} className="text-xs text-subtle">
+    <label htmlFor={`${id}-${key}`} className="text-sm text-muted">
       {label}
       {required && <span className="text-danger"> *</span>}
       <input id={`${id}-${key}`} value={form[key]} onChange={set(key)} className={fieldCls} placeholder={hint} />
@@ -78,7 +78,7 @@ export function MarketEditor({ team, entry }: { team: Team; entry?: DemoEntry })
   );
 
   const area = (key: keyof DemoInput, label: string, hint: string, required = false, rows = 4) => (
-    <label htmlFor={`${id}-${key}`} className="text-xs text-subtle">
+    <label htmlFor={`${id}-${key}`} className="text-sm text-muted">
       {label}
       {required && <span className="text-danger"> *</span>}
       <textarea id={`${id}-${key}`} value={form[key]} onChange={set(key)} rows={rows} placeholder={hint} className={textareaCls} />
@@ -239,7 +239,7 @@ function Uploads({ kind, title, entry }: { kind: AssetKind; title: string; entry
       />
       <label
         htmlFor={`${id}-file`}
-        className={`${secondaryBtn} mt-2 cursor-pointer peer-focus-visible:outline peer-focus-visible:outline-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-30`}
+        className={`${secondaryBtn} mt-2 cursor-pointer peer-focus-visible:outline peer-focus-visible:outline-2 peer-disabled:cursor-not-allowed peer-disabled:opacity-50`}
       >
         <span aria-hidden="true">＋</span>
         {busy ? "올리는 중…" : kind === "image" ? "사진 올리기" : "파일 올리기"}
