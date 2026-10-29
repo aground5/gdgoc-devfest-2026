@@ -19,7 +19,7 @@ export type ControlSize = "sm" | "md" | "lg";
 
 // Form fields stay at 16px text: iOS Safari zooms the page into any smaller field on focus.
 // Field borders are fg/50 (about 3.3:1), enough to see where a field is (WCAG 1.4.11).
-const fieldBase = "border border-fg/50 bg-page text-fg placeholder:text-subtle outline-none transition focus:border-fg";
+const fieldBase = "border border-fg/50 bg-page text-fg placeholder:text-faint outline-none transition focus:border-fg";
 const fieldSize: Record<ControlSize, string> = { sm: "h-9 text-base", md: "h-10 text-base", lg: "h-12 text-lg" };
 
 // A bare field; the caller sets its width
@@ -35,7 +35,7 @@ export const textareaCls = `mt-1.5 w-full ${fieldBase} px-3 py-2 text-base`;
 export const select = (size: ControlSize = "md") =>
   `${fieldBase} ${fieldSize[size]} select-chevron cursor-pointer appearance-none pl-3 pr-9`;
 
-const btnBase = "inline-flex shrink-0 items-center justify-center gap-2 font-bold transition disabled:opacity-30";
+const btnBase = "inline-flex shrink-0 items-center justify-center gap-2 font-bold transition disabled:opacity-50";
 const btnSize: Record<ControlSize, string> = { sm: "h-9 px-3 text-sm", md: "h-10 px-4 text-sm", lg: "h-12 px-5 text-base" };
 const btnKind = {
   primary: "bg-fg text-page hover:opacity-85",

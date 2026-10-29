@@ -19,10 +19,13 @@
   --warn: var(--kaist-main); /* changed since, needs attention */
   --accent: var(--yu-main); /* highlighted series (my team in the chart) */
 
-  /* Secondary text, as black/white mixes with a fixed contrast instead of translucent fg:
-     --muted >= 7:1 (supporting copy), --subtle >= 4.5:1 (labels, meta), also on surfaces. */
-  --muted: color-mix(in srgb, var(--black) 80%, var(--white));
-  --subtle: color-mix(in srgb, var(--black) 68%, var(--white));
+  /* Secondary text, as black/white mixes with a fixed contrast instead of translucent fg.
+     Ratios hold on --surface too (the darker of the two light backgrounds, the lighter dark one):
+     --muted >= 8.5:1 (supporting copy), --subtle >= 7:1 (labels, meta, small text),
+     --faint >= 4.5:1 (placeholders only, so they don't read as typed text). */
+  --muted: color-mix(in srgb, var(--black) 85%, var(--white));
+  --subtle: color-mix(in srgb, var(--black) 80%, var(--white));
+  --faint: color-mix(in srgb, var(--black) 68%, var(--white));
 
   /* Light theme (default) */
   --page: var(--white);
@@ -47,8 +50,9 @@
     --on-raised: var(--black);
     --danger: var(--white);
     --accent: var(--kaist-main);
-    --muted: color-mix(in srgb, var(--white) 75%, var(--black));
-    --subtle: color-mix(in srgb, var(--white) 58%, var(--black));
+    --muted: color-mix(in srgb, var(--white) 85%, var(--black));
+    --subtle: color-mix(in srgb, var(--white) 75%, var(--black));
+    --faint: color-mix(in srgb, var(--white) 58%, var(--black));
     color-scheme: dark;
   }
 }
@@ -63,8 +67,9 @@
   --on-raised: var(--black);
   --danger: var(--white);
   --accent: var(--kaist-main);
-  --muted: color-mix(in srgb, var(--white) 75%, var(--black));
-  --subtle: color-mix(in srgb, var(--white) 58%, var(--black));
+  --muted: color-mix(in srgb, var(--white) 85%, var(--black));
+  --subtle: color-mix(in srgb, var(--white) 75%, var(--black));
+  --faint: color-mix(in srgb, var(--white) 58%, var(--black));
   color-scheme: dark;
 }
 
@@ -86,6 +91,7 @@
   --color-accent: var(--accent);
   --color-muted: var(--muted);
   --color-subtle: var(--subtle);
+  --color-faint: var(--faint);
   /* Fixed (not theme-flipped) guide black and white, e.g. the content-wise header bar */
   --color-ink: var(--black);
   --color-paper: var(--white);

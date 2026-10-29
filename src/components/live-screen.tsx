@@ -329,16 +329,16 @@ function TeamForm({ team, members, onDone }: { team: Team; members: Participant[
   return (
     <form onSubmit={submit} className="mt-6 grid gap-4" noValidate>
       <div className="grid gap-4 sm:grid-cols-2">
-        <label htmlFor={`${id}-name`} className="text-xs text-subtle">
+        <label htmlFor={`${id}-name`} className="text-sm text-muted">
           팀명
           <input id={`${id}-name`} value={name} onChange={(e) => setName(e.target.value)} className={fieldCls} />
         </label>
-        <label htmlFor={`${id}-project`} className="text-xs text-subtle">
+        <label htmlFor={`${id}-project`} className="text-sm text-muted">
           프로젝트명
           <input id={`${id}-project`} value={project} onChange={(e) => setProject(e.target.value)} className={fieldCls} />
         </label>
       </div>
-      <label htmlFor={`${id}-desc`} className="text-xs text-subtle">
+      <label htmlFor={`${id}-desc`} className="text-sm text-muted">
         한 줄 소개
         <input id={`${id}-desc`} value={desc} onChange={(e) => setDesc(e.target.value)} className={fieldCls} />
       </label>
@@ -716,7 +716,7 @@ function InvestCard({
   const set = (v: number) => onChange(Math.max(0, Math.min(max, v)));
   const changed = savedAmount !== undefined && savedAmount !== amount;
   const stepBtn =
-    "grid h-12 w-12 shrink-0 place-items-center border border-fg/50 text-lg transition hover:bg-fg/10 disabled:opacity-25 disabled:hover:bg-transparent";
+    "grid h-12 w-12 shrink-0 place-items-center border border-fg/50 text-lg transition hover:bg-fg/10 disabled:opacity-50 disabled:hover:bg-transparent";
 
   return (
     <li className={`flex flex-col border ${amount > 0 ? "border-fg/50 bg-fg/[0.06]" : "border-fg/15"}`}>
@@ -729,7 +729,7 @@ function InvestCard({
         {team.desc && <p className="mt-1 text-sm leading-relaxed text-subtle">{team.desc}</p>}
 
         <div className="mt-auto pt-5">
-          <label htmlFor={`${id}-amt`} className="text-xs text-subtle">
+          <label htmlFor={`${id}-amt`} className="text-sm text-muted">
             투자 금액
           </label>
           <div className="mt-1.5 flex gap-1.5">
