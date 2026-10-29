@@ -4,7 +4,16 @@ import "./globals.css";
 
 // The design guide sets everything in Google Sans (Latin) + a Korean companion, Regular and Bold only.
 // Google Sans has no Hangul, so Korean falls through to Noto Sans KR.
-const googleSans = Google_Sans({ variable: "--font-google-sans", subsets: ["latin"], weight: ["400", "700"], adjustFontFallback: false });
+// Turbopack has no fallback metrics for Google Sans and warns on every compile unless an
+// explicit `fallback` is given. Empty on purpose: Hangul must fall through to Noto Sans KR
+// (next in --font-sans), not to a system font.
+const googleSans = Google_Sans({
+  variable: "--font-google-sans",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  fallback: [],
+  adjustFontFallback: false,
+});
 const notoSansKr = Noto_Sans_KR({ variable: "--font-noto-kr", weight: ["400", "700"], preload: false });
 
 // viewport-fit=cover lets fixed bars pad themselves with env(safe-area-inset-*) on notched phones
