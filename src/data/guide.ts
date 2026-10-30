@@ -4,7 +4,7 @@
 export const event = {
   series: "GDG DevFest 2026",
   theme: "Tell the Vision.",
-  title: "GDG Demo Day — 개발자와 투자자 사이",
+  title: "GDGoC DevFest - Invest in the future",
   concept:
     "Google 기술로 현실의 문제를 해결하는 프로젝트를 만들고, 참가자 모두가 개발자이자 투자자가 되어 서로의 프로젝트에 모의 투자합니다.",
   date: "2026. 11. 06 (금)",
@@ -19,10 +19,10 @@ export type Notice = { date: string; title: string; tag?: string };
 export const notices: Notice[] = [
   { date: "10.27", title: "팀 매칭 진행 중 · 결과는 10/30 온라인 OT에서 발표", tag: "NEW" },
   { date: "10.30", title: "온라인 OT 19:00 – 20:00 · 팀별 디스코드 채널 오픈" },
-  { date: "11.06", title: "오프라인 Demo Day · Google for Startups Campus" },
+  { date: "11.06", title: "오프라인 Demo Market · Google for Startups Campus" },
 ];
 
-// Road to Demo Day: sign-up → matching → online OT → one week of building → Demo Day
+// Road to Demo Market: sign-up → matching → online OT → one week of building → Demo Market
 export type Step = { date: string; title: string; desc: string };
 
 export const steps: Step[] = [
@@ -30,14 +30,14 @@ export const steps: Step[] = [
   { date: "10.27–29", title: "팀 매칭", desc: "지망 키워드를 바탕으로 팀당 5~6명, 여러 학교가 섞이도록 팀을 구성합니다." },
   { date: "10.30 (금)", title: "온라인 OT · 팀 발표", desc: "행사 소개와 진행 안내, 연사 세션, 팀별 아이스브레이킹. 이후 디스코드에서 소통합니다." },
   { date: "10.31–11.05", title: "팀별 개발 1주", desc: "2일 차 기획서·BM → 4일 차 데모·프로토타입 → 6일 차 발표자료. 팀 첫 회의는 Google Meet으로 진행합니다." },
-  { date: "11.06 (금)", title: "오프라인 Demo Day", desc: "Google for Startups Campus에서 Demo Market, 팀별 발표, 모의 투자, 시상을 진행합니다." },
+  { date: "11.06 (금)", title: "오프라인 Demo Market", desc: "Google for Startups Campus에서 Demo Market, 팀별 발표, 모의 투자, 시상을 진행합니다." },
 ];
 
 export type Day = { id: string; label: string; date: string; where: string };
 
 export const days: Day[] = [
   { id: "ot", label: "온라인 OT", date: "10. 30 (금)", where: "온라인" },
-  { id: "demo", label: "Demo Day", date: "11. 06 (금)", where: "Google for Startups Campus" },
+  { id: "demo", label: "Demo Market", date: "11. 06 (금)", where: "Google for Startups Campus" },
 ];
 
 export type ScheduleItem = {
@@ -87,7 +87,7 @@ export type Faq = { q: string; a: string };
 export const faqs: Faq[] = [
   {
     q: "어떤 행사인가요?",
-    a: "일주일 동안 팀별로 Google 기술을 활용한 프로젝트를 만들고, 11월 6일 Demo Day에서 발표합니다. 참가자 모두가 가상 투자금으로 다른 팀 프로젝트에 투자합니다.",
+    a: "일주일 동안 팀별로 Google 기술을 활용한 프로젝트를 만들고, 11월 6일 Demo Market에서 발표합니다. 참가자 모두가 가상 투자금으로 다른 팀 프로젝트에 투자합니다.",
   },
   {
     q: "팀은 어떻게 정해지나요?",
@@ -98,7 +98,7 @@ export const faqs: Faq[] = [
     a: "기술 스택에 제한은 없습니다. 다만 Google 기술을 활용하면 심사에서 가산점이 있습니다.",
   },
   { q: "팀 소통은 어디서 하나요?", a: "10/30 OT 이후 팀별 디스코드 채널을 열어 드립니다. 팀 첫 회의는 Google Meet으로 진행합니다." },
-  { q: "Demo Day에 식사가 제공되나요?", a: "17:30에 저녁 식사가 제공됩니다." },
+  { q: "Demo Market에 식사가 제공되나요?", a: "17:30에 저녁 식사가 제공됩니다." },
   { q: "참가비가 있나요?", a: "참가비 정책은 신청 페이지에서 안내됩니다." },
   { q: "시상 내역은요?", a: "대상·최우수상·우수상·장려상·인기상(개미 투자를 가장 많이 받은 팀)을 계획하고 있으며, 상세 내역은 추후 공지됩니다." },
 ];
