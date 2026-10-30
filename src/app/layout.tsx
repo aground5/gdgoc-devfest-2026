@@ -22,7 +22,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 
 export const metadata: Metadata = {
   title: "GDG DevFest 2026",
-  description: "GDG Demo Day — 개발자와 투자자 사이 · 2026. 11. 06 (금) · Google for Startups Campus",
+  description: "GDGoC DevFest - Invest in the future · 2026. 11. 06 (금) · Google for Startups Campus",
 };
 
 export default function RootLayout({

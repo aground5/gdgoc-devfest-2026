@@ -134,7 +134,7 @@ function SectionTitle({ title }: { title: string }) {
 /* ---------- Panels ---------- */
 
 const shortcuts: { tab: TabId; title: string; desc: string }[] = [
-  { tab: "timetable", title: "타임테이블", desc: "온라인 OT · Demo Day 일정" },
+  { tab: "timetable", title: "타임테이블", desc: "온라인 OT · Demo Market 일정" },
   { tab: "program", title: "진행 방식", desc: "팀빌딩 · 모의 투자 · 심사 기준" },
   { tab: "venue", title: "오시는 길", desc: "장소 · 운영 시간 · 소통 채널" },
   { tab: "faq", title: "FAQ", desc: "자주 묻는 질문" },
@@ -320,7 +320,7 @@ function Program() {
   return (
     <div className="grid gap-14">
       <section>
-        <SectionTitle title="Demo Day까지" />
+        <SectionTitle title="Demo Market까지" />
         <ol className="grid gap-px border border-fg/10 bg-fg/10 md:grid-cols-5">
           {steps.map((st, i) => (
             <li key={st.title} className="flex flex-col bg-page p-5">
