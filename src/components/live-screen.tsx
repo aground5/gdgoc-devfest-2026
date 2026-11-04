@@ -206,6 +206,12 @@ function Festival({ who }: { who: SessionParticipant }) {
           <div className="grid content-start gap-6">
             {myTeam ? (
               <MyTeamCard state={state} team={myTeam} />
+            ) : who.role === "judge" ? (
+              <section className="border border-fg/15 p-5 sm:p-7">
+                <Label>심사위원</Label>
+                <p className="mt-3 text-lg font-bold">{who.name}님은 심사위원으로 참여합니다.</p>
+                <p className="mt-1 text-sm text-subtle">팀에 속하지 않고, 모든 팀에 투자할 수 있습니다.</p>
+              </section>
             ) : (
               <section className="border border-fg/15 p-5 sm:p-7">
                 <Label>내 팀</Label>
@@ -220,7 +226,7 @@ function Festival({ who }: { who: SessionParticipant }) {
       ) : view === "invest" ? (
         <div className="grid grid-cols-1 gap-10">
           <InvestPanel state={state} me={me} />
-          <PublishedStatus state={state} myTeamId={myTeam?.id} />
+          <PublishedStatus state={state} myTeamId={myTeam?.id} judge={who.role === "judge"} />
         </div>
       ) : (
         <Market state={state} myTeamId={myTeam?.id} />

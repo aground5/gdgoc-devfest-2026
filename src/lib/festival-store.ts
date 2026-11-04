@@ -53,6 +53,13 @@ export function buildState(
 
 export const membersOf = (s: FestivalState, teamId: string) => s.participants.filter((p) => p.teamId === teamId);
 
+// Judges (심사위원) invest but are never on a team. Only staff know who they are:
+// the participant directory reports everyone as a participant.
+export const isJudge = (p: Pick<Participant, "role">) => p.role === "judge";
+
+// A participant (not a judge) still waiting for a team
+export const needsTeam = (p: Pick<Participant, "role" | "teamId">) => !p.teamId && !isJudge(p);
+
 // A participant's total budget (staff can change it per person on /organize)
 export const budgetOf = (s: FestivalState, pid: string) => s.budgets[pid] ?? s.defaultBudget;
 
@@ -83,3 +90,41 @@ export const timeLabel = (at: number) =>
 export const latestTick = (s: FestivalState): Snapshot | null => s.ticks[s.ticks.length - 1] ?? null;
 
 export const clockLabel = (at: number) => new Date(at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+/* ---------- Settlement ---------- */
+
+// Final score per team: what the team received, minus every member's unspent
+// budget (budget - confirmed investment). Based on live confirmed investments,
+// so it's admin only. Judges (role 'judge', never on a team) invest too, but
+// their unspent budget isn't charged to anyone; neither is that of a
+// participant who has no team yet (listed apart as a warning).
+export type SettlementRow = {
+  team: Team;
+  received: number;
+  penalty: number; // sum of members' unspent budget
+  final: number; // received - penalty, may go below 0
+  members: { person: Participant; budget: number; spent: number; unspent: number }[];
+};
+
+export function settlement(s: FestivalState) {
+  const live = liveTotals(s);
+  const unspentOf = (p: Participant) => {
+    const budget = budgetOf(s, p.id);
+    const spent = investedBy(s, p.id);
+    return { person: p, budget, spent, unspent: Math.max(0, budget - spent) };
+  };
+  const rows: SettlementRow[] = s.teams
+    .map((team) => {
+      const members = membersOf(s, team.id).map(unspentOf);
+      const received = live.totals[team.id] ?? 0;
+      const penalty = members.reduce((sum, m) => sum + m.unspent, 0);
+      return { team, received, penalty, final: received - penalty, members };
+    })
+    .sort((a, b) => b.final - a.final || b.received - a.received);
+  const teamless = s.participants.filter((p) => !p.teamId || !s.teams.some((t) => t.id === p.teamId));
+  // Judges: their investments count, their unspent budget is never a penalty
+  const judges = teamless.filter(isJudge).map(unspentOf);
+  // Participants nobody put on a team yet: their unspent budget can't be charged anywhere
+  const unassigned = teamless.filter((p) => !isJudge(p)).map(unspentOf);
+  return { rows, judges, unassigned };
+}

@@ -49,10 +49,12 @@ export function PublishedStatus({
   state,
   myTeamId,
   admin = false,
+  judge = false,
 }: {
   state: FestivalState;
   myTeamId?: string;
   admin?: boolean;
+  judge?: boolean; // a judge has no team, so no "my team" rank
 }) {
   const [asTable, setAsTable] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
@@ -122,7 +124,7 @@ export function PublishedStatus({
           <Tile
             label="내 팀 순위"
             value={mine ? `${mine.rank}위` : "—"}
-            sub={mine ? `${man(mine.total)}${hasPrev ? ` · ${signed(mine.total - mine.prev)}` : ""}` : "팀 미배정"}
+            sub={mine ? `${man(mine.total)}${hasPrev ? ` · ${signed(mine.total - mine.prev)}` : ""}` : judge ? "심사위원" : "팀 미배정"}
           />
         )}
       </dl>
