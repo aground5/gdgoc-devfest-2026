@@ -80,9 +80,11 @@ export async function login(name: string, code: string): Promise<string | null> 
   }
   const { data, error } = await sb.rpc("claim_participant", { p_name: name, p_code: code });
   if (error) return "로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
-  const row = (data as SessionParticipant[] | null)?.[0];
+  const row = (data as Omit<SessionParticipant, "role">[] | null)?.[0];
   if (!row) return "이름 또는 참가자 코드가 맞지 않습니다.";
-  set({ status: "in", participant: row });
+  // claim_participant doesn't return the role; read it from the row we're now bound to
+  const { data: me } = await sb.from("participants").select("role").eq("id", row.id).maybeSingle();
+  set({ status: "in", participant: { ...row, role: (me?.role ?? "participant") as Role } });
   return null;
 }
 
