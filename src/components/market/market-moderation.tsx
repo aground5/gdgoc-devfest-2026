@@ -96,7 +96,7 @@ export function MarketModeration({ state, entries }: { state: FestivalState; ent
 
       <section aria-labelledby={`${id}-preview`}>
         <Label id={`${id}-preview`}>참가자 화면 미리보기</Label>
-        <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {entries
             .filter((e) => e.status === "published" && !e.hidden)
             .map((e) => (

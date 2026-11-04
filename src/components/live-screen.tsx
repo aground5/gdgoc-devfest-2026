@@ -205,8 +205,8 @@ function Festival({ who }: { who: SessionParticipant }) {
       ) : !me ? (
         <p className="py-10 text-lg text-subtle">참가자 정보를 찾을 수 없습니다. 운영진에게 문의해 주세요.</p>
       ) : view === "team" ? (
-        <div className="grid gap-10 lg:grid-cols-[1fr_26rem]">
-          <div className="grid content-start gap-6">
+        <div className="grid w-full grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_26rem]">
+          <div className="grid min-w-0 grid-cols-1 content-start gap-6">
             {myTeam ? (
               <MyTeamCard state={state} team={myTeam} />
             ) : judge ? (
@@ -227,7 +227,8 @@ function Festival({ who }: { who: SessionParticipant }) {
           <TeamList state={state} myTeamId={myTeam?.id} />
         </div>
       ) : view === "invest" ? (
-        <div className="grid grid-cols-1 gap-10">
+        // Phones: room under 투자 현황 for the fixed confirm bar (its height plus the safe area)
+        <div className="grid grid-cols-1 gap-10 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-0">
           <InvestPanel state={state} me={me} judge={judge} />
           <PublishedStatus state={state} myTeamId={myTeam?.id} judgeId={judge ? me.id : undefined} />
         </div>
@@ -582,7 +583,7 @@ function InvestPanel({ state, me, judge }: { state: FestivalState; me: Participa
   }
 
   return (
-    <div className="grid gap-8 pb-24 sm:pb-0">
+    <div className="grid w-full min-w-0 grid-cols-1 gap-8">
       <section aria-labelledby="invest-summary" className="border border-fg/15 bg-surface p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -667,7 +668,7 @@ function InvestPanel({ state, me, judge }: { state: FestivalState; me: Participa
             {targets.length}개 · 투자 {invested.length}
           </span>
         </div>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {targets.map((t) => (
             <InvestCard
               key={t.id}
@@ -743,7 +744,7 @@ function InvestCard({
     "grid h-12 w-12 shrink-0 place-items-center border border-fg/50 text-lg transition hover:bg-fg/10 disabled:opacity-50 disabled:hover:bg-transparent";
 
   return (
-    <li className={`flex flex-col border ${amount > 0 ? "border-fg/50 bg-fg/[0.06]" : "border-fg/15"}`}>
+    <li className={`flex min-w-0 flex-col border ${amount > 0 ? "border-fg/50 bg-fg/[0.06]" : "border-fg/15"}`}>
       <MemberStripe people={members} className="h-1.5" />
       <div className="flex flex-1 flex-col p-5">
         <p className="tabular-nums text-xs text-subtle">
@@ -775,7 +776,7 @@ function InvestCard({
               disabled={disabled}
               onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")) || 0)}
               onBlur={() => set(Math.round(amount / step) * step)}
-              className={`${field("lg")} -mx-px min-w-0 flex-1 text-right tabular-nums focus:relative`}
+              className={`${field("lg")} -mx-px w-0 min-w-0 flex-1 text-right tabular-nums focus:relative`}
             />
             <button
               type="button"

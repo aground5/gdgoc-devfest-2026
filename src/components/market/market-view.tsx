@@ -53,7 +53,7 @@ export function MarketCard({
 }) {
   const cover = entry.images[0];
   return (
-    <li className={`flex flex-col border ${mine ? "border-fg/50" : "border-fg/15"}`}>
+    <li className={`flex min-w-0 flex-col border ${mine ? "border-fg/50" : "border-fg/15"}`}>
       {cover?.url ? (
         // eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL, nothing to optimize
         <img src={cover.url} alt="" className="aspect-[2/1] w-full bg-fg/5 object-cover sm:aspect-[16/9]" />
@@ -135,8 +135,8 @@ export function MarketDetail({
         </div>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
-        <div className="grid content-start gap-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="grid min-w-0 grid-cols-1 content-start gap-8">
           <section aria-labelledby="md-desc">
             <Label id="md-desc">소개</Label>
             <p className="mt-3 whitespace-pre-line leading-relaxed text-muted">{entry.description || "—"}</p>
@@ -160,7 +160,7 @@ export function MarketDetail({
           )}
         </div>
 
-        <aside className="grid content-start gap-6">
+        <aside className="grid min-w-0 grid-cols-1 content-start gap-6">
           <section aria-labelledby="md-test" className="border border-fg/15 bg-surface p-5">
             <Label id="md-test">테스트 방법</Label>
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed">{entry.testInstructions || "—"}</p>

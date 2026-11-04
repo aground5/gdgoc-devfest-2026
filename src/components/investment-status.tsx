@@ -111,7 +111,7 @@ export function PublishedStatus({
       </p>
 
       {/* Headline tiles */}
-      <dl className="mb-6 grid gap-px border border-fg/10 bg-fg/10 sm:grid-cols-3">
+      <dl className="mb-6 grid grid-cols-1 gap-px border border-fg/10 bg-fg/10 sm:grid-cols-3">
         <Tile label="1위" value={rows[0].team.project} sub={man(rows[0].total)} />
         <Tile
           label="이번 틱 최대 상승"
@@ -138,7 +138,7 @@ export function PublishedStatus({
       {asTable ? (
         <TickTable teams={rows.map((r) => r.team)} ticks={ticks} myTeamId={myTeamId} />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <TickChart ticks={ticks} teams={teams} focus={focus} myTeamId={myTeamId} />
           <RankList rows={rows} focus={focus} myTeamId={myTeamId} hasPrev={hasPrev} onPick={setPicked} picked={picked} />
         </div>
