@@ -4,7 +4,7 @@
 // their own team and attendance, the team list, their own investments, and the
 // investment ticks staff have published (never live totals).
 
-import { useId, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { type Participant, type Team } from "@/data/guide";
 import { budgetOf, buildState, membersOf, won, type FestivalState } from "@/lib/festival-store";
 import { login, logout, useParticipantSession, type SessionParticipant } from "@/lib/participant-session";
@@ -227,8 +227,8 @@ function Festival({ who }: { who: SessionParticipant }) {
           <TeamList state={state} myTeamId={myTeam?.id} />
         </div>
       ) : view === "invest" ? (
-        // Phones: room under 투자 현황 for the fixed confirm bar (its height plus the safe area)
-        <div className="grid grid-cols-1 gap-10 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-0">
+        // Phones: room at the bottom of the page for the fixed confirm bar (InvestPanel measures it)
+        <div className="grid grid-cols-1 gap-10 pb-[var(--invest-bar-h,0px)] sm:pb-0">
           <InvestPanel state={state} me={me} judge={judge} />
           <PublishedStatus state={state} myTeamId={myTeam?.id} judgeId={judge ? me.id : undefined} />
         </div>
@@ -564,6 +564,23 @@ function InvestPanel({ state, me, judge }: { state: FestivalState; me: Participa
   const dirty = saved === null || targets.some((t) => (amounts[t.id] ?? 0) !== (saved[t.id] ?? 0));
   const upToDate = saved !== null && !dirty;
 
+  // The page pads its bottom by the fixed bar's real height (it changes with the
+  // safe area and wrapping), so the last section can scroll clear of it
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const root = document.documentElement;
+    const sync = () => root.style.setProperty("--invest-bar-h", `${bar.offsetHeight}px`);
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(bar);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--invest-bar-h");
+    };
+  }, []);
+
   function change(teamId: string, v: number) {
     setDraft({ ...amounts, [teamId]: v });
   }
@@ -688,6 +705,7 @@ function InvestPanel({ state, me, judge }: { state: FestivalState; me: Participa
 
       {/* Phones: the project list is long, so keep what's left and the confirm button in reach */}
       <div
+        ref={barRef}
         className="fixed inset-x-0 bottom-0 z-20 border-t border-fg/15 bg-page px-4 pt-3 sm:hidden"
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
