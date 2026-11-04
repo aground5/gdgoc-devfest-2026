@@ -42,12 +42,14 @@ export function MarketCard({
   members,
   mine,
   onOpen,
+  note,
 }: {
   entry: DemoEntry;
   team?: Team;
   members: Participant[];
   mine: boolean;
   onOpen: () => void;
+  note?: ReactNode; // e.g. a judge's own investment in this team
 }) {
   const cover = entry.images[0];
   return (
@@ -68,6 +70,7 @@ export function MarketCard({
         </p>
         <h3 className="mt-2 text-xl font-bold leading-snug">{entryTitle(entry, team)}</h3>
         <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-subtle">{entry.description}</p>
+        {note && <div className="mt-3 text-sm">{note}</div>}
         <div className="mt-auto flex flex-wrap gap-2 pt-5">
           {entry.liveUrl && (
             <ExternalLink href={entry.liveUrl} strong>

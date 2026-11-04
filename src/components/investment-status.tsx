@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { Team } from "@/data/guide";
-import { clockLabel, timeLabel, won, type FestivalState, type Snapshot } from "@/lib/festival-store";
+import { clockLabel, investedBy, timeLabel, won, type FestivalState, type Snapshot } from "@/lib/festival-store";
 import { Label, btn } from "./festival-ui";
 
 // Compact Korean money: 2,150,000 -> 215만원
@@ -49,12 +49,12 @@ export function PublishedStatus({
   state,
   myTeamId,
   admin = false,
-  judge = false,
+  judgeId,
 }: {
   state: FestivalState;
   myTeamId?: string;
   admin?: boolean;
-  judge?: boolean; // a judge has no team, so no "my team" rank
+  judgeId?: string; // a judge has no team: show their own investments instead of a rank
 }) {
   const [asTable, setAsTable] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
@@ -120,11 +120,17 @@ export function PublishedStatus({
         />
         {admin ? (
           <Tile label="최근 틱 총액" value={man(sumNow)} sub={hasPrev ? `이전 틱 대비 ${signed(sumNow - sumPrev)}` : "첫 틱"} />
+        ) : judgeId ? (
+          <Tile
+            label="내 투자"
+            value={`${Object.values(state.investments[judgeId] ?? {}).filter((v) => v > 0).length}팀`}
+            sub={`${man(investedBy(state, judgeId))} 확정`}
+          />
         ) : (
           <Tile
             label="내 팀 순위"
             value={mine ? `${mine.rank}위` : "—"}
-            sub={mine ? `${man(mine.total)}${hasPrev ? ` · ${signed(mine.total - mine.prev)}` : ""}` : judge ? "심사위원" : "팀 미배정"}
+            sub={mine ? `${man(mine.total)}${hasPrev ? ` · ${signed(mine.total - mine.prev)}` : ""}` : "팀 미배정"}
           />
         )}
       </dl>

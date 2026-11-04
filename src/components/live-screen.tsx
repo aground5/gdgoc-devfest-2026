@@ -20,6 +20,7 @@ import {
   fieldCls,
   btn,
   field,
+  JudgingCriteria,
   primaryBtn,
   school,
   schoolsOf,
@@ -166,6 +167,8 @@ function Festival({ who }: { who: SessionParticipant }) {
   const [view, setView] = useHashTab(VIEWS, "team");
   const me = state?.participants.find((p) => p.id === who.id);
   const myTeam = me?.teamId ? state?.teams.find((t) => t.id === me.teamId) : undefined;
+  // The directory reports everyone as a participant; my own role comes from the session
+  const judge = who.role === "judge";
   const failed = people.error ?? teams.error ?? settings.error ?? investments.error ?? ticks.error ?? myBudget.error;
   const [leaving, setLeaving] = useState(false);
 
@@ -206,7 +209,7 @@ function Festival({ who }: { who: SessionParticipant }) {
           <div className="grid content-start gap-6">
             {myTeam ? (
               <MyTeamCard state={state} team={myTeam} />
-            ) : who.role === "judge" ? (
+            ) : judge ? (
               <section className="border border-fg/15 p-5 sm:p-7">
                 <Label>심사위원</Label>
                 <p className="mt-3 text-lg font-bold">{who.name}님은 심사위원으로 참여합니다.</p>
@@ -225,11 +228,11 @@ function Festival({ who }: { who: SessionParticipant }) {
         </div>
       ) : view === "invest" ? (
         <div className="grid grid-cols-1 gap-10">
-          <InvestPanel state={state} me={me} />
-          <PublishedStatus state={state} myTeamId={myTeam?.id} judge={who.role === "judge"} />
+          <InvestPanel state={state} me={me} judge={judge} />
+          <PublishedStatus state={state} myTeamId={myTeam?.id} judgeId={judge ? me.id : undefined} />
         </div>
       ) : (
-        <Market state={state} myTeamId={myTeam?.id} />
+        <Market state={state} myTeamId={myTeam?.id} judgeId={judge ? me.id : undefined} onInvest={() => setView("invest")} />
       )}
     </ScreenFrame>
   );
@@ -238,7 +241,17 @@ function Festival({ who }: { who: SessionParticipant }) {
 /* ---------- Demo Market ---------- */
 
 // Loaded only when the tab is open (signed URLs for uploads are fetched with it)
-function Market({ state, myTeamId }: { state: FestivalState; myTeamId?: string }) {
+function Market({
+  state,
+  myTeamId,
+  judgeId,
+  onInvest,
+}: {
+  state: FestivalState;
+  myTeamId?: string;
+  judgeId?: string;
+  onInvest: () => void;
+}) {
   const demos = useDemos("participant");
   if (demos.error)
     return (
@@ -252,7 +265,7 @@ function Market({ state, myTeamId }: { state: FestivalState; myTeamId?: string }
         불러오는 중…
       </p>
     );
-  return <MarketPanel state={state} entries={demos.data} myTeamId={myTeamId} />;
+  return <MarketPanel state={state} entries={demos.data} myTeamId={myTeamId} judgeId={judgeId} onInvest={onInvest} />;
 }
 
 /* ---------- My team ---------- */
@@ -515,7 +528,8 @@ function TeamList({ state, myTeamId }: { state: FestivalState; myTeamId?: string
 
 /* ---------- Investment ---------- */
 
-function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
+// A judge (심사위원) uses the same panel: no own team to skip, and unspent budget is never a penalty
+function InvestPanel({ state, me, judge }: { state: FestivalState; me: Participant; judge: boolean }) {
   // Confirmed amounts live in the shared store; edits stay in a local draft until confirmed.
   const saved = state.investments[me.id] ?? null;
   const [draft, setDraft] = useState<Record<string, number> | null>(null);
@@ -572,7 +586,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
       <section aria-labelledby="invest-summary" className="border border-fg/15 bg-surface p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <Label id="invest-summary">내 투자금</Label>
+            <Label id="invest-summary">{judge ? "심사위원 투자금" : "내 투자금"}</Label>
             <p
               className={`mt-2 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl ${over ? "text-danger" : ""}`}
             >
@@ -637,10 +651,14 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           <p role="status" className="mt-3 text-xs text-subtle">
             {upToDate
               ? "확정된 투자입니다. 언제든 다시 바꾸고 확정할 수 있습니다."
-              : `${won(state.step)} 단위로 투자할 수 있습니다. 내 팀 프로젝트에는 투자할 수 없습니다.`}
+              : judge
+                ? `${won(state.step)} 단위로 모든 팀에 투자할 수 있습니다. 심사위원의 투자는 결과에 함께 반영됩니다.`
+                : `${won(state.step)} 단위로 투자할 수 있습니다. 내 팀 프로젝트에는 투자할 수 없습니다.`}
           </p>
         )}
       </section>
+
+      {judge && <JudgingCriteria />}
 
       <section aria-labelledby="invest-projects">
         <div className="mb-4 flex items-baseline justify-between gap-4">
