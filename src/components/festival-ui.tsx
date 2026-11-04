@@ -3,7 +3,7 @@
 // UI bits shared by the participant (/onfestival) and admin (/organize) screens.
 
 import Link from "next/link";
-import { useRef, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { GdgLogo, schools, type School } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
 import { criteria, event, type Participant, type SchoolKey } from "@/data/guide";
@@ -115,6 +115,37 @@ export function useHashTab<T extends string>(tabs: readonly ScreenTab<T>[], fall
   return [active, setActive] as const;
 }
 
+// Phones: the sticky header slides up out of view while scrolling down and comes
+// back on any scroll up (or when focus moves into it). Wider screens keep it.
+function useHideOnScroll(header: React.RefObject<HTMLElement | null>) {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    const phone = window.matchMedia("(max-width: 639px)");
+    let last = window.scrollY;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const y = window.scrollY;
+      const h = header.current?.offsetHeight ?? 0;
+      if (!phone.matches || y <= h) setHidden(false);
+      else if (y > last + 4) setHidden(true);
+      else if (y < last - 4) setHidden(false);
+      if (Math.abs(y - last) > 4 || y <= h) last = y;
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    phone.addEventListener("change", update);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      phone.removeEventListener("change", update);
+      cancelAnimationFrame(frame);
+    };
+  }, [header]);
+  return [hidden, () => setHidden(false)] as const;
+}
+
 // Page frame: header with brand, theme toggle, exit link, and an ARIA tab bar.
 export function ScreenFrame<T extends string>({
   badge,
@@ -132,6 +163,8 @@ export function ScreenFrame<T extends string>({
   children: ReactNode;
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const headerRef = useRef<HTMLElement>(null);
+  const [hidden, reveal] = useHideOnScroll(headerRef);
 
   function onKey(e: React.KeyboardEvent) {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
@@ -145,7 +178,11 @@ export function ScreenFrame<T extends string>({
   return (
     <div className="flex min-h-svh flex-col bg-page text-fg">
       {/* Plain header in the page's own colors, like the home page's top row */}
-      <header className="sticky top-0 z-10 border-b border-fg/15 bg-page">
+      <header
+        ref={headerRef}
+        onFocus={reveal}
+        className={`sticky top-0 z-10 border-b border-fg/15 bg-page transition-transform duration-200 motion-reduce:transition-none ${hidden ? "-translate-y-full" : ""}`}
+      >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-8">
           <Link href="/" className="flex min-w-0 items-center gap-2 text-sm font-bold sm:text-base">
             <GdgLogo className="h-3 w-6 shrink-0" />
