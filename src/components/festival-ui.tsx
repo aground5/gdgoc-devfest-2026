@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRef, useSyncExternalStore, type ReactNode } from "react";
 import { GdgLogo, schools, type School } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
-import { event, type Participant, type SchoolKey } from "@/data/guide";
+import { criteria, event, type Participant, type SchoolKey } from "@/data/guide";
 
 export const school = (key: SchoolKey) => schools.find((s) => s.key === key) as School;
 
@@ -209,5 +209,22 @@ export function RankBar({ value, max }: { value: number; max: number }) {
     <div className="h-1.5 w-full bg-fg/10" aria-hidden="true">
       <div className="h-full bg-fg" style={{ width: `${max ? (value / max) * 100 : 0}%` }} />
     </div>
+  );
+}
+
+// Judging criteria from guide.ts, as a compact reference for judges (심사위원)
+export function JudgingCriteria({ className = "" }: { className?: string }) {
+  return (
+    <section aria-labelledby="judging-criteria" className={`border border-fg/15 p-5 ${className}`}>
+      <Label id="judging-criteria">심사 기준</Label>
+      <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-5">
+        {criteria.map((c) => (
+          <div key={c.name}>
+            <dt className="font-bold">{c.name}</dt>
+            <dd className="text-subtle">{c.desc}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }

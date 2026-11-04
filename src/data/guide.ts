@@ -137,12 +137,17 @@ export const venueInfo = [
 
 export type SchoolKey = "ku" | "yu" | "skku" | "kaist";
 
+// 심사위원 (judge): logs in and invests, never on a team, never penalized in settlement
+export type Role = "participant" | "judge";
+export const ROLE_LABEL: Record<Role, string> = { participant: "참가자", judge: "심사위원" };
+
 // Teams can mix schools, so school is tracked per participant.
 export type Participant = {
   id: string;
   name: string;
   school: SchoolKey;
-  teamId: string | null; // assigned by staff
+  role: Role; // staff only see it for everyone; the directory reports everyone as "participant"
+  teamId: string | null; // assigned by staff, always null for a judge
   checkedIn: boolean; // checked in today (staff see everyone's, a participant only their own)
   accessCode?: string; // personal login code; only loaded for staff
   budget?: number | null; // staff-set investment budget; null = default. Staff see everyone's, a participant only their own

@@ -5,13 +5,14 @@
 // Read with useParticipantSession(); the session survives reloads via cookies.
 
 import { useSyncExternalStore } from "react";
-import type { SchoolKey } from "@/data/guide";
+import type { Role, SchoolKey } from "@/data/guide";
 import { createClient } from "@/utils/supabase/client";
 
 export type SessionParticipant = {
   id: string;
   name: string;
   school: SchoolKey;
+  role: Role;
   team_id: string | null;
 };
 
@@ -40,7 +41,7 @@ async function load() {
   // Staff can read every row, so filter to the participant bound to this user
   const { data } = await sb
     .from("participants")
-    .select("id, name, school, team_id")
+    .select("id, name, school, role, team_id")
     .eq("user_id", claims.claims.sub)
     .maybeSingle();
   set(data ? { status: "in", participant: data as SessionParticipant } : OUT);

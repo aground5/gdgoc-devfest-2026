@@ -6,14 +6,17 @@
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { schools } from "./brand";
 import { BulkImportPanel } from "./bulk-import";
-import { type Participant, type SchoolKey, type Team } from "@/data/guide";
+import { ROLE_LABEL, type Participant, type Role, type SchoolKey, type Team } from "@/data/guide";
 import {
   budgetOf,
   buildState,
   investedBy,
+  isJudge,
   latestTick,
   liveTotals,
   membersOf,
+  needsTeam,
+  settlement,
   timeLabel,
   won,
   type FestivalState,
@@ -80,6 +83,7 @@ const VIEWS = [
   { id: "attendance", label: "출석" },
   { id: "budget", label: "투자금" },
   { id: "invest", label: "투자 현황" },
+  { id: "settle", label: "결산" },
   { id: "market", label: "데모 마켓" },
   { id: "staff", label: "운영진" },
 ] as const;
@@ -96,6 +100,12 @@ const removeParticipant = (id: string) => run(() => deleteParticipant(id), optim
 
 const assignTeam = (id: string, teamId: string | null) =>
   run(() => updateParticipant(id, { teamId }), optimisticPatch.person(id, { teamId }));
+
+// A judge is never on a team, so making someone a judge also takes them off theirs
+const setRole = (id: string, role: Role) => {
+  const patch: PersonPatch = role === "judge" ? { role, teamId: null } : { role };
+  return run(() => updateParticipant(id, patch), optimisticPatch.person(id, patch));
+};
 
 type BudgetCfg = Pick<FestivalState, "step" | "defaultBudget">;
 
@@ -262,10 +272,154 @@ function Panels({ state, view, email }: { state: FestivalState; view: (typeof VI
       {view === "attendance" && <AttendancePanel state={state} />}
       {view === "budget" && <BudgetPanel state={state} />}
       {view === "invest" && <InvestStatusPanel state={state} />}
+      {view === "settle" && <SettlementPanel state={state} />}
       {view === "bulk" && <BulkImportPanel people={state.participants} teams={state.teams} />}
       {view === "staff" && <StaffPanel me={email} />}
       {view === "market" && <MarketTab state={state} />}
     </>
+  );
+}
+
+// Final result: each team's received investment minus its members' unspent
+// budgets. Live confirmed investments, staff only.
+function SettlementPanel({ state }: { state: FestivalState }) {
+  const { rows, judges, unassigned } = settlement(state);
+  const totalPenalty = rows.reduce((s, r) => s + r.penalty, 0);
+  const lostUnassigned = unassigned.reduce((s, m) => s + m.unspent, 0);
+  const top = Math.max(0, ...rows.map((r) => r.final));
+
+  return (
+    <div className="grid grid-cols-1 gap-8">
+      {state.investOpen && (
+        <div role="alert" className="border border-fg/15 border-l-[3px] border-l-danger bg-surface p-4">
+          <p className="flex items-center gap-2 font-bold">
+            <span className="h-2.5 w-2.5 shrink-0 bg-danger" aria-hidden="true" />
+            아직 확정할 수 없는 결과입니다
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            투자 접수가 아직 열려 있어 결과가 바뀔 수 있습니다. 투자 현황 탭에서 마감한 뒤 결산을 확정하세요.
+          </p>
+        </div>
+      )}
+
+      <dl className="grid grid-cols-2 gap-px border border-fg/10 bg-fg/10 sm:grid-cols-3">
+        {[
+          ["팀", `${rows.length}팀`],
+          ["미소진 감점 합계", won(totalPenalty)],
+          ["미소진 참가자", `${rows.reduce((s, r) => s + r.members.filter((m) => m.unspent > 0).length, 0)}명`],
+        ].map(([k, v]) => (
+          <div key={k} className="bg-page px-4 py-3">
+            <dt className="tabular-nums text-xs text-subtle">{k}</dt>
+            <dd className="mt-1 text-lg font-bold tabular-nums">{v}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <section aria-labelledby="settle-rank">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-4">
+          <Label id="settle-rank">최종 순위</Label>
+          <span className="tabular-nums text-xs text-subtle">운영진 전용 · 확정된 투자 기준</span>
+        </div>
+        <ol className="grid gap-px border border-fg/10 bg-fg/10">
+          {rows.map((r, i) => (
+            <li key={r.team.id} className="bg-page">
+              <details className="group">
+                <summary className="grid cursor-pointer list-none grid-cols-[2rem_1fr_auto] items-center gap-x-4 gap-y-2 p-4 [&::-webkit-details-marker]:hidden">
+                  <span className="tabular-nums text-lg font-bold text-subtle">{i + 1}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-bold">{r.team.project || "프로젝트 미정"}</span>
+                    <span className="block truncate text-xs text-subtle">
+                      {r.team.table ? `${r.team.table} · ` : ""}
+                      {r.team.name}
+                    </span>
+                  </span>
+                  <span className="text-right">
+                    <span className="block font-bold tabular-nums">{won(r.final)}</span>
+                    <span className="block tabular-nums text-xs text-subtle">
+                      받음 {won(r.received)}
+                      {r.penalty > 0 && ` − 감점 ${won(r.penalty)}`}
+                    </span>
+                  </span>
+                  <span className="col-span-2 col-start-2">
+                    <RankBar value={Math.max(0, r.final)} max={top} />
+                  </span>
+                </summary>
+                <div className="border-t border-fg/10 px-4 py-3 sm:pl-16">
+                  {r.members.length === 0 ? (
+                    <p className="text-sm text-subtle">팀원이 없습니다.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[28rem] text-left text-sm">
+                        <thead className="text-xs text-subtle">
+                          <tr>
+                            <th scope="col" className="py-1.5 pr-3 font-normal">팀원</th>
+                            <th scope="col" className="py-1.5 pr-3 text-right font-normal">투자금</th>
+                            <th scope="col" className="py-1.5 pr-3 text-right font-normal">사용</th>
+                            <th scope="col" className="py-1.5 text-right font-normal">미소진(감점)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {r.members.map((m) => (
+                            <tr key={m.person.id} className="border-t border-fg/10">
+                              <td className="py-1.5 pr-3">
+                                <span className="flex items-center gap-2">
+                                  <SchoolChip s={school(m.person.school)} className="h-3 w-3" />
+                                  {m.person.name}
+                                </span>
+                              </td>
+                              <td className="py-1.5 pr-3 text-right tabular-nums text-muted">{won(m.budget)}</td>
+                              <td className="py-1.5 pr-3 text-right tabular-nums text-muted">{won(m.spent)}</td>
+                              <td className={`py-1.5 text-right tabular-nums ${m.unspent > 0 ? "font-bold" : "text-muted"}`}>
+                                {m.unspent > 0 ? `−${won(m.unspent)}` : "없음"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </details>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-2 text-xs text-subtle">항목을 누르면 팀원별 사용·미소진 금액을 볼 수 있습니다.</p>
+      </section>
+
+      {judges.length > 0 && (
+        <section aria-labelledby="settle-judges" className="border border-fg/15 p-4">
+          <Label id="settle-judges">심사위원 {judges.length}명</Label>
+          <p className="mt-1 text-sm text-subtle">심사위원의 투자는 팀이 받은 투자금에 포함되고, 남긴 투자금은 감점하지 않습니다.</p>
+          <ul className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
+            {judges.map((m) => (
+              <li key={m.person.id} className="flex justify-between gap-3">
+                <span>{m.person.name}</span>
+                <span className="tabular-nums text-muted">
+                  사용 {won(m.spent)} / {won(m.budget)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {unassigned.length > 0 && (
+        <section aria-labelledby="settle-unassigned" className="border border-fg/15 border-l-[3px] border-l-warn p-4">
+          <Label id="settle-unassigned">팀이 없는 참가자</Label>
+          <p className="mt-1 text-sm text-subtle">
+            팀이 없어 감점을 반영할 수 없습니다. 미소진 합계 {won(lostUnassigned)}. 참가자 탭에서 팀을 배정하거나 심사위원으로 바꾸면 결산에 반영됩니다.
+          </p>
+          <ul className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
+            {unassigned.map((m) => (
+              <li key={m.person.id} className="flex justify-between gap-3">
+                <span>{m.person.name}</span>
+                <span className="tabular-nums text-muted">미소진 {won(m.unspent)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -357,6 +511,28 @@ function TeamSelect({
   );
 }
 
+function RoleSelect({
+  value,
+  onChange,
+  label,
+  size = "md",
+}: {
+  value: Role;
+  onChange: (v: Role) => void;
+  label: string;
+  size?: ControlSize;
+}) {
+  return (
+    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value as Role)} className={select(size)}>
+      {(Object.keys(ROLE_LABEL) as Role[]).map((r) => (
+        <option key={r} value={r}>
+          {ROLE_LABEL[r]}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 /* ---------- 참가자 관리 ---------- */
 
 function PeoplePanel({ state }: { state: FestivalState }) {
@@ -368,10 +544,12 @@ function PeoplePanel({ state }: { state: FestivalState }) {
 
   const rows = state.participants.filter(
     (p) =>
-      (teamFilter === "all" || (teamFilter === "none" ? !p.teamId : p.teamId === teamFilter)) &&
+      (teamFilter === "all" ||
+        (teamFilter === "none" ? needsTeam(p) : teamFilter === "judge" ? isJudge(p) : p.teamId === teamFilter)) &&
       (!query || p.name.toLowerCase().includes(query) || teamName(p.teamId).toLowerCase().includes(query)),
   );
-  const unassigned = state.participants.filter((p) => !p.teamId).length;
+  const unassigned = state.participants.filter(needsTeam).length;
+  const judges = state.participants.filter(isJudge).length;
 
   return (
     <div className="grid grid-cols-1 gap-8">
@@ -382,6 +560,7 @@ function PeoplePanel({ state }: { state: FestivalState }) {
           <Label id={`${id}-title`}>참가자 목록</Label>
           <span className="tabular-nums text-xs text-subtle">
             {rows.length}명 표시{unassigned > 0 && ` · 미배정 ${unassigned}명`}
+            {judges > 0 && ` · 심사위원 ${judges}명`}
           </span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -399,6 +578,7 @@ function PeoplePanel({ state }: { state: FestivalState }) {
           <select aria-label="팀 필터" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} className={select()}>
             <option value="all">전체 팀</option>
             <option value="none">미배정</option>
+            <option value="judge">심사위원</option>
             {state.teams.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.table} · {t.name}
@@ -408,11 +588,12 @@ function PeoplePanel({ state }: { state: FestivalState }) {
         </div>
 
         <div className="relative mt-3 overflow-x-auto">
-          <table className="w-full min-w-[46rem] border-t border-fg/15 text-left text-sm">
+          <table className="w-full min-w-[54rem] border-t border-fg/15 text-left text-sm">
             <thead className="text-xs text-subtle">
               <tr className="border-b border-fg/15">
                 <th className="py-2 pr-3 font-normal">이름</th>
                 <th className="py-2 pr-3 font-normal">학교</th>
+                <th className="py-2 pr-3 font-normal">역할</th>
                 <th className="py-2 pr-3 font-normal">팀</th>
                 <th className="py-2 pr-3 font-normal">출석</th>
                 <th className="py-2 pr-3 font-normal">참가자 코드</th>
@@ -445,8 +626,8 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
   }
 
   return (
-    <tr className={`border-b border-fg/10 align-middle ${!p.teamId ? "bg-surface" : ""}`}>
-      <td className={`py-2.5 pr-3 ${!p.teamId ? "border-l-[3px] border-l-warn pl-2" : ""}`}>
+    <tr className={`border-b border-fg/10 align-middle ${needsTeam(p) ? "bg-surface" : ""}`}>
+      <td className={`py-2.5 pr-3 ${needsTeam(p) ? "border-l-[3px] border-l-warn pl-2" : ""}`}>
         {editing ? (
           <input
             aria-label="이름"
@@ -470,7 +651,22 @@ function PersonRow({ p, teams }: { p: Participant; teams: Team[] }) {
         )}
       </td>
       <td className="py-2.5 pr-3">
-        <TeamSelect label={`${p.name} 팀 배정`} teams={teams} value={p.teamId} onChange={(v) => assignTeam(p.id, v)} size="sm" />
+        <RoleSelect
+          label={`${p.name} 역할`}
+          value={p.role}
+          onChange={(r) => {
+            if (r === "judge" && p.teamId && !confirm(`${p.name}님을 심사위원으로 바꾸면 팀 배정이 해제됩니다. 계속할까요?`)) return;
+            void setRole(p.id, r);
+          }}
+          size="sm"
+        />
+      </td>
+      <td className="py-2.5 pr-3">
+        {isJudge(p) ? (
+          <span className="text-subtle">팀 없음</span>
+        ) : (
+          <TeamSelect label={`${p.name} 팀 배정`} teams={teams} value={p.teamId} onChange={(v) => assignTeam(p.id, v)} size="sm" />
+        )}
       </td>
       <td className="py-2.5 pr-3">
         <Status on={p.checkedIn} />
@@ -713,7 +909,8 @@ function BudgetPanel({ state }: { state: FestivalState }) {
   });
   const rows = all.filter(
     ({ p, left }) =>
-      (teamFilter === "all" || (teamFilter === "none" ? !p.teamId : p.teamId === teamFilter)) &&
+      (teamFilter === "all" ||
+        (teamFilter === "none" ? needsTeam(p) : teamFilter === "judge" ? isJudge(p) : p.teamId === teamFilter)) &&
       (!query || p.name.toLowerCase().includes(query) || (teamOf(p.teamId)?.name ?? "").toLowerCase().includes(query)) &&
       (!onlyOver || left < 0),
   );
@@ -766,6 +963,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
           <select aria-label="팀 필터" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} className={select()}>
             <option value="all">전체 팀</option>
             <option value="none">미배정</option>
+            <option value="judge">심사위원</option>
             {state.teams.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.table} · {t.name}
@@ -804,7 +1002,7 @@ function BudgetPanel({ state }: { state: FestivalState }) {
                       <span className="font-bold">{p.name}</span>
                     </span>
                   </td>
-                  <td className="py-2.5 pr-3 text-subtle">{teamOf(p.teamId)?.name ?? "미배정"}</td>
+                  <td className="py-2.5 pr-3 text-subtle">{teamOf(p.teamId)?.name ?? (isJudge(p) ? "심사위원" : "미배정")}</td>
                   <td className="py-2.5 pr-3">
                     <BudgetCell cfg={state} id={p.id} name={p.name} budget={budget} />
                   </td>
@@ -835,6 +1033,7 @@ function AddParticipant({ teams }: { teams: Team[] }) {
   const id = useId();
   const [name, setName] = useState("");
   const [sch, setSch] = useState<SchoolKey>("ku");
+  const [role, setRoleDraft] = useState<Role>("participant");
   const [teamId, setTeamId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [added, setAdded] = useState<{ name: string; code: string } | null>(null);
@@ -846,7 +1045,7 @@ function AddParticipant({ teams }: { teams: Team[] }) {
     setBusy(true);
     let code = "";
     const done = await run(async () => {
-      code = await addParticipant({ name: name.trim(), school: sch, teamId });
+      code = await addParticipant({ name: name.trim(), school: sch, role, teamId: role === "judge" ? null : teamId });
     });
     setBusy(false);
     if (!done) return;
@@ -872,7 +1071,8 @@ function AddParticipant({ teams }: { teams: Team[] }) {
           />
         </label>
         <SchoolSelect label="학교" value={sch} onChange={setSch} />
-        <TeamSelect label="팀" teams={teams} value={teamId} onChange={setTeamId} />
+        <RoleSelect label="역할" value={role} onChange={setRoleDraft} />
+        {role === "participant" && <TeamSelect label="팀" teams={teams} value={teamId} onChange={setTeamId} />}
         <button type="submit" disabled={busy} className={primaryBtn}>
           {busy ? "추가 중…" : "추가"}
         </button>
@@ -895,7 +1095,7 @@ function AddParticipant({ teams }: { teams: Team[] }) {
 /* ---------- 팀 관리 ---------- */
 
 function TeamsPanel({ state }: { state: FestivalState }) {
-  const unassigned = state.participants.filter((p) => !p.teamId);
+  const unassigned = state.participants.filter(needsTeam);
 
   return (
     <div className="grid grid-cols-1 gap-8">
@@ -1109,7 +1309,8 @@ function AttendancePanel({ state }: { state: FestivalState }) {
 
   const groups = [
     ...state.teams.map((t) => ({ key: t.id, title: `${t.table} · ${t.name}`, people: membersOf(state, t.id) })),
-    { key: "none", title: "미배정", people: state.participants.filter((p) => !p.teamId) },
+    { key: "none", title: "미배정", people: state.participants.filter(needsTeam) },
+    { key: "judge", title: "심사위원", people: state.participants.filter(isJudge) },
   ].filter((g) => g.people.length > 0);
 
   const show = (p: Participant) => filter === "all" || (filter === "present" ? p.checkedIn : !p.checkedIn);

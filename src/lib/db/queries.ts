@@ -4,7 +4,7 @@
 // plus a few RPCs. Rows are mapped to the app's Participant / Team types here.
 
 import type { PostgrestError } from "@supabase/supabase-js";
-import type { Participant, SchoolKey, Team } from "@/data/guide";
+import type { Participant, Role, SchoolKey, Team } from "@/data/guide";
 import type { Investments, Snapshot } from "@/lib/festival-store";
 import { createClient } from "@/utils/supabase/client";
 import { ASSET_RULES, normalizeUrl, type AssetKind } from "@/lib/market-rules";
@@ -35,6 +35,8 @@ const HINTS: Record<string, string> = {
   person_required: "참가자 이름은 비워 둘 수 없습니다.",
   bad_school: "알 수 없는 학교가 있습니다.",
   bad_table: "팀 목록에 없는 팀 테이블을 쓴 참가자가 있습니다.",
+  bad_role: "알 수 없는 역할이 있습니다.",
+  judge_team: "심사위원은 팀에 배정할 수 없습니다.",
   too_many_assets: "올릴 수 있는 개수를 넘었습니다.",
 };
 
@@ -73,12 +75,12 @@ export async function fetchTeams(): Promise<Team[]> {
 // directory. Attendance comes back only for rows the caller may see: everyone
 // for staff, just themselves for a participant.
 export async function fetchPeople(mode: Mode): Promise<Participant[]> {
-  type Row = { id: string; name: string; school: string; team_id: string | null; access_code?: string; invest_budget?: number | null };
+  type Row = { id: string; name: string; school: string; role?: string; team_id: string | null; access_code?: string; invest_budget?: number | null };
   const [rows, attendance] = await Promise.all([
     mode === "staff"
       ? sb()
           .from("participants")
-          .select("id, name, school, team_id, access_code, invest_budget")
+          .select("id, name, school, role, team_id, access_code, invest_budget")
           .order("name")
           .then(ok<Row[]>)
       : sb()
@@ -95,6 +97,7 @@ export async function fetchPeople(mode: Mode): Promise<Participant[]> {
     id: r.id,
     name: r.name,
     school: r.school as SchoolKey,
+    role: (r.role ?? "participant") as Role,
     teamId: r.team_id,
     checkedIn: here.has(r.id),
     accessCode: r.access_code,
@@ -110,18 +113,23 @@ export async function fetchVenueCode(): Promise<string | null> {
 
 /* ---------- Staff writes ---------- */
 
-export type PersonPatch = Partial<Pick<Participant, "name" | "school" | "teamId">>;
+export type PersonPatch = Partial<Pick<Participant, "name" | "school" | "role" | "teamId">>;
 
 const personRow = (p: PersonPatch) => ({
   ...(p.name !== undefined && { name: p.name }),
   ...(p.school !== undefined && { school: p.school }),
+  ...(p.role !== undefined && { role: p.role }),
   ...(p.teamId !== undefined && { team_id: p.teamId }),
 });
 
 // Returns the new participant's generated access code
-export async function addParticipant(p: { name: string; school: SchoolKey; teamId: string | null }): Promise<string> {
+export async function addParticipant(p: { name: string; school: SchoolKey; role: Role; teamId: string | null }): Promise<string> {
   const row = ok<{ access_code: string }>(
-    await sb().from("participants").insert({ name: p.name, school: p.school, team_id: p.teamId }).select("access_code").single(),
+    await sb()
+      .from("participants")
+      .insert({ name: p.name, school: p.school, role: p.role, team_id: p.teamId })
+      .select("access_code")
+      .single(),
   );
   return row.access_code;
 }
@@ -280,7 +288,7 @@ export type ImportCounts = Record<"teams" | "people", { added: number; updated: 
 // Applies a whole file in one transaction (see the bulk_import migration)
 export async function bulkImport(
   teams: { table: string; name: string; project: string; desc: string }[],
-  people: { name: string; school: string; table: string }[],
+  people: { name: string; school: string; role?: string; table: string }[],
   deleteMissing: boolean,
 ): Promise<ImportCounts> {
   return ok(

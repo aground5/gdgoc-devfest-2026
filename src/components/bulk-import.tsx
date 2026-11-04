@@ -78,6 +78,7 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
             그대로 씁니다.
           </li>
           <li>· 학교는 고려대·연세대·성균관대·KAIST(또는 ku·yu·skku·kaist)로 적습니다. 팀 테이블을 비우면 미배정입니다.</li>
+          <li>· 역할은 비워 두면 참가자이고, 심사위원은 &ldquo;심사위원&rdquo;으로 적습니다. 심사위원은 팀 테이블을 비워 둡니다. 역할 칸이 없는 파일은 지금 역할을 그대로 둡니다.</li>
           <li>· 팀 또는 참가자 파일 하나만 올리면 다른 쪽은 그대로 둡니다.</li>
         </ul>
       </section>
@@ -160,8 +161,14 @@ export function BulkImportPanel({ people, teams }: { people: Participant[]; team
 
           <ChangeList title="새 팀" items={p.team.added.map((t) => `${t.table} · ${t.name}`)} />
           <ChangeList title="수정되는 팀" items={p.team.updated.map((t) => `${t.table} · ${t.name}`)} />
-          <ChangeList title="새 참가자" items={p.person.added.map((r) => `${r.name}${r.table ? ` (${r.table})` : " (미배정)"}`)} />
-          <ChangeList title="수정되는 참가자" items={p.person.updated.map((r) => `${r.name}${r.table ? ` → ${r.table}` : " → 미배정"}`)} />
+          <ChangeList
+            title="새 참가자"
+            items={p.person.added.map((r) => `${r.name}${r.role === "judge" ? " (심사위원)" : r.table ? ` (${r.table})` : " (미배정)"}`)}
+          />
+          <ChangeList
+            title="수정되는 참가자"
+            items={p.person.updated.map((r) => `${r.name}${r.role === "judge" ? " → 심사위원" : r.table ? ` → ${r.table}` : " → 미배정"}`)}
+          />
           {deleteMissing && (
             <>
               <ChangeList danger title="삭제되는 팀" items={p.team.deleted.map((t) => `${t.table} · ${t.name}`)} />

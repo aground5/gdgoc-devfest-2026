@@ -7,17 +7,22 @@
 import Papa from "papaparse";
 import readXlsxFile from "read-excel-file/browser";
 import writeXlsxFile from "write-excel-file/browser";
-import type { Participant, SchoolKey, Team } from "@/data/guide";
+import type { Participant, Role, SchoolKey, Team } from "@/data/guide";
 
 export const TEAM_COLS = ["테이블", "팀명", "프로젝트", "소개"] as const;
 // No access code column: codes are generated on the server, and existing
 // participants are matched by name + school so their codes stay the same
 export const PEOPLE_COLS = ["이름", "학교", "팀 테이블"] as const;
+// Optional column (older files don't have it): blank = 참가자, or 심사위원.
+// Left out of a file, existing people keep their role.
+export const ROLE_COL = "역할";
 const TEAM_SHEET = "팀";
 const PEOPLE_SHEET = "참가자";
 
 export type TeamRow = { table: string; name: string; project: string; desc: string };
-export type PersonRow = { name: string; school: SchoolKey; table: string };
+export type PersonRow = { name: string; school: SchoolKey; table: string; role?: Role };
+
+const ROLE_NAMES: Record<string, Role> = { "": "participant", 참가자: "participant", participant: "participant", 심사위원: "judge", judge: "judge" };
 
 const personKey = (x: { name: string; school: string }) => `${x.name.trim()}|${x.school}`;
 
@@ -50,7 +55,7 @@ function teamRows(teams: Team[]): string[][] {
 
 function peopleRows(people: Participant[], teams: Team[]): string[][] {
   const tableOf = (id: string | null) => teams.find((t) => t.id === id)?.table ?? "";
-  return people.map((p) => [p.name, SCHOOL_LABEL[p.school], tableOf(p.teamId)]);
+  return people.map((p) => [p.name, SCHOOL_LABEL[p.school], tableOf(p.teamId), p.role === "judge" ? "심사위원" : ""]);
 }
 
 export async function downloadXlsx(people: Participant[], teams: Team[]) {
@@ -62,8 +67,8 @@ export async function downloadXlsx(people: Participant[], teams: Team[]) {
     { sheet: TEAM_SHEET, data: sheet(TEAM_COLS, teamRows(teams)), columns: [{ width: 10 }, { width: 18 }, { width: 18 }, { width: 40 }] },
     {
       sheet: PEOPLE_SHEET,
-      data: sheet(PEOPLE_COLS, peopleRows(people, teams)),
-      columns: [{ width: 12 }, { width: 10 }, { width: 10 }],
+      data: sheet([...PEOPLE_COLS, ROLE_COL], peopleRows(people, teams)),
+      columns: [{ width: 12 }, { width: 10 }, { width: 10 }, { width: 10 }],
     },
   ]).toFile("devfest-teams-participants.xlsx");
 }
@@ -72,7 +77,7 @@ export function downloadCsv(kind: "teams" | "people", people: Participant[], tea
   const csv =
     kind === "teams"
       ? Papa.unparse({ fields: [...TEAM_COLS], data: teamRows(teams) })
-      : Papa.unparse({ fields: [...PEOPLE_COLS], data: peopleRows(people, teams) });
+      : Papa.unparse({ fields: [...PEOPLE_COLS, ROLE_COL], data: peopleRows(people, teams) });
   // BOM so Excel opens the Korean text correctly
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
@@ -113,12 +118,13 @@ function kindOf(t: Table): "teams" | "people" | null {
   return null;
 }
 
+// Missing optional columns come back as null
 function rowsOf(t: Table, cols: readonly string[]) {
   const h = t[0].map((x) => x.replace(/\s+/g, ""));
   const idx = cols.map((c) => h.indexOf(c.replace(/\s+/g, "")));
   return t
     .slice(1)
-    .map((r, i) => ({ line: i + 2, v: idx.map((k) => r[k] ?? "") }))
+    .map((r, i) => ({ line: i + 2, v: idx.map((k) => (k < 0 ? null : (r[k] ?? ""))) }))
     .filter((r) => r.v.some(Boolean)); // skip blank rows
 }
 
@@ -137,17 +143,23 @@ export async function parseFiles(files: File[]): Promise<Parsed> {
   for (const t of tables) {
     const kind = kindOf(t);
     if (kind === "teams") {
-      teams = rowsOf(t, TEAM_COLS).map(({ line, v: [table, name, project, desc] }) => {
+      teams = rowsOf(t, TEAM_COLS).map(({ line, v }) => {
+        const [table, name, project, desc] = v.map((x) => x ?? "");
         if (!table) errors.push(`팀 ${line}행: 테이블이 비어 있습니다.`);
         if (!name) errors.push(`팀 ${line}행: 팀명이 비어 있습니다.`);
         return { table, name, project, desc };
       });
     } else if (kind === "people") {
-      people = rowsOf(t, PEOPLE_COLS).map(({ line, v: [name, schoolText, table] }) => {
+      people = rowsOf(t, [...PEOPLE_COLS, ROLE_COL]).map(({ line, v }) => {
+        const [name, schoolText, table] = v.map((x) => x ?? "");
+        const roleText = v[3];
         const school = SCHOOL_NAMES[schoolText.toLowerCase()];
+        const role = roleText === null ? undefined : ROLE_NAMES[roleText.toLowerCase()];
         if (!name) errors.push(`참가자 ${line}행: 이름이 비어 있습니다.`);
         if (!school) errors.push(`참가자 ${line}행: 학교 "${schoolText}"을(를) 알 수 없습니다. (고려대·연세대·성균관대·KAIST)`);
-        return { name, school: school ?? "ku", table };
+        if (roleText !== null && !role) errors.push(`참가자 ${line}행: 역할 "${roleText}"을(를) 알 수 없습니다. (비워 두면 참가자, 또는 심사위원)`);
+        if (role === "judge" && table) errors.push(`참가자 ${line}행: 심사위원 "${name}"에게 팀 테이블이 있습니다. 심사위원은 팀에 배정할 수 없습니다.`);
+        return { name, school: school ?? "ku", table, ...(role && { role }) };
       });
     }
   }
@@ -181,7 +193,8 @@ export type Plan = {
 export function plan(parsed: Parsed, people: Participant[], teams: Team[], deleteMissing: boolean): Plan {
   const tableOf = (id: string | null) => teams.find((t) => t.id === id)?.table ?? "";
   const fileTeams = parsed.teams ?? teams.map((t) => ({ table: t.table, name: t.name, project: t.project, desc: t.desc }));
-  const filePeople = parsed.people ?? people.map((p) => ({ name: p.name, school: p.school, table: tableOf(p.teamId) }));
+  const filePeople: PersonRow[] =
+    parsed.people ?? people.map((p) => ({ name: p.name, school: p.school, table: tableOf(p.teamId), role: p.role }));
   const errors = [...parsed.errors];
 
   const team: Plan["team"] = { added: [], updated: [], same: 0, deleted: [] };
@@ -203,8 +216,11 @@ export function plan(parsed: Parsed, people: Participant[], teams: Team[], delet
         `"${r.name}"(${SCHOOL_LABEL[r.school]}) 이름의 참가자가 이미 ${same.length}명 있어 누구인지 알 수 없습니다. 이 사람은 파일에서 빼고 참가자 탭에서 직접 수정해 주세요.`,
       );
     const cur = same.length === 1 ? same[0] : undefined;
+    // Without a role column, an existing person keeps theirs
+    if (cur && !r.role && r.table && cur.role === "judge")
+      errors.push(`심사위원 "${r.name}"에게 팀 테이블이 있습니다. 심사위원은 팀에 배정할 수 없습니다.`);
     if (!cur) person.added.push(r);
-    else if (tableOf(cur.teamId) !== r.table) person.updated.push(r);
+    else if (tableOf(cur.teamId) !== r.table || (r.role && r.role !== cur.role)) person.updated.push(r);
     else person.same++;
   }
   if (deleteMissing) person.deleted = people.filter((p) => !filePeople.some((r) => personKey(r) === personKey(p)));

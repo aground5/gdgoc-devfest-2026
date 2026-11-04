@@ -4,7 +4,7 @@
 // their own team and attendance, the team list, their own investments, and the
 // investment ticks staff have published (never live totals).
 
-import { useId, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { type Participant, type Team } from "@/data/guide";
 import { budgetOf, buildState, membersOf, won, type FestivalState } from "@/lib/festival-store";
 import { login, logout, useParticipantSession, type SessionParticipant } from "@/lib/participant-session";
@@ -20,6 +20,7 @@ import {
   fieldCls,
   btn,
   field,
+  JudgingCriteria,
   primaryBtn,
   school,
   schoolsOf,
@@ -166,6 +167,8 @@ function Festival({ who }: { who: SessionParticipant }) {
   const [view, setView] = useHashTab(VIEWS, "team");
   const me = state?.participants.find((p) => p.id === who.id);
   const myTeam = me?.teamId ? state?.teams.find((t) => t.id === me.teamId) : undefined;
+  // The directory reports everyone as a participant; my own role comes from the session
+  const judge = who.role === "judge";
   const failed = people.error ?? teams.error ?? settings.error ?? investments.error ?? ticks.error ?? myBudget.error;
   const [leaving, setLeaving] = useState(false);
 
@@ -202,10 +205,16 @@ function Festival({ who }: { who: SessionParticipant }) {
       ) : !me ? (
         <p className="py-10 text-lg text-subtle">참가자 정보를 찾을 수 없습니다. 운영진에게 문의해 주세요.</p>
       ) : view === "team" ? (
-        <div className="grid gap-10 lg:grid-cols-[1fr_26rem]">
-          <div className="grid content-start gap-6">
+        <div className="grid w-full grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_26rem]">
+          <div className="grid min-w-0 grid-cols-1 content-start gap-6">
             {myTeam ? (
               <MyTeamCard state={state} team={myTeam} />
+            ) : judge ? (
+              <section className="border border-fg/15 p-5 sm:p-7">
+                <Label>심사위원</Label>
+                <p className="mt-3 text-lg font-bold">{who.name}님은 심사위원으로 참여합니다.</p>
+                <p className="mt-1 text-sm text-subtle">팀에 속하지 않고, 모든 팀에 투자할 수 있습니다.</p>
+              </section>
             ) : (
               <section className="border border-fg/15 p-5 sm:p-7">
                 <Label>내 팀</Label>
@@ -218,12 +227,13 @@ function Festival({ who }: { who: SessionParticipant }) {
           <TeamList state={state} myTeamId={myTeam?.id} />
         </div>
       ) : view === "invest" ? (
-        <div className="grid grid-cols-1 gap-10">
-          <InvestPanel state={state} me={me} />
-          <PublishedStatus state={state} myTeamId={myTeam?.id} />
+        // Phones: room at the bottom of the page for the fixed confirm bar (InvestPanel measures it)
+        <div className="grid grid-cols-1 gap-10 pb-[var(--invest-bar-h,0px)] sm:pb-0">
+          <InvestPanel state={state} me={me} judge={judge} />
+          <PublishedStatus state={state} myTeamId={myTeam?.id} judgeId={judge ? me.id : undefined} />
         </div>
       ) : (
-        <Market state={state} myTeamId={myTeam?.id} />
+        <Market state={state} myTeamId={myTeam?.id} judgeId={judge ? me.id : undefined} onInvest={() => setView("invest")} />
       )}
     </ScreenFrame>
   );
@@ -232,7 +242,17 @@ function Festival({ who }: { who: SessionParticipant }) {
 /* ---------- Demo Market ---------- */
 
 // Loaded only when the tab is open (signed URLs for uploads are fetched with it)
-function Market({ state, myTeamId }: { state: FestivalState; myTeamId?: string }) {
+function Market({
+  state,
+  myTeamId,
+  judgeId,
+  onInvest,
+}: {
+  state: FestivalState;
+  myTeamId?: string;
+  judgeId?: string;
+  onInvest: () => void;
+}) {
   const demos = useDemos("participant");
   if (demos.error)
     return (
@@ -246,7 +266,7 @@ function Market({ state, myTeamId }: { state: FestivalState; myTeamId?: string }
         불러오는 중…
       </p>
     );
-  return <MarketPanel state={state} entries={demos.data} myTeamId={myTeamId} />;
+  return <MarketPanel state={state} entries={demos.data} myTeamId={myTeamId} judgeId={judgeId} onInvest={onInvest} />;
 }
 
 /* ---------- My team ---------- */
@@ -509,7 +529,8 @@ function TeamList({ state, myTeamId }: { state: FestivalState; myTeamId?: string
 
 /* ---------- Investment ---------- */
 
-function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
+// A judge (심사위원) uses the same panel: no own team to skip, and unspent budget is never a penalty
+function InvestPanel({ state, me, judge }: { state: FestivalState; me: Participant; judge: boolean }) {
   // Confirmed amounts live in the shared store; edits stay in a local draft until confirmed.
   const saved = state.investments[me.id] ?? null;
   const [draft, setDraft] = useState<Record<string, number> | null>(null);
@@ -543,6 +564,23 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
   const dirty = saved === null || targets.some((t) => (amounts[t.id] ?? 0) !== (saved[t.id] ?? 0));
   const upToDate = saved !== null && !dirty;
 
+  // The page pads its bottom by the fixed bar's real height (it changes with the
+  // safe area and wrapping), so the last section can scroll clear of it
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const root = document.documentElement;
+    const sync = () => root.style.setProperty("--invest-bar-h", `${bar.offsetHeight}px`);
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(bar);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--invest-bar-h");
+    };
+  }, []);
+
   function change(teamId: string, v: number) {
     setDraft({ ...amounts, [teamId]: v });
   }
@@ -562,11 +600,11 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
   }
 
   return (
-    <div className="grid gap-8 pb-24 sm:pb-0">
+    <div className="grid w-full min-w-0 grid-cols-1 gap-8">
       <section aria-labelledby="invest-summary" className="border border-fg/15 bg-surface p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <Label id="invest-summary">내 투자금</Label>
+            <Label id="invest-summary">{judge ? "심사위원 투자금" : "내 투자금"}</Label>
             <p
               className={`mt-2 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl ${over ? "text-danger" : ""}`}
             >
@@ -631,10 +669,14 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
           <p role="status" className="mt-3 text-xs text-subtle">
             {upToDate
               ? "확정된 투자입니다. 언제든 다시 바꾸고 확정할 수 있습니다."
-              : `${won(state.step)} 단위로 투자할 수 있습니다. 내 팀 프로젝트에는 투자할 수 없습니다.`}
+              : judge
+                ? `${won(state.step)} 단위로 모든 팀에 투자할 수 있습니다. 심사위원의 투자는 결과에 함께 반영됩니다.`
+                : `${won(state.step)} 단위로 투자할 수 있습니다. 내 팀 프로젝트에는 투자할 수 없습니다.`}
           </p>
         )}
       </section>
+
+      {judge && <JudgingCriteria />}
 
       <section aria-labelledby="invest-projects">
         <div className="mb-4 flex items-baseline justify-between gap-4">
@@ -643,7 +685,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
             {targets.length}개 · 투자 {invested.length}
           </span>
         </div>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {targets.map((t) => (
             <InvestCard
               key={t.id}
@@ -663,6 +705,7 @@ function InvestPanel({ state, me }: { state: FestivalState; me: Participant }) {
 
       {/* Phones: the project list is long, so keep what's left and the confirm button in reach */}
       <div
+        ref={barRef}
         className="fixed inset-x-0 bottom-0 z-20 border-t border-fg/15 bg-page px-4 pt-3 sm:hidden"
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
@@ -719,7 +762,7 @@ function InvestCard({
     "grid h-12 w-12 shrink-0 place-items-center border border-fg/50 text-lg transition hover:bg-fg/10 disabled:opacity-50 disabled:hover:bg-transparent";
 
   return (
-    <li className={`flex flex-col border ${amount > 0 ? "border-fg/50 bg-fg/[0.06]" : "border-fg/15"}`}>
+    <li className={`flex min-w-0 flex-col border ${amount > 0 ? "border-fg/50 bg-fg/[0.06]" : "border-fg/15"}`}>
       <MemberStripe people={members} className="h-1.5" />
       <div className="flex flex-1 flex-col p-5">
         <p className="tabular-nums text-xs text-subtle">
@@ -751,7 +794,7 @@ function InvestCard({
               disabled={disabled}
               onChange={(e) => set(Number(e.target.value.replace(/\D/g, "")) || 0)}
               onBlur={() => set(Math.round(amount / step) * step)}
-              className={`${field("lg")} -mx-px min-w-0 flex-1 text-right tabular-nums focus:relative`}
+              className={`${field("lg")} -mx-px w-0 min-w-0 flex-1 text-right tabular-nums focus:relative`}
             />
             <button
               type="button"
